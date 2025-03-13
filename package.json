@@ -1,7 +1,7 @@
 {
-  "name": "pindorama",
+  "name": "jlmoldes",
   "version": "1.0.0",
-  "description": "RPG Multiplayer 2D",
+  "description": "Sistema de planilha integrada",
   "main": "index.js",
   "scripts": {
     "dev": "npm run services:up && npm run services:wait:database && npm run migrations:up && next dev",
