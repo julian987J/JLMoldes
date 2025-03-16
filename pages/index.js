@@ -1,7 +1,11 @@
+import M1content from "./components/Mcontent.js";
+import NavBar from "./components/NavBar.js";
+
 const Home = () => {
   return (
-    <div className="p-4">
-      <button className="btn">Clique aqui</button>
+    <div>
+      <NavBar MContent={M1content} />
+      {/* <Footer /> */}
     </div>
   );
 };
