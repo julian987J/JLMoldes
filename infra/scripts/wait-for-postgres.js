@@ -11,5 +11,5 @@ function handleReturn(error, stdout) {
   }
   console.log("\n🟢 Postgres está pronto e aceitando conexões!\n");
 }
-console.log("\n\n🔴 Postgres está pronto e aceitando conexões!");
+console.log("\n\n🔴 Postgres não está pronto.");
 checkPostgres();

@@ -15,11 +15,11 @@ async function listPendingMigrations() {
   try {
     dbClient = await database.getNewClient();
 
-    const pendigMigrations = await migrationRunner({
+    const pendingMigrations = await migrationRunner({
       ...defaultMigrationsOptions,
       dbClient,
     });
-    return pendigMigrations;
+    return pendingMigrations;
   } finally {
     await dbClient?.end();
   }

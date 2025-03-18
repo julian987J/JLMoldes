@@ -11,7 +11,6 @@ export default router.handler(controller.errorHandlers);
 
 async function getHandler(request, response) {
   const ordemGetValues = await Mordem.getM1Table();
-
   return response.status(200).json(ordemGetValues);
 }
 
