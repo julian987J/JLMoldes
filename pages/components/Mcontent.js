@@ -1,5 +1,5 @@
-import TabelaM from "./TabelaM.js";
 import { useState } from "react";
+import TabelaM from "./TabelaM.js";
 
 const Mcontent = () => {
   const [descricao, setDescricao] = useState("");
@@ -12,42 +12,36 @@ const Mcontent = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    const data = {
-      data: new Date().toISOString().split("T")[0], // Adicione a data atual ou modifique conforme necessário
-      descricao,
-      dec,
-      nome,
-      sis,
-      base,
-      alt,
-    };
+    const ordemInputValues = { descricao, dec, nome, sis, base, alt };
 
     try {
-      const response = await fetch("/api/v1/migrations/POSTm1", {
+      const response = await fetch("/api/v1/tables", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(data),
+        body: JSON.stringify(ordemInputValues),
       });
 
-      if (response.ok) {
-        alert("Dados enviados com sucesso!");
-        // Limpar os campos após o envio
-        setDescricao("");
-        setDec("");
-        setNome("");
-        setSis("");
-        setBase("");
-        setAlt("");
-      } else {
-        alert("Erro ao enviar dados.");
+      if (!response.ok) {
+        throw new Error("Erro ao enviar os dados.");
       }
+
+      const data = await response.json();
+      console.log("Novo registro:", data);
+
+      // Resetar os campos do formulário após o envio
+      setDescricao("");
+      setDec("");
+      setNome("");
+      setSis("");
+      setBase("");
+      setAlt("");
     } catch (error) {
-      console.error(error);
-      alert("Erro ao enviar dados.");
+      console.error("Erro ao enviar:", error);
     }
   };
+
   return (
     <div>
       {/* Formulario Enviar */}
@@ -104,11 +98,6 @@ const Mcontent = () => {
           <button type="submit" className="btn btn-xs btn-info">
             Enviar
           </button>
-          <input
-            type="number"
-            placeholder="Código"
-            className="input input-success input-xs w-24"
-          />
         </form>
       </div>
       {/* Tabela de ações */}

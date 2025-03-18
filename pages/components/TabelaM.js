@@ -3,17 +3,28 @@ import React, { useEffect, useState } from "react";
 const TabelaM = () => {
   const [dados, setDados] = useState([]);
 
-  useEffect(() => {
-    async function fetchData() {
-      try {
-        const response = await fetch("/api/v1/migrations/getM1");
-        const data = await response.json();
-        setDados(data);
-      } catch (error) {
-        console.error("Erro ao buscar dados:", error);
+  const fetchData = async () => {
+    try {
+      const response = await fetch("/api/v1/tables"); // URL correta para o endpoint
+      if (!response.ok) throw new Error("Erro ao carregar os dados");
+      const data = await response.json();
+
+      if (Array.isArray(data.rows)) {
+        setDados(data.rows);
+      } else {
+        console.error("Formato de resposta inesperado:", data);
       }
+    } catch (error) {
+      console.error("Erro ao buscar dados:", error);
     }
-    fetchData();
+  };
+
+  useEffect(() => {
+    fetchData(); // Carrega os dados ao montar o componente
+
+    const intervalId = setInterval(fetchData, 1000); // Atualiza a cada 5 segundos
+
+    return () => clearInterval(intervalId); // Limpa o intervalo ao desmontar o componente
   }, []);
 
   return (

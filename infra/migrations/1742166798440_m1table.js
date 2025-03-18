@@ -1,7 +1,7 @@
 exports.up = (pgm) => {
   pgm.createTable("m1table", {
     id: { type: "serial", primaryKey: true },
-    data: { type: "date", notNull: true },
+    data: { type: "timestamptz", default: pgm.func("now()"), notNull: true },
     descricao: { type: "text", notNull: true },
     dec: { type: "text", notNull: true },
     nome: { type: "text", notNull: true },
@@ -11,6 +11,4 @@ exports.up = (pgm) => {
   });
 };
 
-exports.down = (pgm) => {
-  pgm.dropTable("m1table");
-};
+exports.down = false;
