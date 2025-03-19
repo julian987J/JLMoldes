@@ -1,11 +1,12 @@
 import { useState } from "react";
 import TabelaM from "./TabelaM.js";
-import CodigoVerifier from "./CodigoVerifier.js"; // Importando o verificador
+import CodigoVerifier from "./CodigoVerifier.js";
+import Calculadora from "./Calculadora.js";
 
 const Mcontent = () => {
   const [descricao, setDescricao] = useState("");
   const [dec, setDec] = useState("");
-  const [codigo, setCodigo] = useState(""); // Código monitorado
+  const [codigo, setCodigo] = useState("");
   const [nome, setNome] = useState("");
   const [sis, setSis] = useState("");
   const [base, setBase] = useState("");
@@ -39,7 +40,7 @@ const Mcontent = () => {
   };
 
   return (
-    <div>
+    <div className="h-full">
       {/* Formulário */}
       <div className="bg-base-100 border-base-300 pb-2 px-[15%]">
         <form onSubmit={handleSubmit}>
@@ -115,9 +116,12 @@ const Mcontent = () => {
 
       {/* Tabelas */}
       <div className="columns-2">
-        <TabelaM base="hidden" codigo={codigo} /> {/* Passando o código */}
+        <TabelaM base="hidden" codigo={codigo} />
         <TabelaM sis="hidden" alt="hidden" codigo={codigo} />{" "}
-        {/* Passando o código */}
+      </div>
+      <div className="divider divider-neutral">OFICINA</div>
+      <div>
+        <Calculadora />
       </div>
     </div>
   );
