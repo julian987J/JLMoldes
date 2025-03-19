@@ -20,6 +20,33 @@ async function createM1(ordemInputValues) {
 
   return result;
 }
+async function updateM1(updatedData) {
+  const result = await database.query({
+    text: `
+      UPDATE "m1table"
+      SET 
+        descricao = $1,
+        dec = $2,
+        nome = $3,
+        sis = $4,
+        base = $5,
+        alt = $6
+      WHERE id = $7
+      RETURNING *;
+    `,
+    values: [
+      updatedData.descricao,
+      updatedData.dec,
+      updatedData.nome,
+      updatedData.sis,
+      updatedData.base,
+      updatedData.alt,
+      updatedData.id,
+    ],
+  });
+
+  return result;
+}
 
 async function getM1Table() {
   const result = await database.query({
@@ -39,6 +66,7 @@ const Mordem = {
   createM1,
   getM1Table,
   deleteM1,
+  updateM1,
 };
 
 export default Mordem;

@@ -6,7 +6,8 @@ const router = createRouter();
 
 router.get(getHandler);
 router.post(postHandler);
-router.delete(deleteHandler); // Adicionando suporte para DELETE
+router.delete(deleteHandler);
+router.put(updateHandler);
 
 export default router.handler(controller.errorHandlers);
 
@@ -22,7 +23,13 @@ async function postHandler(request, response) {
 }
 
 async function deleteHandler(request, response) {
-  const { id } = request.body; // Captura o ID do corpo da requisição
+  const { id } = request.body;
   const result = await Mordem.deleteM1(id);
-  return response.status(200).json(result); // Método que precisa estar definido em `Mordem`
+  return response.status(200).json(result);
+}
+
+async function updateHandler(request, response) {
+  const updatedData = request.body;
+  const result = await Mordem.updateM1(updatedData);
+  return response.status(200).json(result);
 }

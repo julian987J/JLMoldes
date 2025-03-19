@@ -1,7 +1,10 @@
 import React, { useEffect, useState } from "react";
+import EditM from "./EditM";
 
 const TabelaM = ({ sis, base, alt, codigo }) => {
   const [dados, setDados] = useState([]);
+  const [editingId, setEditingId] = useState(null);
+  const [editedData, setEditedData] = useState({});
 
   const fetchData = async () => {
     try {
@@ -25,6 +28,27 @@ const TabelaM = ({ sis, base, alt, codigo }) => {
     }
   };
 
+  const handleSave = async (editedData) => {
+    try {
+      const response = await fetch("/api/v1/tables", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(editedData),
+      });
+
+      if (!response.ok) throw new Error("Erro ao atualizar");
+
+      setDados(
+        dados.map((item) =>
+          item.id === editedData.id ? { ...item, ...editedData } : item,
+        ),
+      );
+      setEditingId(null);
+    } catch (error) {
+      console.error("Erro ao salvar:", error);
+    }
+  };
+
   useEffect(() => {
     fetchData(); // Carrega os dados ao montar o componente
     const intervalId = setInterval(fetchData, 5000); // Atualiza a cada 5 segundos
@@ -41,6 +65,14 @@ const TabelaM = ({ sis, base, alt, codigo }) => {
     const result = await response.json();
     console.log(result);
   }
+
+  const handleInputChange = (field, value) => {
+    setEditedData((prev) => ({ ...prev, [field]: value }));
+  };
+  const startEditing = (item) => {
+    setEditingId(item.id);
+    setEditedData({ ...item });
+  };
 
   // Função para formatar a data
   const formatarData = (dataStr) => {
@@ -107,31 +139,126 @@ const TabelaM = ({ sis, base, alt, codigo }) => {
                   >
                     <td className="hidden">{item.id}</td>
                     <td>{formatarData(item.data)}</td>
-                    <td>{item.descricao}</td>
-                    <td className="hidden">{item.codigo}</td>
-                    <td>{item.dec}</td>
-                    <td>{item.nome}</td>
-                    <td className={sis}>{item.sis}</td>
-                    <td className={base}>{item.base}</td>
-                    <td className={alt}>{item.alt}</td>
                     <td>
-                      <button className="btn btn-xs btn-soft btn-warning">
+                      {editingId === item.id ? (
+                        <input
+                          type="text"
+                          value={editedData.descricao}
+                          onChange={(e) =>
+                            handleInputChange("descricao", e.target.value)
+                          }
+                          className="input input-xs p-0 m-0 text-center"
+                        />
+                      ) : (
+                        item.descricao
+                      )}
+                    </td>
+                    <td className="hidden">{item.codigo}</td>
+                    <td>
+                      {editingId === item.id ? (
+                        <input
+                          type="text"
+                          maxLength={1}
+                          value={editedData.dec}
+                          onChange={(e) =>
+                            handleInputChange(
+                              "dec",
+                              e.target.value.toUpperCase(),
+                            )
+                          }
+                          className="input input-xs p-0 m-0 text-center"
+                        />
+                      ) : (
+                        item.dec
+                      )}
+                    </td>
+                    <td>
+                      {editingId === item.id ? (
+                        <input
+                          type="text"
+                          value={editedData.nome}
+                          onChange={(e) =>
+                            handleInputChange("nome", e.target.value)
+                          }
+                          className="input input-xs p-0 m-0 text-center"
+                        />
+                      ) : (
+                        item.nome
+                      )}
+                    </td>
+                    <td className={sis}>
+                      {editingId === item.id ? (
+                        <input
+                          type="number"
+                          value={editedData.sis}
+                          onChange={(e) =>
+                            handleInputChange("sis", e.target.value)
+                          }
+                          className="input input-xs p-0 m-0 text-center"
+                        />
+                      ) : (
+                        item.sis
+                      )}
+                    </td>
+
+                    <td className={base}>
+                      {editingId === item.id ? (
+                        <input
+                          type="number"
+                          value={editedData.base}
+                          onChange={(e) =>
+                            handleInputChange("base", e.target.value)
+                          }
+                          className="input input-xs p-0 m-0 text-center"
+                        />
+                      ) : (
+                        item.base
+                      )}
+                    </td>
+
+                    <td className={alt}>
+                      {editingId === item.id ? (
+                        <input
+                          type="number"
+                          value={editedData.alt}
+                          onChange={(e) =>
+                            handleInputChange("alt", e.target.value)
+                          }
+                          className="input input-xs p-0 m-0 text-center"
+                        />
+                      ) : (
+                        item.alt
+                      )}
+                    </td>
+                    <td>
+                      <button
+                        className={`btn btn-xs btn-soft btn-warning ${editingId === item.id ? "hidden" : ""}`}
+                      >
                         R1
                       </button>
-                      <button className="btn btn-xs btn-soft btn-primary">
+                      <button
+                        className={`btn btn-xs btn-soft btn-primary ${editingId === item.id ? "hidden" : ""}`}
+                      >
                         R2
                       </button>
-                      <button className="btn btn-xs btn-soft btn-info">
+                      <button
+                        className={`btn btn-xs btn-soft btn-info ${editingId === item.id ? "hidden" : ""}`}
+                      >
                         R3
                       </button>
-                      <button className="btn btn-xs btn-soft btn-secondary">
+                      <button
+                        className={`btn btn-xs btn-soft btn-secondary ${editingId === item.id ? "hidden" : ""}`}
+                      >
                         M1
                       </button>
-                      <button className="btn btn-xs btn-soft btn-default">
-                        Edit
-                      </button>
+                      <EditM
+                        isEditing={editingId === item.id}
+                        onEdit={() => startEditing(item)}
+                        onSave={() => handleSave(editedData)}
+                        onCancel={() => setEditingId(null)}
+                      />
                       <button
-                        className="btn btn-xs btn-soft btn-error"
+                        className={`btn btn-xs btn-soft btn-error ${editingId === item.id ? "hidden" : ""}`}
                         onClick={() => deleteM1TableRecord(item.id)}
                       >
                         Excluir
