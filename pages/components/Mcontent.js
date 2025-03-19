@@ -1,9 +1,11 @@
 import { useState } from "react";
 import TabelaM from "./TabelaM.js";
+import CodigoVerifier from "./CodigoVerifier.js"; // Importando o verificador
 
 const Mcontent = () => {
   const [descricao, setDescricao] = useState("");
   const [dec, setDec] = useState("");
+  const [codigo, setCodigo] = useState(""); // Código monitorado
   const [nome, setNome] = useState("");
   const [sis, setSis] = useState("");
   const [base, setBase] = useState("");
@@ -12,27 +14,21 @@ const Mcontent = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    const ordemInputValues = { descricao, dec, nome, sis, base, alt };
+    const ordemInputValues = { descricao, codigo, dec, nome, sis, base, alt };
 
     try {
       const response = await fetch("/api/v1/tables", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(ordemInputValues),
       });
 
-      if (!response.ok) {
-        throw new Error("Erro ao enviar os dados.");
-      }
+      if (!response.ok) throw new Error("Erro ao enviar os dados.");
+      await response.json();
 
-      const data = await response.json();
-      console.log("Novo registro:", data);
-
-      // Resetar os campos do formulário após o envio
       setDescricao("");
       setDec("");
+      setCodigo("");
       setNome("");
       setSis("");
       setBase("");
@@ -44,8 +40,8 @@ const Mcontent = () => {
 
   return (
     <div>
-      {/* Formulario Enviar */}
-      <div className="bg-base-100 border-base-300 px-[18%]">
+      {/* Formulário */}
+      <div className="bg-base-100 border-base-300 pb-2 px-[15%]">
         <form onSubmit={handleSubmit}>
           <input
             type="text"
@@ -57,10 +53,25 @@ const Mcontent = () => {
           />
           <input
             type="text"
+            placeholder="CODIGO"
+            className="input input-info input-xs w-24"
+            value={codigo}
+            onChange={(e) => setCodigo(e.target.value)}
+            required
+          />
+          <input
+            type="text"
             placeholder="DEC"
             className="input input-info input-xs w-24"
             value={dec}
-            onChange={(e) => setDec(e.target.value)}
+            maxLength={1} // Limita o número máximo de caracteres para 1
+            onChange={(e) => {
+              const value = e.target.value.toUpperCase();
+              if (/^[A-Z]*$/.test(value)) {
+                // Permite apenas letras
+                setDec(value);
+              }
+            }}
             required
           />
           <input
@@ -98,12 +109,15 @@ const Mcontent = () => {
           <button type="submit" className="btn btn-xs btn-info">
             Enviar
           </button>
+          <CodigoVerifier codigo={codigo} /> {/* Exibe a contagem ao lado */}
         </form>
       </div>
-      {/* Tabela de ações */}
+
+      {/* Tabelas */}
       <div className="columns-2">
-        <TabelaM />
-        <TabelaM />
+        <TabelaM base="hidden" codigo={codigo} /> {/* Passando o código */}
+        <TabelaM sis="hidden" alt="hidden" codigo={codigo} />{" "}
+        {/* Passando o código */}
       </div>
     </div>
   );
