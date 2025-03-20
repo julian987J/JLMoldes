@@ -1,14 +1,14 @@
 import React, { useEffect, useState } from "react";
 import EditM from "./Edit";
 
-const TabelaM = ({ sis, base, alt, codigo }) => {
+const TabelaM = ({ codigo }) => {
   const [dados, setDados] = useState([]);
   const [editingId, setEditingId] = useState(null);
   const [editedData, setEditedData] = useState({});
 
   const fetchData = async () => {
     try {
-      const response = await fetch("/api/v1/tables"); // URL correta para o endpoint
+      const response = await fetch("/api/v1/Base"); // URL correta para o endpoint
       if (!response.ok) throw new Error("Erro ao carregar os dados");
       const data = await response.json();
 
@@ -30,7 +30,7 @@ const TabelaM = ({ sis, base, alt, codigo }) => {
 
   const handleSave = async (editedData) => {
     try {
-      const response = await fetch("/api/v1/tables", {
+      const response = await fetch("/api/v1/Base", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(editedData),
@@ -129,9 +129,7 @@ const TabelaM = ({ sis, base, alt, codigo }) => {
               <th className="hidden">CODIGO</th>
               <th>DEC</th>
               <th>Nome</th>
-              <th className={sis}>Sis</th>
-              <th className={base}>Base</th>
-              <th className={alt}>Alt</th>
+              <th>Base</th>
               <th>Ações</th>
             </tr>
           </thead>
@@ -198,22 +196,8 @@ const TabelaM = ({ sis, base, alt, codigo }) => {
                         item.nome
                       )}
                     </td>
-                    <td className={sis}>
-                      {editingId === item.id ? (
-                        <input
-                          type="number"
-                          value={editedData.sis}
-                          onChange={(e) =>
-                            handleInputChange("sis", e.target.value)
-                          }
-                          className="input input-xs p-0 m-0 text-center"
-                        />
-                      ) : (
-                        item.sis
-                      )}
-                    </td>
 
-                    <td className={base}>
+                    <td>
                       {editingId === item.id ? (
                         <input
                           type="number"
@@ -228,20 +212,6 @@ const TabelaM = ({ sis, base, alt, codigo }) => {
                       )}
                     </td>
 
-                    <td className={alt}>
-                      {editingId === item.id ? (
-                        <input
-                          type="number"
-                          value={editedData.alt}
-                          onChange={(e) =>
-                            handleInputChange("alt", e.target.value)
-                          }
-                          className="input input-xs p-0 m-0 text-center"
-                        />
-                      ) : (
-                        item.alt
-                      )}
-                    </td>
                     <td>
                       <button
                         className={`btn btn-xs btn-soft btn-warning ${editingId === item.id ? "hidden" : ""}`}

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import EditM from "./Edit";
 
-const TabelaM = ({ sis, base, alt, codigo }) => {
+const TabelaM = ({ codigo }) => {
   const [dados, setDados] = useState([]);
   const [editingId, setEditingId] = useState(null);
   const [editedData, setEditedData] = useState({});
@@ -129,9 +129,8 @@ const TabelaM = ({ sis, base, alt, codigo }) => {
               <th className="hidden">CODIGO</th>
               <th>DEC</th>
               <th>Nome</th>
-              <th className={sis}>Sis</th>
-              <th className={base}>Base</th>
-              <th className={alt}>Alt</th>
+              <th>Sis</th>
+              <th>Alt</th>
               <th>Ações</th>
             </tr>
           </thead>
@@ -198,44 +197,41 @@ const TabelaM = ({ sis, base, alt, codigo }) => {
                         item.nome
                       )}
                     </td>
-                    <td className={sis}>
+                    <td>
                       {editingId === item.id ? (
                         <input
                           type="number"
+                          min="1"
                           value={editedData.sis}
-                          onChange={(e) =>
-                            handleInputChange("sis", e.target.value)
-                          }
+                          onChange={(e) => {
+                            if (isNaN(e.target.value) || e.target.value <= 0) {
+                              // If not a number or less than or equal to 0, set to 1 or empty string
+                              handleInputChange("sis", 1); // Set to 1
+                              // Or, if you want to clear the input:
+                              // handleInputChange("sis", "");
+                            } else {
+                              handleInputChange("sis", e.target.value);
+                            }
+                          }}
                           className="input input-xs p-0 m-0 text-center"
                         />
                       ) : (
                         item.sis
                       )}
                     </td>
-
-                    <td className={base}>
+                    <td>
                       {editingId === item.id ? (
                         <input
                           type="number"
-                          value={editedData.base}
-                          onChange={(e) =>
-                            handleInputChange("base", e.target.value)
-                          }
-                          className="input input-xs p-0 m-0 text-center"
-                        />
-                      ) : (
-                        item.base
-                      )}
-                    </td>
-
-                    <td className={alt}>
-                      {editingId === item.id ? (
-                        <input
-                          type="number"
+                          min="1"
                           value={editedData.alt}
-                          onChange={(e) =>
-                            handleInputChange("alt", e.target.value)
-                          }
+                          onChange={(e) => {
+                            if (isNaN(e.target.value) || e.target.value <= 0) {
+                              handleInputChange("alt", 1);
+                            } else {
+                              handleInputChange("alt", e.target.value);
+                            }
+                          }}
                           className="input input-xs p-0 m-0 text-center"
                         />
                       ) : (

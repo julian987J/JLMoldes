@@ -4,15 +4,15 @@ import ordem from "models/tables.js";
 
 const router = createRouter();
 
-router.get(getHandler);
+router.get(getSisAltHandler);
 router.post(postHandler);
 router.delete(deleteHandler);
 router.put(updateHandler);
 
 export default router.handler(controller.errorHandlers);
 
-async function getHandler(request, response) {
-  const ordemGetValues = await ordem.getM1Table();
+async function getSisAltHandler(request, response) {
+  const ordemGetValues = await ordem.getM1TableAltSis();
   return response.status(200).json(ordemGetValues);
 }
 
@@ -30,6 +30,6 @@ async function deleteHandler(request, response) {
 
 async function updateHandler(request, response) {
   const updatedData = request.body;
-  const result = await ordem.updateM1(updatedData);
+  const result = await ordem.updateAltSis(updatedData);
   return response.status(200).json(result);
 }

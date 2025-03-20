@@ -20,7 +20,7 @@ async function createM1(ordemInputValues) {
 
   return result;
 }
-async function updateM1(updatedData) {
+async function updateAltSis(updatedData) {
   const result = await database.query({
     text: `
       UPDATE "m1table"
@@ -29,9 +29,8 @@ async function updateM1(updatedData) {
         dec = $2,
         nome = $3,
         sis = $4,
-        base = $5,
-        alt = $6
-      WHERE id = $7
+        alt = $5
+      WHERE id = $6
       RETURNING *;
     `,
     values: [
@@ -39,7 +38,6 @@ async function updateM1(updatedData) {
       updatedData.dec,
       updatedData.nome,
       updatedData.sis,
-      updatedData.base,
       updatedData.alt,
       updatedData.id,
     ],
@@ -48,9 +46,47 @@ async function updateM1(updatedData) {
   return result;
 }
 
-async function getM1Table() {
+async function updateBase(updatedData) {
   const result = await database.query({
-    text: `SELECT * FROM "m1table" ORDER BY data DESC;`,
+    text: `
+      UPDATE "m1table"
+      SET 
+        observacao = $1,
+        dec = $2,
+        nome = $3,
+        base = $4
+      WHERE id = $5
+      RETURNING *;
+    `,
+    values: [
+      updatedData.observacao,
+      updatedData.dec,
+      updatedData.nome,
+      updatedData.base,
+      updatedData.id,
+    ],
+  });
+
+  return result;
+}
+
+async function getM1TableAltSis() {
+  const result = await database.query({
+    text: `SELECT id, data, observacao, codigo, dec, nome, sis, alt FROM "m1table" WHERE sis > 0 OR alt > 0 ORDER BY data DESC;`,
+  });
+  return result;
+}
+
+async function getM1TableBase() {
+  const result = await database.query({
+    text: `SELECT id, data, observacao, codigo, dec, nome, base FROM "m1table" WHERE base > 0 ORDER BY data DESC;`,
+  });
+  return result;
+}
+
+async function getVerificador() {
+  const result = await database.query({
+    text: `SELECT * FROM "m1table"`,
   });
   return result;
 }
@@ -64,9 +100,12 @@ export async function deleteM1(id) {
 
 const ordem = {
   createM1,
-  getM1Table,
+  getM1TableAltSis,
+  getM1TableBase,
+  getVerificador,
   deleteM1,
-  updateM1,
+  updateAltSis,
+  updateBase,
 };
 
 export default ordem;

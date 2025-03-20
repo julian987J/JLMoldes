@@ -3,7 +3,7 @@ import TabelaM from "./TabelaM.js";
 import TabelaMRight from "./TabelaMRight.js";
 import CodigoVerifier from "./CodigoVerifier.js";
 import Calculadora from "./Calculadora.js";
-
+import ErrorComponent from "./Errors.js";
 const Mcontent = () => {
   const [observacao, setObservacao] = useState("");
   const [dec, setDec] = useState("");
@@ -12,6 +12,7 @@ const Mcontent = () => {
   const [sis, setSis] = useState("");
   const [base, setBase] = useState("");
   const [alt, setAlt] = useState("");
+  const [showError, setShowError] = useState(false);
 
   // Busca a observação correspondente ao código digitado
   useEffect(() => {
@@ -81,16 +82,80 @@ const Mcontent = () => {
 
     const ordemInputValues = { observacao, codigo, dec, nome, sis, base, alt };
 
-    try {
-      const response = await fetch("/api/v1/tables", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(ordemInputValues),
-      });
+    // Condição para separar os dados em duas tabelas
+    let hasInserted = false; // Flag para evitar inserções duplicadas
 
-      if (!response.ok) throw new Error("Erro ao enviar os dados.");
-      await response.json();
+    // Se todos os valores forem 0, exibe o erro e interrompe a execução
+    if (parseInt(base) === 0 && parseInt(sis) === 0 && parseInt(alt) === 0) {
+      showErrorToast();
+    } else {
+      if (parseInt(base) > 0) {
+        try {
+          const responseBase = await fetch("/api/v1/tables", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              observacao,
+              codigo,
+              dec,
+              nome,
+              sis: 0,
+              base,
+              alt: 0,
+            }),
+          });
 
+          if (!responseBase.ok)
+            throw new Error("Erro ao enviar os dados para a tabela 'base'.");
+          await responseBase.json();
+          hasInserted = true; // Marca que pelo menos uma inserção foi feita
+        } catch (error) {
+          console.error("Erro ao enviar base:", error);
+        }
+      }
+
+      if (parseInt(sis) > 0 || parseInt(alt) > 0) {
+        try {
+          const responseSisAlt = await fetch("/api/v1/tables", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              observacao,
+              codigo,
+              dec,
+              nome,
+              sis,
+              base: 0,
+              alt,
+            }),
+          });
+
+          if (!responseSisAlt.ok)
+            throw new Error("Erro ao enviar os dados para a tabela 'sis_alt'.");
+          await responseSisAlt.json();
+          hasInserted = true; // Marca que pelo menos uma inserção foi feita
+        } catch (error) {
+          console.error("Erro ao enviar sis_alt:", error);
+        }
+      }
+
+      // Se nenhum dado foi inserido antes, faz o envio para a tabela padrão
+      if (!hasInserted) {
+        try {
+          const response = await fetch("/api/v1/tables", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(ordemInputValues),
+          });
+
+          if (!response.ok) throw new Error("Erro ao enviar os dados.");
+          await response.json();
+        } catch (error) {
+          console.error("Erro ao enviar:", error);
+        }
+      }
+
+      // Limpa os campos após o envio
       setObservacao("");
       setDec("");
       setCodigo("");
@@ -98,9 +163,14 @@ const Mcontent = () => {
       setSis("");
       setBase("");
       setAlt("");
-    } catch (error) {
-      console.error("Erro ao enviar:", error);
     }
+  };
+
+  const showErrorToast = () => {
+    setShowError(true);
+    setTimeout(() => {
+      setShowError(false);
+    }, 5000);
   };
 
   return (
@@ -176,13 +246,14 @@ const Mcontent = () => {
 
       {/* Tabelas */}
       <div className="columns-2">
-        <TabelaM base="hidden" codigo={codigo} />
-        <TabelaMRight sis="hidden" alt="hidden" codigo={codigo} />
+        <TabelaM codigo={codigo} />
+        <TabelaMRight codigo={codigo} />
       </div>
       <div className="divider divider-neutral">OFICINA</div>
       <div>
         <Calculadora />
       </div>
+      {showError && <ErrorComponent errorCode="000SAB" />}
     </div>
   );
 };
