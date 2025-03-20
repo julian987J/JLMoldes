@@ -32,7 +32,6 @@ const NavBar = ({ MContent, Cadastro }) => {
     {
       label: "Cadastros",
       content: isCadastroAvailable ? <Cadastro /> : "Loading...",
-      checked: true,
     },
     // Adicione outros grupos conforme necessário
   ];

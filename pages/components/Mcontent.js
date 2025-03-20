@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import TabelaM from "./TabelaM.js";
 import CodigoVerifier from "./CodigoVerifier.js";
 import Calculadora from "./Calculadora.js";
@@ -11,6 +11,39 @@ const Mcontent = () => {
   const [sis, setSis] = useState("");
   const [base, setBase] = useState("");
   const [alt, setAlt] = useState("");
+
+  // Busca a observação correspondente ao código digitado
+  useEffect(() => {
+    const fetchDados = async () => {
+      if (!codigo) {
+        setObservacao("");
+        setNome("");
+        return;
+      }
+
+      try {
+        const response = await fetch("/api/v1/cadastro");
+        if (!response.ok) throw new Error("Erro ao buscar dados");
+
+        const data = await response.json();
+        const registroEncontrado = data.rows.find(
+          (item) => item.codigo === codigo,
+        );
+
+        if (registroEncontrado) {
+          setObservacao(registroEncontrado.observacao || "");
+          setNome(registroEncontrado.nome || "");
+        } else {
+          setObservacao("");
+          setNome("");
+        }
+      } catch (error) {
+        console.error("Erro ao buscar dados:", error);
+      }
+    };
+
+    fetchDados();
+  }, [codigo]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -50,7 +83,6 @@ const Mcontent = () => {
             className="input input-info input-xs"
             value={observacao}
             onChange={(e) => setObservacao(e.target.value)}
-            required
           />
           <input
             type="text"
@@ -58,22 +90,20 @@ const Mcontent = () => {
             className="input input-info input-xs w-24"
             value={codigo}
             onChange={(e) => setCodigo(e.target.value)}
-            required
           />
           <input
             type="text"
             placeholder="DEC"
+            required
             className="input input-info input-xs w-24"
             value={dec}
             maxLength={1} // Limita o número máximo de caracteres para 1
             onChange={(e) => {
               const value = e.target.value.toUpperCase();
               if (/^[A-Z]*$/.test(value)) {
-                // Permite apenas letras
                 setDec(value);
               }
             }}
-            required
           />
           <input
             type="text"
@@ -81,31 +111,30 @@ const Mcontent = () => {
             className="input input-info input-xs"
             value={nome}
             onChange={(e) => setNome(e.target.value)}
-            required
           />
           <input
             type="number"
+            required
             placeholder="Sis"
             className="input input-info input-xs w-24"
             value={sis}
             onChange={(e) => setSis(e.target.value)}
-            required
           />
           <input
             type="number"
+            required
             placeholder="Base"
             className="input input-info input-xs w-24"
             value={base}
             onChange={(e) => setBase(e.target.value)}
-            required
           />
           <input
             type="number"
+            required
             placeholder="Alt"
             className="input input-info input-xs w-24"
             value={alt}
             onChange={(e) => setAlt(e.target.value)}
-            required
           />
           <button type="submit" className="btn btn-xs btn-info">
             Enviar
@@ -117,7 +146,7 @@ const Mcontent = () => {
       {/* Tabelas */}
       <div className="columns-2">
         <TabelaM base="hidden" codigo={codigo} />
-        <TabelaM sis="hidden" alt="hidden" codigo={codigo} />{" "}
+        <TabelaM sis="hidden" alt="hidden" codigo={codigo} />
       </div>
       <div className="divider divider-neutral">OFICINA</div>
       <div>
