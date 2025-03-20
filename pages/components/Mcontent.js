@@ -46,6 +46,36 @@ const Mcontent = () => {
     fetchDados();
   }, [codigo]);
 
+  useEffect(() => {
+    const fetchDados = async () => {
+      if (!nome) {
+        setObservacao("");
+        setCodigo("");
+        return;
+      }
+
+      try {
+        const response = await fetch("/api/v1/cadastro");
+        if (!response.ok) throw new Error("Erro ao buscar dados");
+
+        const data = await response.json();
+        const registroEncontrado = data.rows.find((item) => item.nome === nome);
+
+        if (registroEncontrado) {
+          setObservacao(registroEncontrado.observacao || "");
+          setCodigo(registroEncontrado.codigo || "");
+        } else {
+          setObservacao("");
+          setCodigo("");
+        }
+      } catch (error) {
+        console.error("Erro ao buscar dados:", error);
+      }
+    };
+
+    fetchDados();
+  }, [nome]);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
