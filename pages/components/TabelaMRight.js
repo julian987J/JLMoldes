@@ -109,7 +109,7 @@ const TabelaM = ({ sis, base, alt, codigo }) => {
   const filteredGroupedData = Object.fromEntries(
     Object.entries(groupedData).filter((entry) => {
       const items = entry[1]; //acessa o value do entry.
-      return items.some((item) => item.sis > 0 || item.alt > 0);
+      return items.some((item) => item.base > 0);
     }),
   );
   //Se nenhum grupo passar no filtro, nao renderiza nada.

@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import TabelaM from "./TabelaM.js";
+import TabelaMRight from "./TabelaMRight.js";
 import CodigoVerifier from "./CodigoVerifier.js";
 import Calculadora from "./Calculadora.js";
 
@@ -146,7 +147,7 @@ const Mcontent = () => {
       {/* Tabelas */}
       <div className="columns-2">
         <TabelaM base="hidden" codigo={codigo} />
-        <TabelaM sis="hidden" alt="hidden" codigo={codigo} />
+        <TabelaMRight sis="hidden" alt="hidden" codigo={codigo} />
       </div>
       <div className="divider divider-neutral">OFICINA</div>
       <div>
