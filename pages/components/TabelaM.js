@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import EditM from "./EditM";
+import EditM from "./Edit";
 
 const TabelaM = ({ sis, base, alt, codigo }) => {
   const [dados, setDados] = useState([]);
@@ -113,7 +113,7 @@ const TabelaM = ({ sis, base, alt, codigo }) => {
             <tr>
               <th className="hidden">ID</th>
               <th>Data</th>
-              <th>Descrição</th>
+              <th>Observações</th>
               <th className="hidden">CODIGO</th>
               <th>DEC</th>
               <th>Nome</th>
@@ -143,14 +143,14 @@ const TabelaM = ({ sis, base, alt, codigo }) => {
                       {editingId === item.id ? (
                         <input
                           type="text"
-                          value={editedData.descricao}
+                          value={editedData.observacao}
                           onChange={(e) =>
-                            handleInputChange("descricao", e.target.value)
+                            handleInputChange("observacao", e.target.value)
                           }
                           className="input input-xs p-0 m-0 text-center"
                         />
                       ) : (
-                        item.descricao
+                        item.observacao
                       )}
                     </td>
                     <td className="hidden">{item.codigo}</td>

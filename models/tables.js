@@ -3,12 +3,12 @@ import database from "infra/database.js";
 async function createM1(ordemInputValues) {
   const result = await database.query({
     text: `
-      INSERT INTO "m1table" (descricao, codigo, dec, nome, sis, base, alt) 
+      INSERT INTO "m1table" (observacao, codigo, dec, nome, sis, base, alt) 
       VALUES ($1, $2, $3, $4, $5, $6, $7)
       RETURNING *;
     `,
     values: [
-      ordemInputValues.descricao,
+      ordemInputValues.observacao,
       ordemInputValues.codigo,
       ordemInputValues.dec,
       ordemInputValues.nome,
@@ -25,7 +25,7 @@ async function updateM1(updatedData) {
     text: `
       UPDATE "m1table"
       SET 
-        descricao = $1,
+        observacao = $1,
         dec = $2,
         nome = $3,
         sis = $4,
@@ -35,7 +35,7 @@ async function updateM1(updatedData) {
       RETURNING *;
     `,
     values: [
-      updatedData.descricao,
+      updatedData.observacao,
       updatedData.dec,
       updatedData.nome,
       updatedData.sis,
@@ -62,11 +62,11 @@ export async function deleteM1(id) {
   });
 }
 
-const Mordem = {
+const ordem = {
   createM1,
   getM1Table,
   deleteM1,
   updateM1,
 };
 
-export default Mordem;
+export default ordem;

@@ -4,7 +4,7 @@ import CodigoVerifier from "./CodigoVerifier.js";
 import Calculadora from "./Calculadora.js";
 
 const Mcontent = () => {
-  const [descricao, setDescricao] = useState("");
+  const [observacao, setObservacao] = useState("");
   const [dec, setDec] = useState("");
   const [codigo, setCodigo] = useState("");
   const [nome, setNome] = useState("");
@@ -15,7 +15,7 @@ const Mcontent = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    const ordemInputValues = { descricao, codigo, dec, nome, sis, base, alt };
+    const ordemInputValues = { observacao, codigo, dec, nome, sis, base, alt };
 
     try {
       const response = await fetch("/api/v1/tables", {
@@ -27,7 +27,7 @@ const Mcontent = () => {
       if (!response.ok) throw new Error("Erro ao enviar os dados.");
       await response.json();
 
-      setDescricao("");
+      setObservacao("");
       setDec("");
       setCodigo("");
       setNome("");
@@ -46,10 +46,10 @@ const Mcontent = () => {
         <form onSubmit={handleSubmit}>
           <input
             type="text"
-            placeholder="Descrição"
+            placeholder="Observações"
             className="input input-info input-xs"
-            value={descricao}
-            onChange={(e) => setDescricao(e.target.value)}
+            value={observacao}
+            onChange={(e) => setObservacao(e.target.value)}
             required
           />
           <input
