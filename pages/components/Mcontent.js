@@ -176,7 +176,7 @@ const Mcontent = () => {
   return (
     <div className="h-full">
       {/* Formulário */}
-      <div className="bg-base-100 border-base-300 pb-2 px-[15%]">
+      <div className="bg-base-100 border-base-300 pb-2 px-[14%]">
         <form onSubmit={handleSubmit}>
           <input
             type="text"

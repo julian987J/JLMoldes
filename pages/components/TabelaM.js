@@ -77,25 +77,41 @@ const TabelaM = ({ codigo }) => {
   // Função para formatar a data
   const formatarData = (dataStr) => {
     const data = new Date(dataStr);
-    const dia = String(data.getDate()).padStart(2, "0");
+
+    // Obtendo o nome do dia da semana por extenso
+    const diasDaSemana = [
+      "domingo",
+      "lunes",
+      "martes",
+      "miércoles",
+      "jueves",
+      "viernes",
+      "sábado",
+    ];
+    const nomeDia = diasDaSemana[data.getDay()];
+
+    // Meses abreviados
     const mesesAbreviados = [
-      "jan",
-      "fev",
+      "ene",
+      "feb",
       "mar",
       "abr",
-      "mai",
+      "may",
       "jun",
       "jul",
       "ago",
-      "set",
-      "out",
+      "sep",
+      "oct",
       "nov",
-      "dez",
+      "dic",
     ];
     const mes = mesesAbreviados[data.getMonth()];
+
+    const dia = String(data.getDate()).padStart(2, "0");
     const horas = String(data.getHours()).padStart(2, "0");
     const minutos = String(data.getMinutes()).padStart(2, "0");
-    return `${dia}/${mes} ${horas}:${minutos}`;
+
+    return `${nomeDia}, ${dia}/${mes} ${horas}:${minutos}`;
   };
 
   // Agrupar os dados por DEC
@@ -119,7 +135,7 @@ const TabelaM = ({ codigo }) => {
 
   return (
     <div>
-      <div className="overflow-x-auto rounded-box border border-base-content/5 bg-base-100">
+      <div className="overflow-x-auto rounded-box border border-base-content/5  bg-base-100">
         <table className="table table-xs">
           <thead>
             <tr>
@@ -146,7 +162,11 @@ const TabelaM = ({ codigo }) => {
                 {filteredGroupedData[decKey].map((item) => (
                   <tr
                     key={item.id}
-                    className={item.codigo === codigo ? "bg-green-200" : ""}
+                    className={
+                      item.codigo === codigo
+                        ? "bg-green-200 border-b border-gray-700"
+                        : "border-b border-gray-700"
+                    }
                   >
                     <td className="hidden">{item.id}</td>
                     <td>{formatarData(item.data)}</td>
