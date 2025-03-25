@@ -67,6 +67,29 @@ async function updateAltSis(updatedData) {
 
   return result;
 }
+async function updateAltSisR1(updatedData) {
+  const result = await database.query({
+    text: `
+      UPDATE "R1BSA"
+      SET 
+        nome = $1,
+        base = $2,
+        sis = $3,
+        alt = $4
+      WHERE id = $5
+      RETURNING *;
+    `,
+    values: [
+      updatedData.nome,
+      updatedData.base || 0,
+      updatedData.sis || 0,
+      updatedData.alt || 0,
+      updatedData.id,
+    ],
+  });
+
+  return result;
+}
 
 async function updateBase(updatedData) {
   const result = await database.query({
@@ -143,6 +166,7 @@ const ordem = {
   deleteM1,
   deleteR1,
   updateAltSis,
+  updateAltSisR1,
   updateBase,
 };
 

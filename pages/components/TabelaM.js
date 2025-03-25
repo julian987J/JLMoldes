@@ -40,7 +40,14 @@ const TabelaM = ({ codigo }) => {
         body: JSON.stringify(editedData),
       });
 
+      const response2 = await fetch("/api/v1/tables/R1", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(editedData),
+      });
+
       if (!response.ok) throw new Error("Erro ao atualizar");
+      if (!response2.ok) throw new Error("Erro ao atualizar");
 
       setDados(
         dados.map((item) =>
@@ -53,12 +60,6 @@ const TabelaM = ({ codigo }) => {
     }
   };
 
-  useEffect(() => {
-    fetchData(); // Carrega os dados ao montar o componente
-    const intervalId = setInterval(fetchData, 5000); // Atualiza a cada 5 segundos
-    return () => clearInterval(intervalId); // Limpa o intervalo ao desmontar o componente
-  }, []);
-
   const handleInputChange = (field, value) => {
     setEditedData((prev) => ({ ...prev, [field]: value }));
   };
@@ -66,6 +67,12 @@ const TabelaM = ({ codigo }) => {
     setEditingId(item.id);
     setEditedData({ ...item });
   };
+
+  useEffect(() => {
+    fetchData(); // Carrega os dados ao montar o componente
+    const intervalId = setInterval(fetchData, 5000); // Atualiza a cada 5 segundos
+    return () => clearInterval(intervalId); // Limpa o intervalo ao desmontar o componente
+  }, []);
 
   // Agrupar os dados por DEC
   const groupedData = dados.reduce((acc, item) => {

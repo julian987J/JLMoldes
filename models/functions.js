@@ -21,7 +21,7 @@ async function sendToR1(itemData) {
         data: itemData.data,
         codigo: itemData.codigo,
         nome: itemData.nome,
-        sis: itemData.sis ?? 0, // Usa ?? em vez de ||
+        sis: itemData.sis ?? 0,
         alt: itemData.alt ?? 0,
         base: itemData.base ?? 0,
       }),
