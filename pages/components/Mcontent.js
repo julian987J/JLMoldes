@@ -2,10 +2,8 @@ import { useState, useEffect } from "react";
 import TabelaM from "./TabelaM.js";
 import TabelaMRight from "./TabelaMRight.js";
 import CodigoVerifier from "./CodigoVerifier.js";
-import Calculadora from "./Calculadora.js";
 import ErrorComponent from "./Errors.js";
-import BSTA from "./BSATable.js";
-
+import R1content from "./R1Content.js";
 const Mcontent = () => {
   const [observacao, setObservacao] = useState("");
   const [dec, setDec] = useState("");
@@ -249,15 +247,8 @@ const Mcontent = () => {
         <TabelaMRight codigo={codigo} />
       </div>
       <div className="divider divider-neutral">OFICINA</div>
-      <div className="grid grid-cols-4 gap-4">
-        <div>
-          <BSTA />
-        </div>
-        <div>
-          <Calculadora />
-        </div>
-        <div>{/* Adicione mais componentes aqui se necessário */}</div>
-        <div>{/* Adicione mais componentes aqui se necessário */}</div>
+      <div>
+        <R1content />
       </div>
 
       {showError && <ErrorComponent errorCode="000BSA" />}

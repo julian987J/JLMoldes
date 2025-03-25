@@ -1,4 +1,4 @@
-function Calculadora() {
+const Calculadora = ({ codigo, nome, onCodigoChange, onNomeChange }) => {
   return (
     <div className="flex flex-col">
       <form>
@@ -8,12 +8,16 @@ function Calculadora() {
             type="text"
             placeholder="Nome"
             className="input input-warning input-xs w-32 join-item"
+            value={nome}
+            onChange={(e) => onNomeChange(e.target.value)}
             required
           />
           <input
             type="text"
             placeholder="CODIGO"
             className="input input-warning input-xs w-23.5 join-item"
+            value={codigo}
+            onChange={(e) => onCodigoChange(e.target.value)}
             required
           />
           <div className="badge badge-outline badge-warning join-item">7</div>
@@ -66,6 +70,6 @@ function Calculadora() {
       </form>
     </div>
   );
-}
+};
 
 export default Calculadora;

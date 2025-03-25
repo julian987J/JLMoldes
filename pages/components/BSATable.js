@@ -4,17 +4,22 @@ import Use from "models/utils";
 
 const BSA = ({ codigo }) => {
   const [dados, setDados] = useState([]);
+  const loadData = async () => {
+    const data = await Execute.reciveFromR1();
+    setDados(data.sort((a, b) => new Date(a.data) - new Date(b.data)));
+  };
 
   useEffect(() => {
-    const loadData = async () => {
-      const data = await Execute.reciveFromR1();
-      setDados(data.sort((a, b) => new Date(a.data) - new Date(b.data)));
-    };
+    loadData(); // Busca inicial
 
-    loadData();
-    const intervalId = setInterval(loadData, 5000);
+    const intervalId = setInterval(loadData, 5000); // Atualiza a cada 5s
     return () => clearInterval(intervalId);
   }, []);
+
+  // Busca imediatamente quando o código muda
+  useEffect(() => {
+    loadData();
+  }, [codigo]);
 
   return (
     <div className="overflow-x-auto rounded-box border border-warning bg-base-100">
@@ -37,7 +42,7 @@ const BSA = ({ codigo }) => {
               className={
                 item.codigo === codigo
                   ? "bg-green-200"
-                  : "boder-b border-warning"
+                  : "border-b border-warning"
               }
             >
               <td className="hidden">{item.id}</td>
