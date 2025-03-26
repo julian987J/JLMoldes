@@ -18,7 +18,6 @@ async function sendToR1(itemData) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         id: itemData.id,
-        data: itemData.data,
         codigo: itemData.codigo,
         nome: itemData.nome,
         sis: itemData.sis ?? 0,

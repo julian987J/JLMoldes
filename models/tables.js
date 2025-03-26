@@ -24,13 +24,12 @@ async function createM1(ordemInputValues) {
 async function createR1BSA(ordemInputValues) {
   const result = await database.query({
     text: `
-      INSERT INTO "R1BSA" (id, data, codigo, nome, sis, alt, base) 
-      VALUES ($1, $2, $3, $4, $5, $6, $7)
+      INSERT INTO "R1BSA" (id, codigo, nome, sis, alt, base) 
+      VALUES ($1, $2, $3, $4, $5, $6)
       RETURNING *;
     `,
     values: [
       ordemInputValues.id,
-      ordemInputValues.data,
       ordemInputValues.codigo,
       ordemInputValues.nome,
       ordemInputValues.sis,

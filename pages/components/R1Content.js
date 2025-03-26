@@ -1,16 +1,28 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Calculadora from "./Calculadora.js";
 import BSTA from "./BSATable.js";
 
-const R1content = () => {
-  const [codigo, setCodigo] = useState("");
+const R1content = ({ codigoExterno }) => {
+  // Referência para o valor de codigoExterno, para garantir que não altere depois de passado
+  const codigoExternoRef = useRef(codigoExterno);
+
+  // Se o codigoExterno for passado, não alteramos o estado de codigo
+  const [codigo, setCodigo] = useState(codigoExterno || "");
   const [nome, setNome] = useState("");
+
+  useEffect(() => {
+    // Atualizando a referência se codigoExterno mudar
+    if (codigoExterno !== codigoExternoRef.current) {
+      codigoExternoRef.current = codigoExterno;
+      setCodigo(codigoExterno || ""); // Se o codigoExterno for vazio, mantemos o código vazio
+    }
+  }, [codigoExterno]);
 
   // Busca nome quando código muda
   useEffect(() => {
     const fetchNome = async () => {
       if (!codigo) {
-        setNome("");
+        setNome(""); // Se o código for vazio, limpa o nome
         return;
       }
 
@@ -20,20 +32,20 @@ const R1content = () => {
 
         const data = await response.json();
         const item = data.rows.find((item) => item.codigo === codigo);
-        setNome(item?.nome || "");
+        setNome(item?.nome || ""); // Se não encontrar o nome, fica vazio
       } catch (error) {
         console.error("Falha ao buscar nome:", error);
       }
     };
 
     fetchNome();
-  }, [codigo]);
+  }, [codigo]); // A dependência é o 'codigo', pois a busca do nome depende dele
 
   // Busca código quando nome muda
   useEffect(() => {
     const fetchCodigo = async () => {
       if (!nome) {
-        setCodigo("");
+        setCodigo(""); // Se o nome for vazio, limpa o código
         return;
       }
 
@@ -43,14 +55,25 @@ const R1content = () => {
 
         const data = await response.json();
         const item = data.rows.find((item) => item.nome === nome);
-        setCodigo(item?.codigo || "");
+        setCodigo(item?.codigo || ""); // Se não encontrar o código, fica vazio
       } catch (error) {
         console.error("Falha ao buscar código:", error);
       }
     };
 
     fetchCodigo();
-  }, [nome]);
+  }, [nome]); // A dependência é o 'nome', pois a busca do código depende dele
+
+  // Atualizando o estado 'codigo' ou 'nome' diretamente
+  const handleCodigoChange = (novoCodigo) => {
+    if (!codigoExternoRef.current) {
+      setCodigo(novoCodigo); // Só altera o código se codigoExterno não estiver definido
+    }
+  };
+
+  const handleNomeChange = (novoNome) => {
+    setNome(novoNome);
+  };
 
   return (
     <div>
@@ -60,10 +83,8 @@ const R1content = () => {
         </div>
         <div>
           <Calculadora
-            codigo={codigo}
-            nome={nome}
-            onCodigoChange={setCodigo}
-            onNomeChange={setNome}
+            onCodigoChange={handleCodigoChange} // Passando a função de alteração para a Calculadora
+            onNomeChange={handleNomeChange} // Passando a função de alteração para a Calculadora
           />
         </div>
       </div>
