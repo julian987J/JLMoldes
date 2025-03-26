@@ -55,6 +55,7 @@ const R1content = ({ codigoExterno }) => {
 
         const data = await response.json();
         const item = data.rows.find((item) => item.nome === nome);
+
         setCodigo(item?.codigo || ""); // Se não encontrar o código, fica vazio
       } catch (error) {
         console.error("Falha ao buscar código:", error);
@@ -83,6 +84,8 @@ const R1content = ({ codigoExterno }) => {
         </div>
         <div>
           <Calculadora
+            codigo={codigo}
+            nome={nome}
             onCodigoChange={handleCodigoChange} // Passando a função de alteração para a Calculadora
             onNomeChange={handleNomeChange} // Passando a função de alteração para a Calculadora
           />

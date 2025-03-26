@@ -44,6 +44,34 @@ async function reciveFromR1() {
     return [];
   }
 }
+async function reciveFromR1JustBSA(codigo) {
+  try {
+    const response = await fetch(`/api/v1/tables/calculadora?codigo=${codigo}`);
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || "Erro ao carregar os dados");
+    }
+
+    const data = await response.json();
+
+    // Retorna o objeto direto com os totais
+    return (
+      data || {
+        total_base: 0,
+        total_sis: 0,
+        total_alt: 0,
+      }
+    );
+  } catch (error) {
+    console.error("Erro ao buscar dados R1:", error);
+    return {
+      total_base: 0,
+      total_sis: 0,
+      total_alt: 0,
+    };
+  }
+}
 
 async function removeM1andR1(id) {
   const response = await fetch("/api/v1/tables", {
@@ -68,6 +96,7 @@ async function removeM1andR1(id) {
 const execute = {
   sendToR1,
   reciveFromR1,
+  reciveFromR1JustBSA,
   removeM1andR1,
 };
 

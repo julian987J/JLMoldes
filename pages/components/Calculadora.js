@@ -1,4 +1,31 @@
+import Execute from "models/functions";
+import { useState, useEffect } from "react";
+
 const Calculadora = ({ codigo, nome, onCodigoChange, onNomeChange }) => {
+  const [dadosR1, setDadosR1] = useState(0);
+
+  useEffect(() => {
+    const buscarDados = async () => {
+      try {
+        const resultado = await Execute.reciveFromR1JustBSA(codigo);
+        console.log("Dados brutos:", resultado);
+
+        // Soma todos os valores
+        const somaTotal =
+          Number(resultado.total_base || 0) +
+          Number(resultado.total_sis || 0) +
+          Number(resultado.total_alt || 0);
+
+        setDadosR1(somaTotal);
+      } catch (error) {
+        console.error("Erro:", error);
+        setDadosR1(0);
+      }
+    };
+    buscarDados();
+  }, [codigo]);
+  // Apenas codigo como dependência
+
   return (
     <div className="flex flex-col">
       <form>
@@ -32,10 +59,17 @@ const Calculadora = ({ codigo, nome, onCodigoChange, onNomeChange }) => {
             />
           ))}
         </div>
-        <div className="badge badge-soft badge-warning px-26.5 rounded-none join-item">
-          SOMA
+        <div>
+          <input
+            min="0"
+            type="number"
+            placeholder="SOMA"
+            value={dadosR1 || 0}
+            className="input input-warning input-xs w-63 z-3 text-center text-warning font-bold"
+            readOnly
+          />
         </div>
-        <div className="join grid grid-cols-3 w-63.5">
+        <div className="join grid grid-cols-3 mt-0.5 w-63.5">
           <input
             min="0"
             step={0.01}

@@ -140,6 +140,26 @@ async function getR1BSA() {
   });
   return result;
 }
+async function getR1JustBSA(codigo) {
+  const result = await database.query({
+    text: `SELECT 
+             SUM(base) AS total_base,
+             SUM(sis) AS total_sis,
+             SUM(alt) AS total_alt
+           FROM "R1BSA" 
+           WHERE codigo = $1;`,
+    values: [codigo],
+  });
+
+  // Retorna apenas a primeira linha com os totais
+  return (
+    result.rows[0] || {
+      total_base: 0,
+      total_sis: 0,
+      total_alt: 0,
+    }
+  );
+}
 
 export async function deleteM1(id) {
   return database.query({
@@ -159,6 +179,7 @@ const ordem = {
   createM1,
   createR1BSA,
   getR1BSA,
+  getR1JustBSA,
   getM1TableAltSis,
   getM1TableBase,
   getVerificador,
