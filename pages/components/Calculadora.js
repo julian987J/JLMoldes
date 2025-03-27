@@ -3,6 +3,8 @@ import { useState, useEffect } from "react";
 
 const Calculadora = ({ codigo, nome, onCodigoChange, onNomeChange }) => {
   const [dadosR1, setDadosR1] = useState(0);
+  const [valorDevo, setValorDevo] = useState(0);
+  const [valorDeve, setValorDeve] = useState(0);
   const [multiplier, setMultiplier] = useState(7);
   const [values, setValues] = useState(Array(28).fill(""));
   const [pix, setPix] = useState("");
@@ -31,13 +33,9 @@ const Calculadora = ({ codigo, nome, onCodigoChange, onNomeChange }) => {
     newValues[index] = newValue;
     setValues(newValues);
   };
-  const totalGeral = (Number(dadosR1) || 0) + sumValues * multiplier;
-
-  const totalTroco =
-    (Number(dadosR1) || 0) +
-    sumValues * multiplier -
-    (Number(pix) || 0) -
-    (Number(real) || 0);
+  const totalGeral =
+    (Number(dadosR1) || 0) + sumValues * multiplier - valorDevo + valorDeve;
+  const totalTroco = totalGeral - (Number(pix) || 0) - (Number(real) || 0);
 
   useEffect(() => {
     const buscarDados = async () => {
@@ -59,11 +57,80 @@ const Calculadora = ({ codigo, nome, onCodigoChange, onNomeChange }) => {
     };
     buscarDados();
   }, [codigo]);
-  // Apenas codigo como dependência
+
+  useEffect(() => {
+    const buscarDados = async () => {
+      try {
+        const resultado = await Execute.reciveFromDeveJustValor(codigo);
+        console.log("Dados brutos:", resultado);
+
+        // Soma todos os valores
+        const somaTotal = Number(resultado.total_valor || 0);
+
+        setValorDeve(somaTotal);
+      } catch (error) {
+        console.error("Erro:", error);
+        setValorDeve(0);
+      }
+    };
+    buscarDados();
+  }, [codigo]);
+
+  useEffect(() => {
+    const buscarDados = async () => {
+      try {
+        const resultado = await Execute.reciveFromDevoJustValor(codigo);
+        console.log("Dados brutos:", resultado);
+
+        // Soma todos os valores
+        const somaTotal = Number(resultado.total_valor || 0);
+
+        setValorDevo(somaTotal);
+      } catch (error) {
+        console.error("Erro:", error);
+        setValorDevo(0);
+      }
+    };
+    buscarDados();
+  }, [codigo]);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    const trocoValue = Number(totalTroco);
+
+    try {
+      if (trocoValue > 0) {
+        await Execute.sendToDeve({
+          nome,
+          codigo,
+          valor: trocoValue,
+        });
+        console.log("Registro adicionado em Deve");
+      } else if (trocoValue < 0) {
+        await Execute.sendToDevo({
+          nome,
+          codigo,
+          valor: Math.abs(trocoValue),
+        });
+        console.log("Registro adicionado em Devo");
+      } else {
+        console.log("Troco zero - nenhum registro criado");
+      }
+
+      // Limpar campos após o envio
+      setPix("");
+      setReal("");
+      setValues(Array(28).fill(""));
+    } catch (error) {
+      console.error("Erro ao salvar:", error);
+      alert("Erro ao salvar os dados!");
+    }
+  };
 
   return (
     <div className="flex flex-col">
-      <form>
+      <form onSubmit={handleSubmit}>
         {/* Inputs superiores */}
         <div className="join z-2">
           <input

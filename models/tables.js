@@ -40,6 +40,39 @@ async function createR1BSA(ordemInputValues) {
 
   return result;
 }
+async function createDevo(ordemInputValues) {
+  const result = await database.query({
+    text: `
+      INSERT INTO "Devo" (codigo, nome, valor) 
+      VALUES ($1, $2, $3)
+      RETURNING *;
+    `,
+    values: [
+      ordemInputValues.codigo,
+      ordemInputValues.nome,
+      ordemInputValues.valor,
+    ],
+  });
+
+  return result;
+}
+
+async function createDeve(ordemInputValues) {
+  const result = await database.query({
+    text: `
+      INSERT INTO "Deve" (codigo, nome, valor) 
+      VALUES ($1, $2, $3)
+      RETURNING *;
+    `,
+    values: [
+      ordemInputValues.codigo,
+      ordemInputValues.nome,
+      ordemInputValues.valor,
+    ],
+  });
+
+  return result;
+}
 
 async function updateAltSis(updatedData) {
   const result = await database.query({
@@ -140,6 +173,20 @@ async function getR1BSA() {
   });
   return result;
 }
+
+async function getDeve() {
+  const result = await database.query({
+    text: `SELECT * FROM "Deve"`,
+  });
+  return result;
+}
+async function getDevo() {
+  const result = await database.query({
+    text: `SELECT * FROM "Devo"`,
+  });
+  return result;
+}
+
 async function getR1JustBSA(codigo) {
   const result = await database.query({
     text: `SELECT 
@@ -161,6 +208,40 @@ async function getR1JustBSA(codigo) {
   );
 }
 
+async function getDeveJustValor(codigo) {
+  const result = await database.query({
+    text: `SELECT 
+             SUM(valor) AS total_valor
+           FROM "Deve" 
+           WHERE codigo = $1;`,
+    values: [codigo],
+  });
+
+  // Retorna apenas a primeira linha com os totais
+  return (
+    result.rows[0] || {
+      total_valor: 0,
+    }
+  );
+}
+
+async function getDevoJustValor(codigo) {
+  const result = await database.query({
+    text: `SELECT 
+             SUM(valor) AS total_valor
+           FROM "Devo" 
+           WHERE codigo = $1;`,
+    values: [codigo],
+  });
+
+  // Retorna apenas a primeira linha com os totais
+  return (
+    result.rows[0] || {
+      total_valor: 0,
+    }
+  );
+}
+
 export async function deleteM1(id) {
   return database.query({
     text: `DELETE FROM "m1table" WHERE id = $1 RETURNING *;`,
@@ -178,11 +259,17 @@ export async function deleteR1(id) {
 const ordem = {
   createM1,
   createR1BSA,
+  createDevo,
+  createDeve,
   getR1BSA,
   getR1JustBSA,
   getM1TableAltSis,
   getM1TableBase,
   getVerificador,
+  getDeve,
+  getDeveJustValor,
+  getDevo,
+  getDevoJustValor,
   deleteM1,
   deleteR1,
   updateAltSis,

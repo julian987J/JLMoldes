@@ -2,10 +2,10 @@ import React, { useEffect, useState } from "react";
 import Execute from "models/functions";
 import Use from "models/utils";
 
-const BSA = ({ codigo }) => {
+const Deve = ({ codigo }) => {
   const [dados, setDados] = useState([]);
   const loadData = async () => {
-    const data = await Execute.reciveFromR1();
+    const data = await Execute.reciveFromDeve();
     setDados(data.sort((a, b) => new Date(a.data) - new Date(b.data)));
   };
 
@@ -22,7 +22,7 @@ const BSA = ({ codigo }) => {
   }, [codigo]);
 
   return (
-    <div className="overflow-x-auto rounded-box border border-warning bg-base-100">
+    <div className="overflow-x-auto rounded-box border border-secondary bg-base-100">
       <table className="table table-xs">
         <thead>
           <tr>
@@ -30,9 +30,7 @@ const BSA = ({ codigo }) => {
             <th className="w-36">Data</th>
             <th className="hidden">CODIGO</th>
             <th>Nome</th>
-            <th className="w-10">Base</th>
-            <th className="w-10">Sis</th>
-            <th className="w-10">Alt</th>
+            <th className="w-20">Deve</th>
           </tr>
         </thead>
         <tbody>
@@ -42,16 +40,14 @@ const BSA = ({ codigo }) => {
               className={
                 item.codigo === codigo
                   ? "bg-green-200"
-                  : "border-b border-warning"
+                  : "border-b border-secondary"
               }
             >
               <td className="hidden">{item.id}</td>
               <td>{Use.formatarData(item.data)}</td>
               <td className="hidden">{item.codigo}</td>
               <td>{item.nome}</td>
-              <td>{item.base}</td>
-              <td>{item.sis}</td>
-              <td>{item.alt}</td>
+              <td>$ {Number(item.valor).toFixed(2)}</td>
             </tr>
           ))}
         </tbody>
@@ -60,4 +56,4 @@ const BSA = ({ codigo }) => {
   );
 };
 
-export default BSA;
+export default Deve;

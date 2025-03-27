@@ -33,6 +33,54 @@ async function sendToR1(itemData) {
   }
 }
 
+async function sendToDeve(itemData) {
+  try {
+    const response = await fetch("/api/v1/tables/deve", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        nome: itemData.nome,
+        codigo: itemData.codigo,
+        valor: itemData.valor,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || "Erro ao criar registro em Deve");
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error("Erro no createDeve:", error);
+    throw error;
+  }
+}
+
+async function sendToDevo(itemData) {
+  try {
+    const response = await fetch("/api/v1/tables/devo", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        nome: itemData.nome,
+        codigo: itemData.codigo,
+        valor: itemData.valor,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || "Erro ao criar registro em Devo");
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error("Erro no createDevo:", error);
+    throw error;
+  }
+}
+
 async function reciveFromR1() {
   try {
     const response = await fetch("/api/v1/tables/R1");
@@ -44,6 +92,85 @@ async function reciveFromR1() {
     return [];
   }
 }
+
+async function reciveFromDeve() {
+  try {
+    const response = await fetch("/api/v1/tables/deve");
+    if (!response.ok) throw new Error("Erro ao carregar os dados");
+    const data = await response.json();
+    return Array.isArray(data.rows) ? data.rows : [];
+  } catch (error) {
+    console.error("Erro ao buscar dados deve:", error);
+    return [];
+  }
+}
+
+async function reciveFromDeveJustValor(codigo) {
+  try {
+    const response = await fetch(
+      `/api/v1/tables/calculadora/deve?codigo=${codigo}`,
+    );
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || "Erro ao carregar os dados");
+    }
+
+    const data = await response.json();
+
+    // Retorna o objeto direto com os totais
+    return (
+      data || {
+        total_valor: 0,
+      }
+    );
+  } catch (error) {
+    console.error("Erro ao buscar dados deve:", error);
+    return {
+      total_valor: 0,
+    };
+  }
+}
+
+async function reciveFromDevoJustValor(codigo) {
+  try {
+    const response = await fetch(
+      `/api/v1/tables/calculadora/devo?codigo=${codigo}`,
+    );
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || "Erro ao carregar os dados");
+    }
+
+    const data = await response.json();
+
+    // Retorna o objeto direto com os totais
+    return (
+      data || {
+        total_valor: 0,
+      }
+    );
+  } catch (error) {
+    console.error("Erro ao buscar dados devo:", error);
+    return {
+      total_valor: 0,
+    };
+  }
+}
+
+async function reciveFromDevo() {
+  try {
+    const response = await fetch("/api/v1/tables/devo");
+    if (!response.ok) throw new Error("Erro ao carregar os dados");
+    const data = await response.json();
+    return Array.isArray(data.rows) ? data.rows : [];
+  } catch (error) {
+    console.error("Erro ao buscar dados deve:", error);
+    return [];
+  }
+}
+
 async function reciveFromR1JustBSA(codigo) {
   try {
     const response = await fetch(`/api/v1/tables/calculadora?codigo=${codigo}`);
@@ -95,6 +222,12 @@ async function removeM1andR1(id) {
 
 const execute = {
   sendToR1,
+  sendToDeve,
+  sendToDevo,
+  reciveFromDeve,
+  reciveFromDeveJustValor,
+  reciveFromDevo,
+  reciveFromDevoJustValor,
   reciveFromR1,
   reciveFromR1JustBSA,
   removeM1andR1,

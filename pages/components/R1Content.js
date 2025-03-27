@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from "react";
 import Calculadora from "./Calculadora.js";
 import BSTA from "./BSATable.js";
+import Deve from "./Deve.js";
+import Devo from "./Devo.js";
 
 const R1content = ({ codigoExterno }) => {
   // Referência para o valor de codigoExterno, para garantir que não altere depois de passado
@@ -83,12 +85,16 @@ const R1content = ({ codigoExterno }) => {
           <BSTA codigo={codigo} />
         </div>
         <div>
+          <Deve codigo={codigo} />
+        </div>
+        <div>
           <Calculadora
             codigo={codigo}
             nome={nome}
             onCodigoChange={handleCodigoChange} // Passando a função de alteração para a Calculadora
             onNomeChange={handleNomeChange} // Passando a função de alteração para a Calculadora
           />
+          <Devo codigo={codigo} />
         </div>
       </div>
     </div>
