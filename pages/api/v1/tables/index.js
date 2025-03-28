@@ -24,7 +24,8 @@ async function postHandler(request, response) {
 
 async function deleteHandler(request, response) {
   const { id } = request.body;
-  const result = await ordem.deleteM1(id);
+  const idsToDelete = Array.isArray(id) ? id : [id];
+  const result = await ordem.deleteM1(idsToDelete);
   return response.status(200).json(result);
 }
 

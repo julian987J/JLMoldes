@@ -1,6 +1,5 @@
 exports.up = (pgm) => {
   pgm.createTable("Deve", {
-    id: { type: "serial", primaryKey: true },
     data: { type: "timestamptz", default: pgm.func("now()"), notNull: true },
     codigo: { type: "text", notNull: true },
     nome: { type: "text", notNull: true },

@@ -125,7 +125,9 @@ const TabelaM = ({ codigo }) => {
                     className={
                       item.codigo === codigo
                         ? "bg-green-200 border-b border-gray-700"
-                        : "border-b border-gray-700"
+                        : item.r1 === true
+                          ? "bg-yellow-100 border-b border-gray-700"
+                          : " border-b border-gray-700"
                     }
                   >
                     <td className="hidden">{item.id}</td>
@@ -220,6 +222,7 @@ const TabelaM = ({ codigo }) => {
                         className={`btn btn-xs btn-soft btn-warning ${editingId === item.id ? "hidden" : ""}`}
                         onClick={async () => {
                           try {
+                            await Execute.sendTrueMR1(item.id);
                             setErrorCode(null); // Reset do erro antes da tentativa
                             await Execute.sendToR1({
                               ...item,
@@ -249,11 +252,7 @@ const TabelaM = ({ codigo }) => {
                       >
                         R3
                       </button>
-                      <button
-                        className={`btn btn-xs btn-soft btn-secondary ${editingId === item.id ? "hidden" : ""}`}
-                      >
-                        M1
-                      </button>
+
                       <EditM
                         isEditing={editingId === item.id}
                         onEdit={() => startEditing(item)}

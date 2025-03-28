@@ -24,7 +24,8 @@ async function getHandlerR1BSA(request, response) {
 
 async function deleteHandler(request, response) {
   const { id } = request.body;
-  const result = await ordem.deleteR1(id);
+  const idsToDelete = Array.isArray(id) ? id : [id];
+  const result = await ordem.deleteR1(idsToDelete);
   return response.status(200).json(result);
 }
 

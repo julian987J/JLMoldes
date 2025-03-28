@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import Calculadora from "./Calculadora.js";
+import Execute from "models/functions";
 import BSTA from "./BSATable.js";
 import Deve from "./Deve.js";
 import Devo from "./Devo.js";
@@ -7,6 +8,7 @@ import Devo from "./Devo.js";
 const R1content = ({ codigoExterno }) => {
   // Referência para o valor de codigoExterno, para garantir que não altere depois de passado
   const codigoExternoRef = useRef(codigoExterno);
+  const tablesToSearch = useRef(["R1", "deve", "devo"]);
 
   // Se o codigoExterno for passado, não alteramos o estado de codigo
   const [codigo, setCodigo] = useState(codigoExterno || "");
@@ -20,51 +22,65 @@ const R1content = ({ codigoExterno }) => {
     }
   }, [codigoExterno]);
 
-  // Busca nome quando código muda
   useEffect(() => {
+    let isMounted = true;
     const fetchNome = async () => {
       if (!codigo) {
-        setNome(""); // Se o código for vazio, limpa o nome
+        if (isMounted) setNome("");
         return;
       }
 
       try {
-        const response = await fetch("/api/v1/tables/R1");
-        if (!response.ok) throw new Error("Erro na busca");
-
-        const data = await response.json();
-        const item = data.rows.find((item) => item.codigo === codigo);
-        setNome(item?.nome || ""); // Se não encontrar o nome, fica vazio
+        let foundNome = "";
+        for (const table of tablesToSearch.current) {
+          const items = await Execute.reciveFromR1DeveDevo(table);
+          const foundItem = items.find((item) => item.codigo === codigo);
+          if (foundItem) {
+            foundNome = foundItem.nome;
+            break;
+          }
+        }
+        if (isMounted) setNome(foundNome);
       } catch (error) {
         console.error("Falha ao buscar nome:", error);
       }
     };
 
     fetchNome();
-  }, [codigo]); // A dependência é o 'codigo', pois a busca do nome depende dele
+    return () => {
+      isMounted = false;
+    };
+  }, [codigo]);
 
-  // Busca código quando nome muda
+  // Busca codigo quando nome muda
   useEffect(() => {
+    let isMounted = true;
     const fetchCodigo = async () => {
       if (!nome) {
-        setCodigo(""); // Se o nome for vazio, limpa o código
+        if (isMounted) setCodigo("");
         return;
       }
 
       try {
-        const response = await fetch("/api/v1/tables/R1");
-        if (!response.ok) throw new Error("Erro na busca");
-
-        const data = await response.json();
-        const item = data.rows.find((item) => item.nome === nome);
-
-        setCodigo(item?.codigo || ""); // Se não encontrar o código, fica vazio
+        let foundCodigo = "";
+        for (const table of tablesToSearch.current) {
+          const items = await Execute.reciveFromR1DeveDevo(table);
+          const foundItem = items.find((item) => item.nome === nome);
+          if (foundItem) {
+            foundCodigo = foundItem.codigo;
+            break;
+          }
+        }
+        if (isMounted) setCodigo(foundCodigo);
       } catch (error) {
         console.error("Falha ao buscar código:", error);
       }
     };
 
     fetchCodigo();
+    return () => {
+      isMounted = false;
+    };
   }, [nome]); // A dependência é o 'nome', pois a busca do código depende dele
 
   // Atualizando o estado 'codigo' ou 'nome' diretamente

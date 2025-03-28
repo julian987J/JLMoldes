@@ -3,9 +3,11 @@ import { useState, useEffect } from "react";
 
 const Calculadora = ({ codigo, nome, onCodigoChange, onNomeChange }) => {
   const [dadosR1, setDadosR1] = useState(0);
+  const [idsArray, setIdsArray] = useState(0);
   const [valorDevo, setValorDevo] = useState(0);
   const [valorDeve, setValorDeve] = useState(0);
   const [multiplier, setMultiplier] = useState(7);
+  const [plus, setPlus] = useState(0);
   const [values, setValues] = useState(Array(28).fill(""));
   const [pix, setPix] = useState("");
   const [real, setReal] = useState("");
@@ -26,6 +28,9 @@ const Calculadora = ({ codigo, nome, onCodigoChange, onNomeChange }) => {
   const handleMultiplierChange = (e) => {
     setMultiplier(Number(e.target.value));
   };
+  const handlePlusChange = (e) => {
+    setPlus(Number(e.target.value));
+  };
 
   const handleValueChange = (index, e) => {
     const newValue = e.target.value;
@@ -34,7 +39,12 @@ const Calculadora = ({ codigo, nome, onCodigoChange, onNomeChange }) => {
     setValues(newValues);
   };
   const totalGeral =
-    (Number(dadosR1) || 0) + sumValues * multiplier - valorDevo + valorDeve;
+    (Number(dadosR1) || 0) +
+    sumValues * multiplier -
+    valorDevo +
+    valorDeve +
+    plus;
+
   const totalTroco = totalGeral - (Number(pix) || 0) - (Number(real) || 0);
 
   useEffect(() => {
@@ -50,9 +60,11 @@ const Calculadora = ({ codigo, nome, onCodigoChange, onNomeChange }) => {
           Number(resultado.total_alt || 0);
 
         setDadosR1(somaTotal);
+        setIdsArray(resultado.ids || []);
       } catch (error) {
         console.error("Erro:", error);
         setDadosR1(0);
+        setIdsArray([]);
       }
     };
     buscarDados();
@@ -96,11 +108,14 @@ const Calculadora = ({ codigo, nome, onCodigoChange, onNomeChange }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
     const trocoValue = Number(totalTroco);
+
+    await Execute.removeDeve(codigo);
+    await Execute.removeDevo(codigo);
 
     try {
       if (trocoValue > 0) {
+        await Execute.removeDevo(codigo);
         await Execute.sendToDeve({
           nome,
           codigo,
@@ -108,6 +123,7 @@ const Calculadora = ({ codigo, nome, onCodigoChange, onNomeChange }) => {
         });
         console.log("Registro adicionado em Deve");
       } else if (trocoValue < 0) {
+        await Execute.removeDeve(codigo);
         await Execute.sendToDevo({
           nome,
           codigo,
@@ -121,11 +137,14 @@ const Calculadora = ({ codigo, nome, onCodigoChange, onNomeChange }) => {
       // Limpar campos após o envio
       setPix("");
       setReal("");
+      onNomeChange("");
+      onCodigoChange("");
       setValues(Array(28).fill(""));
     } catch (error) {
       console.error("Erro ao salvar:", error);
       alert("Erro ao salvar os dados!");
     }
+    await Execute.removeM1andR1(idsArray);
   };
 
   return (
@@ -151,11 +170,18 @@ const Calculadora = ({ codigo, nome, onCodigoChange, onNomeChange }) => {
           />
           <input
             type="number"
-            className="input input-warning text-warning input-xs w-7.5 join-item"
-            value={multiplier}
-            onChange={handleMultiplierChange}
+            className="input input-warning text-warning text-left input-xs w-7.5 join-item"
+            value={plus}
+            placeholder={0}
+            onChange={handlePlusChange}
           />
         </div>
+        <input
+          type="number"
+          className="input input-warning hidden text-warning input-xs w-7.5"
+          value={multiplier}
+          onChange={handleMultiplierChange}
+        />
         <div className="grid grid-cols-4 mt-0.5 w-fit">
           {Array.from({ length: 28 }).map((_, i) => (
             <div key={i} className="relative">

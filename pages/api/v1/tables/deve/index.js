@@ -6,6 +6,7 @@ const router = createRouter();
 
 router.post(postHandlerDeve);
 router.get(getHandlerDeve);
+router.delete(deleteHandler);
 
 export default router.handler(controller.errorHandlers);
 
@@ -18,4 +19,10 @@ async function postHandlerDeve(request, response) {
 async function getHandlerDeve(request, response) {
   const ordemGetValues = await ordem.getDeve();
   return response.status(200).json(ordemGetValues);
+}
+
+async function deleteHandler(request, response) {
+  const { codigo } = request.body;
+  const result = await ordem.deleteDeve(codigo);
+  return response.status(200).json(result);
 }

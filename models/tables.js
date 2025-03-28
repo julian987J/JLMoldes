@@ -99,6 +99,19 @@ async function updateAltSis(updatedData) {
 
   return result;
 }
+async function updateR1Button(updatedData) {
+  const result = await database.query({
+    text: `
+      UPDATE "m1table"
+      SET r1 = $1
+      WHERE id = $2
+      RETURNING *;
+    `,
+    values: [true, updatedData.id],
+  });
+  return result.rows[0];
+}
+
 async function updateAltSisR1(updatedData) {
   const result = await database.query({
     text: `
@@ -149,14 +162,14 @@ async function updateBase(updatedData) {
 
 async function getM1TableAltSis() {
   const result = await database.query({
-    text: `SELECT id, data, observacao, codigo, dec, nome, sis, alt FROM "m1table" WHERE sis > 0 OR alt > 0 ORDER BY data DESC;`,
+    text: `SELECT id, data, observacao, codigo, dec, nome, sis, alt, r1, r2, r3 FROM "m1table" WHERE sis > 0 OR alt > 0 ORDER BY data DESC;`,
   });
   return result;
 }
 
 async function getM1TableBase() {
   const result = await database.query({
-    text: `SELECT id, data, observacao, codigo, dec, nome, base FROM "m1table" WHERE base > 0 ORDER BY data DESC;`,
+    text: `SELECT id, data, observacao, codigo, dec, nome, base, r1, r2, r3 FROM "m1table" WHERE base > 0 ORDER BY data DESC;`,
   });
   return result;
 }
@@ -190,11 +203,12 @@ async function getDevo() {
 async function getR1JustBSA(codigo) {
   const result = await database.query({
     text: `SELECT 
-             SUM(base) AS total_base,
-             SUM(sis) AS total_sis,
-             SUM(alt) AS total_alt
-           FROM "R1BSA" 
-           WHERE codigo = $1;`,
+            (SELECT array_agg(id) FROM "R1BSA" WHERE codigo = $1) AS ids,  -- Todos os IDs em um array
+            SUM(base) AS total_base,
+            SUM(sis) AS total_sis,
+            SUM(alt) AS total_alt
+          FROM "R1BSA" 
+          WHERE codigo = $1;`,
     values: [codigo],
   });
 
@@ -242,18 +256,36 @@ async function getDevoJustValor(codigo) {
   );
 }
 
-export async function deleteM1(id) {
-  return database.query({
-    text: `DELETE FROM "m1table" WHERE id = $1 RETURNING *;`,
-    values: [id],
+async function deleteM1(ids) {
+  const result = await database.query({
+    text: `DELETE FROM "m1table" WHERE id = ANY($1) RETURNING *`,
+    values: [ids],
   });
+  return result.rows;
 }
 
-export async function deleteR1(id) {
-  return database.query({
-    text: `DELETE FROM "R1BSA" WHERE id = $1 RETURNING *;`,
-    values: [id],
+export async function deleteR1(ids) {
+  const result = await database.query({
+    text: `DELETE FROM "R1BSA" WHERE id = ANY($1) RETURNING *`,
+    values: [ids],
   });
+  return result.rows;
+}
+
+export async function deleteDevo(codigo) {
+  const result = await database.query({
+    text: `DELETE FROM "Devo" WHERE codigo = $1 RETURNING *`,
+    values: [codigo],
+  });
+  return result.rows;
+}
+
+export async function deleteDeve(codigo) {
+  const result = await database.query({
+    text: `DELETE FROM "Deve" WHERE codigo = $1 RETURNING *`,
+    values: [codigo],
+  });
+  return result.rows;
 }
 
 const ordem = {
@@ -272,9 +304,12 @@ const ordem = {
   getDevoJustValor,
   deleteM1,
   deleteR1,
+  deleteDeve,
+  deleteDevo,
   updateAltSis,
   updateAltSisR1,
   updateBase,
+  updateR1Button,
 };
 
 export default ordem;
