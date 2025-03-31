@@ -24,7 +24,7 @@ const Mcontent = () => {
       }
 
       try {
-        const response = await fetch("/api/v1/cadastro");
+        const response = await fetch("/api/v1/tables/cadastro");
         if (!response.ok) throw new Error("Erro ao buscar dados");
 
         const data = await response.json();
@@ -56,7 +56,7 @@ const Mcontent = () => {
       }
 
       try {
-        const response = await fetch("/api/v1/cadastro");
+        const response = await fetch("/api/v1/tables/cadastro");
         if (!response.ok) throw new Error("Erro ao buscar dados");
 
         const data = await response.json();

@@ -12,13 +12,6 @@ const Calculadora = ({ codigo, nome, onCodigoChange, onNomeChange }) => {
   const [pix, setPix] = useState("");
   const [real, setReal] = useState("");
 
-  const total = values.some((val) => val !== "")
-    ? values.reduce((sum, current) => {
-        const num = current === "" ? 0 : Number(current);
-        return sum + num * multiplier;
-      }, 0)
-    : "";
-
   // Calcula a soma bruta dos valores (novo cálculo)
   const sumValues = values.reduce((sum, current) => {
     const num = current === "" ? 0 : Number(current);
@@ -38,14 +31,27 @@ const Calculadora = ({ codigo, nome, onCodigoChange, onNomeChange }) => {
     newValues[index] = newValue;
     setValues(newValues);
   };
+
+  // calculos da calculadora
+  const comitions = plus * 5;
+  const encaixe = values.some((val) => val !== "")
+    ? values.reduce((sum, current) => {
+        const num = current === "" ? 0 : Number(current);
+        return sum + num * multiplier;
+      }, 0)
+    : "";
+
+  const total = encaixe + comitions;
+
   const totalGeral =
     (Number(dadosR1) || 0) +
     sumValues * multiplier -
     valorDevo +
     valorDeve +
-    plus;
+    comitions;
 
   const totalTroco = totalGeral - (Number(pix) || 0) - (Number(real) || 0);
+  // fim dos calculos
 
   useEffect(() => {
     const buscarDados = async () => {
