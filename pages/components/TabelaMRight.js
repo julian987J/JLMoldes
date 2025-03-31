@@ -4,7 +4,7 @@ import Execute from "models/functions";
 import Use from "models/utils";
 import ErrorComponent from "./Errors.js";
 
-const TabelaM = ({ codigo }) => {
+const TabelaM = () => {
   const [dados, setDados] = useState([]);
   const [editingId, setEditingId] = useState(null);
   const [editedData, setEditedData] = useState({});
@@ -124,11 +124,9 @@ const TabelaM = ({ codigo }) => {
                   <tr
                     key={item.id}
                     className={
-                      item.codigo === codigo
-                        ? "bg-green-200 border-b border-gray-700"
-                        : item.r1 === true
-                          ? "bg-yellow-100 border-b border-gray-700"
-                          : "border-b border-gray-700"
+                      item.r1 === true
+                        ? "bg-yellow-100 border-b border-gray-700"
+                        : "border-b border-gray-700"
                     }
                   >
                     <td className="hidden">{item.id}</td>

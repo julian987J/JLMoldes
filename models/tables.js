@@ -176,7 +176,7 @@ async function getM1TableBase() {
 
 async function getVerificador() {
   const result = await database.query({
-    text: `SELECT * FROM "m1table"`,
+    text: `SELECT * FROM "Deve"`,
   });
   return result;
 }
