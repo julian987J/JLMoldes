@@ -1,9 +1,13 @@
-const NavBar = ({ MContent, Cadastro }) => {
+const NavBar = ({ R1, MContent, Cadastro, Ccontent }) => {
   const isMContentAvailable = Boolean(MContent);
   const isCadastroAvailable = Boolean(Cadastro);
+  const isR1Available = Boolean(R1);
   // Grupos de tabs para organização
   const tabGroups = [
-    { label: "R1", content: "Tab content 1" },
+    {
+      label: "R1",
+      content: isR1Available ? <R1 /> : "Loading...",
+    },
     { label: "R2", content: "Tab content 2" },
     { label: "R3", content: "Tab content 3" },
     {
@@ -13,6 +17,9 @@ const NavBar = ({ MContent, Cadastro }) => {
     },
     { label: "M2", content: "Tab content 2" },
     { label: "M3", content: "Tab content 3" },
+    { label: "C1", content: isMContentAvailable ? <Ccontent /> : "Loading..." },
+    { label: "C2", content: "Tab content 3" },
+    { label: "C3", content: "Tab content 3" },
     { label: "T1", content: "Tab content 2" },
     { label: "T2", content: "Tab content 3" },
     { label: "T3", content: "Tab content 2" },

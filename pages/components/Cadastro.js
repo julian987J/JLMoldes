@@ -30,7 +30,7 @@ function Cadastro() {
     };
 
     try {
-      const response = await fetch("/api/v1/cadastro", {
+      const response = await fetch("/api/v1/tables/cadastro", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(ordemInputValues),
@@ -56,7 +56,7 @@ function Cadastro() {
   return (
     <div className="h-full">
       {/* Formulário */}
-      <div className="bg-base-100 border-base-300 pb-2 px-40">
+      <div className="bg-base-100 border-base-300 pb-2 px-[5%]">
         <form onSubmit={handleSubmit}>
           <input
             type="text"
