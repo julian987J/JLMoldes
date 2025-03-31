@@ -30,7 +30,7 @@ function Cadastro() {
     };
 
     try {
-      const response = await fetch("/api/v1/cadastro", {
+      const response = await fetch("/api/v1/tables/cadastro", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(ordemInputValues),

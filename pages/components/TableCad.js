@@ -9,7 +9,7 @@ const TableCad = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await fetch("/api/v1/cadastro");
+        const response = await fetch("/api/v1/tables/cadastro");
         if (!response.ok) throw new Error("Erro ao buscar dados");
         const data = await response.json();
 
@@ -28,7 +28,7 @@ const TableCad = () => {
   }, []);
 
   async function deleteTableRecord(id) {
-    const response = await fetch("/api/v1/cadastro", {
+    const response = await fetch("/api/v1/tables/cadastro", {
       method: "DELETE",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id }), // Envia o `id` no corpo da requisição
@@ -48,7 +48,7 @@ const TableCad = () => {
 
   const handleSave = async (editedData) => {
     try {
-      const response = await fetch("/api/v1/cadastro", {
+      const response = await fetch("/api/v1/tables/cadastro", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(editedData),
