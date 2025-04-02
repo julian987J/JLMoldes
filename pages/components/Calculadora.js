@@ -1,7 +1,7 @@
 import Execute from "models/functions";
 import { useState, useEffect } from "react";
 
-const Calculadora = ({ codigo, nome, onCodigoChange, onNomeChange }) => {
+const Calculadora = ({ codigo, nome, onCodigoChange, onNomeChange, data }) => {
   const [dadosR1, setDadosR1] = useState(0);
   const [idsArray, setIdsArray] = useState(0);
   const [valorDevo, setValorDevo] = useState(0);
@@ -11,6 +11,11 @@ const Calculadora = ({ codigo, nome, onCodigoChange, onNomeChange }) => {
   const [values, setValues] = useState(Array(28).fill(""));
   const [pix, setPix] = useState("");
   const [real, setReal] = useState("");
+  const [comentario, setComentario] = useState("");
+  const [perdida, setPerdida] = useState("");
+  const [base, setBase] = useState("");
+  const [sis, setSis] = useState("");
+  const [alt, setAlt] = useState("");
 
   // Calcula a soma bruta dos valores (novo cálculo)
   const sumValues = values.reduce((sum, current) => {
@@ -34,14 +39,14 @@ const Calculadora = ({ codigo, nome, onCodigoChange, onNomeChange }) => {
 
   // calculos da calculadora
   const comitions = plus * 5;
-  const encaixe = values.some((val) => val !== "")
+  const papel = values.some((val) => val !== "")
     ? values.reduce((sum, current) => {
         const num = current === "" ? 0 : Number(current);
         return sum + num * multiplier;
       }, 0)
     : "";
 
-  const total = encaixe + comitions;
+  const total = papel + comitions;
 
   const totalGeral =
     (Number(dadosR1) || 0) +
@@ -67,6 +72,9 @@ const Calculadora = ({ codigo, nome, onCodigoChange, onNomeChange }) => {
 
         setDadosR1(somaTotal);
         setIdsArray(resultado.ids || []);
+        setBase(Number(resultado.total_base || 0));
+        setSis(Number(resultado.total_sis || 0));
+        setAlt(Number(resultado.total_alt || 0));
       } catch (error) {
         console.error("Erro:", error);
         setDadosR1(0);
@@ -116,9 +124,6 @@ const Calculadora = ({ codigo, nome, onCodigoChange, onNomeChange }) => {
     e.preventDefault();
     const trocoValue = Number(totalTroco);
 
-    await Execute.removeDeve(codigo);
-    await Execute.removeDevo(codigo);
-
     try {
       if (trocoValue > 0) {
         await Execute.removeDevo(codigo);
@@ -136,13 +141,60 @@ const Calculadora = ({ codigo, nome, onCodigoChange, onNomeChange }) => {
           valor: Math.abs(trocoValue),
         });
         console.log("Registro adicionado em Devo");
+      } else if (
+        Number(pix) === total ||
+        Number(real) === total ||
+        Number(pix) + Number(real) === total
+      ) {
+        console.log("enviado só calculadora");
       } else {
-        console.log("Troco zero - nenhum registro criado");
+        await Execute.sendToC1({
+          codigo,
+          data,
+          nome,
+          sis,
+          alt,
+          base,
+          real: Number(real),
+          pix: Number(pix),
+        });
+        await Execute.sendToPapelC1({
+          codigo,
+          data,
+          nome,
+          multi: multiplier,
+          papel,
+          papelpix: Number(pix) > 0 ? Math.min(Number(pix), papel) : 0,
+          papelreal:
+            Number(real) > 0
+              ? Math.min(
+                  Number(real),
+                  papel - (Number(pix) > 0 ? Math.min(Number(pix), papel) : 0),
+                )
+              : 0,
+          encaixepix: Number(pix) > 0 ? Math.min(Number(pix), comitions) : 0,
+          encaixereal:
+            Number(real) > 0
+              ? Math.min(
+                  Number(real),
+                  comitions -
+                    (Number(pix) > 0 ? Math.min(Number(pix), comitions) : 0),
+                )
+              : 0,
+          desperdicio: 0.06,
+          util: 0,
+          perdida: perdida || 0,
+          comentario,
+        });
+        await Execute.removeDeve(codigo);
+        await Execute.removeDevo(codigo);
       }
 
       // Limpar campos após o envio
       setPix("");
       setReal("");
+      setComentario("");
+      setPerdida("");
       onNomeChange("");
       onCodigoChange("");
       setValues(Array(28).fill(""));
@@ -250,11 +302,24 @@ const Calculadora = ({ codigo, nome, onCodigoChange, onNomeChange }) => {
             Salvar
           </button>
         </div>
-        <input
-          type="text"
-          placeholder="Comentário"
-          className="input input-defaut w-62 input-xs"
-        />
+        <div className="join">
+          <input
+            type="text"
+            placeholder="Comentário"
+            className="input input-defaut w-42 input-xs join-item"
+            value={comentario}
+            onChange={(e) => setComentario(e.target.value)}
+          />
+          <input
+            min="0"
+            step={0.01}
+            type="number"
+            placeholder="Desperdício"
+            className="input input-defaut w-20 input-xs join-item"
+            value={perdida}
+            onChange={(e) => setPerdida(e.target.value)}
+          />
+        </div>
       </form>
     </div>
   );

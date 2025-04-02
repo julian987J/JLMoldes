@@ -1,5 +1,54 @@
 import database from "infra/database.js";
 
+async function createC1(ordemInputValues) {
+  const result = await database.query({
+    text: `
+      INSERT INTO "C1" (codigo, data, nome, sis, alt, base, real, pix) 
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+      RETURNING *;
+    `,
+    values: [
+      ordemInputValues.codigo,
+      ordemInputValues.data,
+      ordemInputValues.nome,
+      ordemInputValues.sis,
+      ordemInputValues.alt,
+      ordemInputValues.base,
+      ordemInputValues.real,
+      ordemInputValues.pix,
+    ],
+  });
+
+  return result;
+}
+
+async function createPapelC1(ordemInputValues) {
+  const result = await database.query({
+    text: `
+      INSERT INTO "PapelC1" (codigo, data, nome, multi, papel, papelpix, papelreal, encaixepix, encaixereal, desperdicio, util, perdida, comentarios ) 
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+      RETURNING *;
+    `,
+    values: [
+      ordemInputValues.codigo,
+      ordemInputValues.data,
+      ordemInputValues.nome,
+      ordemInputValues.multi,
+      ordemInputValues.papel,
+      ordemInputValues.papelpix,
+      ordemInputValues.papelreal,
+      ordemInputValues.encaixepix,
+      ordemInputValues.encaixereal,
+      ordemInputValues.desperdicio,
+      ordemInputValues.util,
+      ordemInputValues.perdida,
+      ordemInputValues.comentarios,
+    ],
+  });
+
+  return result;
+}
+
 async function createM1(ordemInputValues) {
   const result = await database.query({
     text: `
@@ -160,6 +209,20 @@ async function updateBase(updatedData) {
   return result;
 }
 
+async function getC1() {
+  const result = await database.query({
+    text: `SELECT * FROM "C1"`,
+  });
+  return result;
+}
+
+async function getPapelC1() {
+  const result = await database.query({
+    text: `SELECT * FROM "PapelC1"`,
+  });
+  return result;
+}
+
 async function getM1TableAltSis() {
   const result = await database.query({
     text: `SELECT id, data, observacao, codigo, dec, nome, sis, alt, r1, r2, r3 FROM "m1table" WHERE sis > 0 OR alt > 0 ORDER BY data DESC;`,
@@ -293,6 +356,10 @@ const ordem = {
   createR1BSA,
   createDevo,
   createDeve,
+  createC1,
+  createPapelC1,
+  getC1,
+  getPapelC1,
   getR1BSA,
   getR1JustBSA,
   getM1TableAltSis,
