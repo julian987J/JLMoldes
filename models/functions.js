@@ -336,6 +336,28 @@ async function removeM1andR1(id) {
   console.log(result2);
 }
 
+async function removeC1(id) {
+  const response = await fetch("/api/v1/tables/c1", {
+    method: "DELETE",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ id }), // Envia o `id` no corpo da requisição
+  });
+
+  const result = await response.json();
+  console.log(result);
+}
+
+async function removePapelC1(id) {
+  const response = await fetch("/api/v1/tables/c1/papel", {
+    method: "DELETE",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ id }), // Envia o `id` no corpo da requisição
+  });
+
+  const result = await response.json();
+  console.log(result);
+}
+
 async function removeDeve(codigo) {
   const response = await fetch("/api/v1/tables/deve", {
     method: "DELETE",
@@ -374,6 +396,8 @@ const execute = {
   reciveFromDevoJustValor,
   reciveFromR1,
   reciveFromR1JustBSA,
+  removeC1,
+  removePapelC1,
   removeM1andR1,
   removeDeve,
   removeDevo,

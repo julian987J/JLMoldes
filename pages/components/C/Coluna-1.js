@@ -9,8 +9,31 @@ const formatCurrency = (value) => {
 };
 
 const Coluna = () => {
+  const [dados, setDados] = useState([]);
   const [groupedResults, setGroupedResults] = useState({});
   const [loading, setLoading] = useState(true);
+  const [editingId, setEditingId] = useState(null);
+  const [editedData, setEditedData] = useState({});
+
+  const handleSave = async (editedData) => {
+    try {
+      const response = await fetch("/api/v1/tables/c1", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(editedData),
+      });
+
+      if (!response.ok) throw new Error("Erro ao atualizar");
+      setDados(
+        dados.map((item) =>
+          item.id === editedData.id ? { ...item, ...editedData } : item,
+        ),
+      );
+      setEditingId(null);
+    } catch (error) {
+      console.error("Erro ao salvar:", error);
+    }
+  };
 
   const fetchData = async () => {
     try {
@@ -46,8 +69,17 @@ const Coluna = () => {
     return <div className="text-center p-4">Carregando...</div>;
   }
 
+  const handleInputChange = (field, value) => {
+    setEditedData((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const startEditing = (item) => {
+    setEditingId(item.id);
+    setEditedData({ ...item });
+  };
+
   return (
-    <div className="w-100 overflow-x-auto rounded-box border border-base-content/5 bg-base-100">
+    <div className="overflow-x-auto rounded-box border border-base-content/5 bg-base-100">
       {Object.entries(groupedResults).map(([date, items]) => (
         <div key={date} className="mb-2">
           {/* Cabeçalho com a data */}
@@ -75,15 +107,106 @@ const Coluna = () => {
                 <tr key={item.id} className="border-b border-base-content/5">
                   <td className="hidden">{item.id}</td>
                   <td className="hidden">{item.codigo}</td>
-                  <td>{item.nome}</td>
-                  <td>{item.base}</td>
-                  <td>{item.sis}</td>
-                  <td>{item.alt}</td>
-                  <td>{formatCurrency(item.real)}</td>
-                  <td>{formatCurrency(item.pix)}</td>
                   <td>
-                    <Edit data={item} />
-                    <button className="btn btn-xs btn-error ml-2">
+                    {editingId === item.id ? (
+                      <input
+                        type="text"
+                        value={editedData.nome}
+                        onChange={(e) =>
+                          handleInputChange("nome", e.target.value)
+                        }
+                        className="input input-xs p-0 m-0 text-center"
+                      />
+                    ) : (
+                      item.nome
+                    )}
+                  </td>
+                  <td>
+                    {editingId === item.id ? (
+                      <input
+                        type="number"
+                        min="1"
+                        value={editedData.base}
+                        onChange={(e) =>
+                          handleInputChange("base", e.target.value)
+                        }
+                        className="input input-xs p-0 m-0 text-center"
+                      />
+                    ) : (
+                      item.base
+                    )}
+                  </td>
+                  <td>
+                    {editingId === item.id ? (
+                      <input
+                        type="number"
+                        min="1"
+                        value={editedData.sis}
+                        onChange={(e) =>
+                          handleInputChange("sis", e.target.value)
+                        }
+                        className="input input-xs p-0 m-0 text-center"
+                      />
+                    ) : (
+                      item.sis
+                    )}
+                  </td>
+                  <td>
+                    {editingId === item.id ? (
+                      <input
+                        type="number"
+                        min="1"
+                        value={editedData.alt}
+                        onChange={(e) =>
+                          handleInputChange("alt", e.target.value)
+                        }
+                        className="input input-xs p-0 m-0 text-center"
+                      />
+                    ) : (
+                      item.alt
+                    )}
+                  </td>
+                  <td>
+                    {editingId === item.id ? (
+                      <input
+                        type="number"
+                        min="1"
+                        value={formatCurrency(editedData.real)}
+                        onChange={(e) =>
+                          handleInputChange("real", e.target.value)
+                        }
+                        className="input input-xs p-0 m-0 text-center"
+                      />
+                    ) : (
+                      formatCurrency(item.real)
+                    )}
+                  </td>
+                  <td>
+                    {editingId === item.id ? (
+                      <input
+                        type="number"
+                        min="1"
+                        value={formatCurrency(editedData.pix)}
+                        onChange={(e) =>
+                          handleInputChange("pix", e.target.value)
+                        }
+                        className="input input-xs p-0 m-0 text-center"
+                      />
+                    ) : (
+                      formatCurrency(item.pix)
+                    )}
+                  </td>
+                  <td>
+                    <Edit
+                      isEditing={editingId === item.id}
+                      onEdit={() => startEditing(item)}
+                      onSave={() => handleSave(editedData)}
+                      onCancel={() => setEditingId(null)}
+                    />
+                    <button
+                      className={`btn btn-xs btn-soft btn-error ${editingId === item.id ? "hidden" : ""}`}
+                      onClick={() => Execute.removeC1(item.id)}
+                    >
                       Excluir
                     </button>
                   </td>

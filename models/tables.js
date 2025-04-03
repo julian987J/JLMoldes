@@ -148,6 +148,73 @@ async function updateAltSis(updatedData) {
 
   return result;
 }
+
+async function updateC1(updatedData) {
+  const result = await database.query({
+    text: `
+      UPDATE "C1"
+      SET 
+        nome = $1,
+        base = $2,
+        sis = $3,
+        alt = $4,
+        real = $5,
+        pix = $6
+      WHERE id = $7
+      RETURNING *;
+    `,
+    values: [
+      updatedData.nome,
+      updatedData.base,
+      updatedData.sis,
+      updatedData.alt,
+      updatedData.real,
+      updatedData.pix,
+      updatedData.id,
+    ],
+  });
+
+  return result;
+}
+
+async function updatePapelC1(updatedData) {
+  const result = await database.query({
+    text: `
+      UPDATE "PapelC1"
+      SET 
+        nome = $1,
+        multi = $2,
+        papel = $3,
+        papelpix = $4,
+        papelreal = $5,
+        encaixereal = $6,
+        encaixepix = $7,
+        desperdicio = $8,
+        util = $9,
+        perdida = $10,
+        comentarios = $11
+      WHERE id = $12
+      RETURNING *;
+    `,
+    values: [
+      updatedData.nome,
+      updatedData.multi,
+      updatedData.papel,
+      updatedData.papelpix,
+      updatedData.papelreal,
+      updatedData.encaixereal,
+      updatedData.encaixepix,
+      updatedData.desperdicio,
+      updatedData.util,
+      updatedData.perdida,
+      updatedData.comentarios,
+      updatedData.id,
+    ],
+  });
+
+  return result;
+}
+
 async function updateR1Button(updatedData) {
   const result = await database.query({
     text: `
@@ -179,6 +246,56 @@ async function updateAltSisR1(updatedData) {
       updatedData.sis || 0,
       updatedData.alt || 0,
       updatedData.id,
+    ],
+  });
+
+  return result;
+}
+
+async function updateR1Calculadora(updatedData) {
+  const result = await database.query({
+    text: `
+      WITH current_totals AS (
+        SELECT 
+          codigo,
+          SUM(base) AS total_base,
+          SUM(sis) AS total_sis,
+          SUM(alt) AS total_alt
+        FROM "R1BSA"
+        WHERE codigo = $4
+          AND (base > 0 OR sis > 0 OR alt > 0)
+        GROUP BY codigo
+      ),
+      desired_totals AS (
+        SELECT 
+          $1::numeric AS desired_base,  -- Sem precisão fixa
+          $2::numeric AS desired_sis,
+          $3::numeric AS desired_alt
+      )
+      UPDATE "R1BSA" r1
+      SET
+        base = CASE 
+          WHEN ct.total_base = 0 THEN r1.base
+          ELSE TRIM_SCALE( (r1.base * dt.desired_base) / ct.total_base )
+        END,
+        sis = CASE 
+          WHEN ct.total_sis = 0 THEN r1.sis
+          ELSE TRIM_SCALE( (r1.sis * dt.desired_sis) / ct.total_sis )
+        END,
+        alt = CASE 
+          WHEN ct.total_alt = 0 THEN r1.alt
+          ELSE TRIM_SCALE( (r1.alt * dt.desired_alt) / ct.total_alt )
+        END
+      FROM current_totals ct, desired_totals dt
+      WHERE r1.codigo = ct.codigo
+        AND (r1.base > 0 OR r1.sis > 0 OR r1.alt > 0)
+      RETURNING *;
+    `,
+    values: [
+      Number(updatedData.base) || 0,
+      Number(updatedData.sis) || 0,
+      Number(updatedData.alt) || 0,
+      updatedData.codigo,
     ],
   });
 
@@ -327,6 +444,22 @@ async function deleteM1(ids) {
   return result.rows;
 }
 
+async function deleteC1(ids) {
+  const result = await database.query({
+    text: `DELETE FROM "C1" WHERE id = $1 RETURNING *`,
+    values: [ids],
+  });
+  return result.rows;
+}
+
+async function deletePapelC1(ids) {
+  const result = await database.query({
+    text: `DELETE FROM "PapelC1" WHERE id = $1 RETURNING *`,
+    values: [ids],
+  });
+  return result.rows;
+}
+
 export async function deleteR1(ids) {
   const result = await database.query({
     text: `DELETE FROM "R1BSA" WHERE id = ANY($1) RETURNING *`,
@@ -369,12 +502,17 @@ const ordem = {
   getDeveJustValor,
   getDevo,
   getDevoJustValor,
+  deleteC1,
+  deletePapelC1,
   deleteM1,
   deleteR1,
   deleteDeve,
   deleteDevo,
+  updateC1,
+  updatePapelC1,
   updateAltSis,
   updateAltSisR1,
+  updateR1Calculadora,
   updateBase,
   updateR1Button,
 };

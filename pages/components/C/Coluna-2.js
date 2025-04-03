@@ -9,8 +9,31 @@ const formatCurrency = (value) => {
 };
 
 const Coluna = () => {
+  const [dados, setDados] = useState([]);
   const [groupedResults, setGroupedResults] = useState({});
   const [loading, setLoading] = useState(true);
+  const [editingId, setEditingId] = useState(null);
+  const [editedData, setEditedData] = useState({});
+
+  const handleSave = async (editedData) => {
+    try {
+      const response = await fetch("/api/v1/tables/c1/papel", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(editedData),
+      });
+
+      if (!response.ok) throw new Error("Erro ao atualizar");
+      setDados(
+        dados.map((item) =>
+          item.id === editedData.id ? { ...item, ...editedData } : item,
+        ),
+      );
+      setEditingId(null);
+    } catch (error) {
+      console.error("Erro ao salvar:", error);
+    }
+  };
 
   const fetchData = async () => {
     try {
@@ -51,6 +74,15 @@ const Coluna = () => {
     return <div className="text-center p-4">Carregando...</div>;
   }
 
+  const handleInputChange = (field, value) => {
+    setEditedData((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const startEditing = (item) => {
+    setEditingId(item.id);
+    setEditedData({ ...item });
+  };
+
   return (
     <div className="w-240 overflow-x-auto rounded-box border border-success bg-base-100">
       {Object.entries(groupedResults).map(([date, items]) => (
@@ -85,30 +117,191 @@ const Coluna = () => {
                 <tr key={item.id} className="border-b border-success">
                   <td className="hidden">{item.id}</td>
                   <td className="hidden">{item.codigo}</td>
-                  <td>{item.nome}</td>
-                  <td>{item.multi}</td>
-                  <td>{item.papel}</td>
-                  <td className="bg-accent/50">
-                    {formatCurrency(item.papelreal)}
-                  </td>
-                  <td className="bg-accent/50">
-                    {formatCurrency(item.papelpix)}
-                  </td>
-                  <td className="bg-success/50">
-                    {formatCurrency(item.encaixereal)}
-                  </td>
-                  <td className="bg-success/50">
-                    {formatCurrency(item.encaixepix)}
-                  </td>
-                  <td className="bg-warning-content/20">
-                    {formatCurrency(item.desperdicio)}
-                  </td>
-                  <td className="bg-warning-content/20">{item.util}</td>
-                  <td className="bg-warning-content/20">{item.perdida}</td>
-                  <td>{item.comentarios}</td>
                   <td>
-                    <Edit data={item} />
-                    <button className="btn btn-xs btn-soft btn-error ml-2">
+                    {editingId === item.id ? (
+                      <input
+                        type="text"
+                        value={editedData.nome}
+                        onChange={(e) =>
+                          handleInputChange("nome", e.target.value)
+                        }
+                        className="input input-xs p-0 m-0 text-center"
+                      />
+                    ) : (
+                      item.nome
+                    )}
+                  </td>
+                  <td>
+                    {editingId === item.id ? (
+                      <input
+                        type="number"
+                        value={editedData.multi}
+                        onChange={(e) =>
+                          handleInputChange("multi", e.target.value)
+                        }
+                        className="input input-xs p-0 m-0 text-center"
+                      />
+                    ) : (
+                      item.multi
+                    )}
+                  </td>
+                  <td>
+                    {editingId === item.id ? (
+                      <input
+                        type="number"
+                        min="1"
+                        value={editedData.papel}
+                        onChange={(e) => {
+                          if (isNaN(e.target.value) || e.target.value <= 0) {
+                            handleInputChange("papel", 1);
+                          } else {
+                            handleInputChange("papel", e.target.value);
+                          }
+                        }}
+                        className="input input-xs p-0 m-0 text-center"
+                      />
+                    ) : (
+                      item.papel
+                    )}
+                  </td>
+                  <td>
+                    {editingId === item.id ? (
+                      <input
+                        type="number"
+                        min="1"
+                        value={formatCurrency(editedData.papelreal)}
+                        onChange={(e) =>
+                          handleInputChange("papelreal", e.target.value)
+                        }
+                        className="input input-xs p-0 m-0 text-center"
+                      />
+                    ) : (
+                      formatCurrency(item.papelreal)
+                    )}
+                  </td>
+                  <td>
+                    {editingId === item.id ? (
+                      <input
+                        type="number"
+                        min="1"
+                        value={formatCurrency(editedData.papelpix)}
+                        onChange={(e) =>
+                          handleInputChange("papelpix", e.target.value)
+                        }
+                        className="input input-xs p-0 m-0 text-center"
+                      />
+                    ) : (
+                      formatCurrency(item.papelpix)
+                    )}
+                  </td>
+                  <td>
+                    {editingId === item.id ? (
+                      <input
+                        type="number"
+                        min="1"
+                        value={formatCurrency(editedData.encaixereal)}
+                        onChange={(e) =>
+                          handleInputChange("encaixereal", e.target.value)
+                        }
+                        className="input input-xs p-0 m-0 text-center"
+                      />
+                    ) : (
+                      formatCurrency(item.encaixereal)
+                    )}
+                  </td>
+                  <td>
+                    {editingId === item.id ? (
+                      <input
+                        type="number"
+                        min="1"
+                        value={formatCurrency(editedData.encaixepix)}
+                        onChange={(e) =>
+                          handleInputChange("encaixepix", e.target.value)
+                        }
+                        className="input input-xs p-0 m-0 text-center"
+                      />
+                    ) : (
+                      formatCurrency(item.encaixepix)
+                    )}
+                  </td>
+                  <td>
+                    {editingId === item.id ? (
+                      <input
+                        type="number"
+                        min="1"
+                        value={formatCurrency(editedData.desperdicio)}
+                        onChange={(e) => {
+                          if (isNaN(e.target.value) || e.target.value <= 0) {
+                            handleInputChange("desperdicio", 1);
+                          } else {
+                            handleInputChange("desperdicio", e.target.value);
+                          }
+                        }}
+                        className="input input-xs p-0 m-0 text-center"
+                      />
+                    ) : (
+                      formatCurrency(item.desperdicio)
+                    )}
+                  </td>
+                  <td>
+                    {editingId === item.id ? (
+                      <input
+                        type="number"
+                        min="1"
+                        value={editedData.util}
+                        onChange={(e) => {
+                          if (isNaN(e.target.value) || e.target.value <= 0) {
+                            handleInputChange("util", 1);
+                          } else {
+                            handleInputChange("util", e.target.value);
+                          }
+                        }}
+                        className="input input-xs p-0 m-0 text-center"
+                      />
+                    ) : (
+                      item.util
+                    )}
+                  </td>
+                  <td>
+                    {editingId === item.id ? (
+                      <input
+                        type="number"
+                        min="1"
+                        value={editedData.perdida}
+                        onChange={(e) =>
+                          handleInputChange("perdida", e.target.value)
+                        }
+                        className="input input-xs p-0 m-0 text-center"
+                      />
+                    ) : (
+                      item.perdida
+                    )}
+                  </td>
+                  <td>
+                    {editingId === item.id ? (
+                      <input
+                        type="text"
+                        value={editedData.comentarios}
+                        onChange={(e) =>
+                          handleInputChange("comentarios", e.target.value)
+                        }
+                        className="input input-xs p-0 m-0 text-center"
+                      />
+                    ) : (
+                      item.comentarios
+                    )}
+                  </td>
+                  <td>
+                    <Edit
+                      isEditing={editingId === item.id}
+                      onEdit={() => startEditing(item)}
+                      onSave={() => handleSave(editedData)}
+                      onCancel={() => setEditingId(null)}
+                    />
+                    <button
+                      className={`btn btn-xs btn-soft btn-error ${editingId === item.id ? "hidden" : ""}`}
+                      onClick={() => Execute.removePapelC1(item.id)}
+                    >
                       Excluir
                     </button>
                   </td>
