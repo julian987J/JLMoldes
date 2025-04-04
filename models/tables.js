@@ -177,6 +177,33 @@ async function updateC1(updatedData) {
   return result;
 }
 
+async function updateC1BSA(updatedData) {
+  const result = await database.query({
+    text: `
+      UPDATE "C1"
+      SET 
+        base = base + $1,
+        sis = sis + $2,
+        alt = alt + $3,
+        real = real + $4,
+        pix = pix + $5
+      WHERE codigo = $6 AND data = $7
+      RETURNING *;
+    `,
+    values: [
+      updatedData.base,
+      updatedData.sis,
+      updatedData.alt,
+      updatedData.real,
+      updatedData.pix,
+      updatedData.codigo,
+      updatedData.data,
+    ],
+  });
+
+  return result;
+}
+
 async function updatePapelC1(updatedData) {
   const result = await database.query({
     text: `
@@ -331,6 +358,16 @@ async function getC1() {
     text: `SELECT * FROM "C1"`,
   });
   return result;
+}
+
+// Modificação no getC1Data
+async function getC1Data(codigo, data) {
+  const result = await database.query({
+    text: `SELECT EXISTS(SELECT 1 FROM "C1" WHERE codigo = $1 AND data = $2) AS exists;`,
+    values: [codigo, data], // Supondo que 'data' seja um objeto compatível com o tipo da coluna
+  });
+
+  return result.rows[0].exists; // Retorna true ou false
 }
 
 async function getPapelC1() {
@@ -492,6 +529,7 @@ const ordem = {
   createC1,
   createPapelC1,
   getC1,
+  getC1Data,
   getPapelC1,
   getR1BSA,
   getR1JustBSA,
@@ -509,6 +547,7 @@ const ordem = {
   deleteDeve,
   deleteDevo,
   updateC1,
+  updateC1BSA,
   updatePapelC1,
   updateAltSis,
   updateAltSisR1,

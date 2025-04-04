@@ -42,9 +42,17 @@ const Coluna = () => {
       const grouped = results.reduce((acc, item) => {
         // Formata a data removendo o horário
         const rawDate = Use.formatarData(item.data);
+
+        // Formata a hora para 00:00
+        const dateObj = new Date(item.data);
+        const horas = String(dateObj.getHours()).padStart(2, "0");
+        const minutos = String(dateObj.getMinutes()).padStart(2, "0");
+        const horaFormatada = `${horas}:${minutos}`;
+
         acc[rawDate] = acc[rawDate] || [];
         acc[rawDate].push({
           ...item,
+          horaSeparada: horaFormatada,
           real: Number(item.papelreal) || 0,
           pix: Number(item.papelpix) || 0,
           encaixereal: Number(item.encaixereal) || 0,
@@ -98,6 +106,7 @@ const Coluna = () => {
               <tr>
                 <th className="hidden">ID</th>
                 <th className="hidden">Codigo</th>
+                <th>Hora</th>
                 <th>Nome</th>
                 <th>M</th>
                 <th>Papel</th>
@@ -117,6 +126,7 @@ const Coluna = () => {
                 <tr key={item.id} className="border-b border-success">
                   <td className="hidden">{item.id}</td>
                   <td className="hidden">{item.codigo}</td>
+                  <td>{item.horaSeparada}</td>
                   <td>
                     {editingId === item.id ? (
                       <input

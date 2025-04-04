@@ -275,6 +275,26 @@ async function reciveFromC1() {
   }
 }
 
+async function reciveFromC1Data(codigo, data) {
+  try {
+    // Codifica 'data' para enviar como parâmetro na URL
+    const encodedData = encodeURIComponent(JSON.stringify(data));
+
+    const response = await fetch(
+      `/api/v1/tables/c1/calculadora?codigo=${codigo}&data=${encodedData}`,
+    );
+
+    if (!response.ok) throw new Error("Erro ao carregar os dados");
+    const result = await response.json();
+
+    // Retorna diretamente o booleano 'exists' vindo do servidor
+    return result.exists; // true ou false
+  } catch (error) {
+    console.error("Erro ao buscar dados:", error);
+    return false;
+  }
+}
+
 async function reciveFromPapelC1() {
   try {
     const response = await fetch("/api/v1/tables/c1/papel");
@@ -388,6 +408,7 @@ const execute = {
   sendToC1,
   sendToPapelC1,
   reciveFromC1,
+  reciveFromC1Data,
   reciveFromPapelC1,
   reciveFromR1DeveDevo,
   reciveFromDeve,

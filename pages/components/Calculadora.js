@@ -1,7 +1,23 @@
 import Execute from "models/functions";
 import { useState, useEffect } from "react";
+import dynamic from "next/dynamic";
 
 const Calculadora = ({ codigo, nome, onCodigoChange, onNomeChange, data }) => {
+  const ErrorComponent = dynamic(() => import("./Errors.js"), { ssr: false });
+  const [showError, setShowError] = useState(false);
+  useEffect(() => {
+    setShowError(false); // Resetar no cliente após a montagem
+  }, []);
+
+  // Efeito para esconder o erro após 5 segundos
+  useEffect(() => {
+    let timer;
+    if (showError) {
+      timer = setTimeout(() => setShowError(false), 3000);
+    }
+    return () => clearTimeout(timer);
+  }, [showError]);
+
   const [dadosR1, setDadosR1] = useState(0);
   const [idsArray, setIdsArray] = useState(0);
   const [valorDevo, setValorDevo] = useState(0);
@@ -90,8 +106,6 @@ const Calculadora = ({ codigo, nome, onCodigoChange, onNomeChange, data }) => {
     const buscarDados = async () => {
       try {
         const resultado = await Execute.reciveFromDeveJustValor(codigo);
-        console.log("Dados brutos:", resultado);
-
         // Soma todos os valores
         const somaTotal = Number(resultado.total_valor || 0);
 
@@ -108,7 +122,6 @@ const Calculadora = ({ codigo, nome, onCodigoChange, onNomeChange, data }) => {
     const buscarDados = async () => {
       try {
         const resultado = await Execute.reciveFromDevoJustValor(codigo);
-        console.log("Dados brutos:", resultado);
 
         // Soma todos os valores
         const somaTotal = Number(resultado.total_valor || 0);
@@ -136,69 +149,156 @@ const Calculadora = ({ codigo, nome, onCodigoChange, onNomeChange, data }) => {
     }
   };
 
+  const handleUpdateC1 = async (codigo, data) => {
+    try {
+      // Decodifica a data (que já é uma string ISO)
+      const decodedData = decodeURIComponent(data);
+
+      const response = await fetch(
+        `/api/v1/tables/c1/calculadora?codigo=${codigo}&data=${data}`, // Mantém a data codificada na URL
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            codigo,
+            data: decodedData, // Usa a data decodificada diretamente (sem JSON.parse)
+            sis: sis || 0,
+            alt: alt || 0,
+            base: base || 0,
+            real: real || 0,
+            pix: pix || 0,
+          }),
+        },
+      );
+
+      if (!response.ok) throw new Error("Erro ao atualizar");
+    } catch (error) {
+      console.error("Erro ao salvar:", error);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     const trocoValue = Number(totalTroco);
 
     try {
-      if (trocoValue > 0 && trocoValue !== total) {
+      //Inicio das condições.
+
+      // Troco é maior que zero e é diferetnte do total(o em amerelo) e pix ou real maior que zero.
+      if (
+        (trocoValue > 0 && trocoValue !== total && Number(pix) > 0) ||
+        Number(real) > 0
+      ) {
         await Execute.removeDevo(codigo);
 
-        // Calcula o total atual e o excesso a ser removido
         const currentTotal = base + sis + alt;
         const excessoTotal = currentTotal - trocoValue;
+        const exists = await Execute.reciveFromC1Data(codigo, data);
 
-        if (excessoTotal > 0) {
-          // Cria array de valores para ajuste
-          const valores = [
-            { nome: "base", valor: base },
-            { nome: "sis", valor: sis },
-            { nome: "alt", valor: alt },
-          ];
-          valores.sort((a, b) => b.valor - a.valor);
+        if (exists) {
+          const dataEncoded = encodeURIComponent(data);
+          handleUpdateC1(codigo, dataEncoded);
 
-          let resto = excessoTotal;
-          for (const item of valores) {
-            if (resto <= 0) break;
-            const subtrair = Math.min(item.valor, resto);
-            item.valor -= subtrair;
-            resto -= subtrair;
-          }
+          if (excessoTotal > 0) {
+            const valores = [
+              { nome: "base", valor: base },
+              { nome: "sis", valor: sis },
+              { nome: "alt", valor: alt },
+            ];
+            valores.sort((a, b) => b.valor - a.valor);
 
-          // Atualiza os valores
-          const novosDados = {
-            base: valores.find((v) => v.nome === "base").valor,
-            sis: valores.find((v) => v.nome === "sis").valor,
-            alt: valores.find((v) => v.nome === "alt").valor,
-            codigo,
-          };
+            let resto = excessoTotal;
+            for (const item of valores) {
+              if (resto <= 0) break;
+              const subtrair = Math.min(item.valor, resto);
+              item.valor -= subtrair;
+              resto -= subtrair;
+            }
 
-          // Executa o salvamento
-          handleSave(novosDados);
+            const novosDados = {
+              base: valores.find((v) => v.nome === "base").valor,
+              sis: valores.find((v) => v.nome === "sis").valor,
+              alt: valores.find((v) => v.nome === "alt").valor,
+              codigo,
+            };
 
-          // Se houver resto (impossível se cálculos corretos), envia para Deve
-          if (resto > 0) {
+            handleSave(novosDados);
+
+            if (resto > 0) {
+              await Execute.sendToDeve({
+                nome,
+                codigo,
+                valor: resto,
+              });
+              await Execute.removeM1andR1(idsArray);
+            }
+          } else if (excessoTotal < 0) {
+            const diferenca = trocoValue - currentTotal;
             await Execute.sendToDeve({
               nome,
               codigo,
-              valor: resto,
+              valor: diferenca,
             });
+            handleSave({ base: 0, sis: 0, alt: 0, codigo });
             await Execute.removeM1andR1(idsArray);
           }
-        } else if (excessoTotal < 0) {
-          // Se o trocoValue é maior que o total atual, envia a diferença para Deve
-          const diferenca = trocoValue - currentTotal;
-          await Execute.sendToDeve({
-            nome,
-            codigo,
-            valor: diferenca,
-          });
-          // Zera os valores existentes
-          handleSave({ base: 0, sis: 0, alt: 0, codigo });
-          await Execute.removeM1andR1(idsArray);
-        }
+        } else {
+          if (excessoTotal > 0) {
+            const valores = [
+              { nome: "base", valor: base },
+              { nome: "sis", valor: sis },
+              { nome: "alt", valor: alt },
+            ];
+            valores.sort((a, b) => b.valor - a.valor);
 
-        console.log("caiu em troco Maior que 0");
+            let resto = excessoTotal;
+            for (const item of valores) {
+              if (resto <= 0) break;
+              const subtrair = Math.min(item.valor, resto);
+              item.valor -= subtrair;
+              resto -= subtrair;
+            }
+
+            const novosDados = {
+              base: valores.find((v) => v.nome === "base").valor,
+              sis: valores.find((v) => v.nome === "sis").valor,
+              alt: valores.find((v) => v.nome === "alt").valor,
+              codigo,
+            };
+
+            handleSave(novosDados);
+
+            await Execute.sendToC1({
+              ...ObjC1,
+              sis: sis - novosDados.sis,
+              alt: alt - novosDados.alt,
+              base: base - novosDados.base,
+            });
+
+            if (resto > 0) {
+              await Execute.sendToDeve({
+                nome,
+                codigo,
+                valor: resto,
+              });
+              await Execute.removeM1andR1(idsArray);
+            }
+          } else if (excessoTotal < 0) {
+            const diferenca = trocoValue - currentTotal;
+            await Execute.sendToDeve({
+              nome,
+              codigo,
+              valor: diferenca,
+            });
+            handleSave({ base: 0, sis: 0, alt: 0, codigo });
+            await Execute.removeM1andR1(idsArray);
+          }
+          await Execute.sendToPapelC1(ObjPapelC1);
+        }
+        console.log("caiu em troco Maior que 0 diferente de total");
+        // Troco é maior que zero e é diferetnte do total(o em amerelo) e pix ou real maior que zero.
+
+        //Troco Menor que Zero
       } else if (trocoValue < 0) {
         await Execute.removeDeve(codigo);
         await Execute.sendToDevo({
@@ -207,84 +307,66 @@ const Calculadora = ({ codigo, nome, onCodigoChange, onNomeChange, data }) => {
           valor: Math.abs(trocoValue),
         });
         await Execute.removeM1andR1(idsArray);
+        console.log("Caiu em Troco Menor que Zero.");
+        //Troco Menor que Zero.
+
+        //Se pix e real ou a soma dos dois forem estritamente igual a total (valor em amarelo).
       } else if (
         Number(pix) === total ||
         Number(real) === total ||
         Number(pix) + Number(real) === total
       ) {
         await Execute.sendToPapelC1({
-          codigo,
-          data: { type: "timestamptz", value: Date.now() },
-          nome,
-          multi: multiplier,
-          papel: papel || 0,
-          papelpix: Number(pix) > 0 ? Math.min(Number(pix), papel) : 0,
-          papelreal:
-            Number(real) > 0
-              ? Math.min(
-                  Number(real),
-                  papel - (Number(pix) > 0 ? Math.min(Number(pix), papel) : 0),
-                )
-              : 0,
-          encaixepix: Number(pix) > 0 ? Math.min(Number(pix), comitions) : 0,
-          encaixereal:
-            Number(real) > 0
-              ? Math.min(
-                  Number(real),
-                  comitions -
-                    (Number(pix) > 0 ? Math.min(Number(pix), comitions) : 0),
-                )
-              : 0,
-          desperdicio: 0.06,
-          util: sumValues,
-          perdida: perdida || 0,
-          comentario,
+          ...ObjPapelC1,
+          data: new Date().toISOString(),
         });
-      } else {
-        await Execute.sendToC1({
-          codigo,
-          data,
-          nome,
-          sis,
-          alt,
-          base,
-          real: Number(real),
-          pix: Number(pix),
-        });
-        await Execute.sendToPapelC1({
-          codigo,
-          data,
-          nome,
-          multi: multiplier,
-          papel: papel || 0,
-          papelpix: Number(pix) > 0 ? Math.min(Number(pix), papel) : 0,
-          papelreal:
-            Number(real) > 0
-              ? Math.min(
-                  Number(real),
-                  papel - (Number(pix) > 0 ? Math.min(Number(pix), papel) : 0),
-                )
-              : 0,
-          encaixepix: Number(pix) > 0 ? Math.min(Number(pix), comitions) : 0,
-          encaixereal:
-            Number(real) > 0
-              ? Math.min(
-                  Number(real),
-                  comitions -
-                    (Number(pix) > 0 ? Math.min(Number(pix), comitions) : 0),
-                )
-              : 0,
-          desperdicio: 0.06,
-          util: sumValues,
-          perdida: perdida || 0,
-          comentario,
-        });
-        await Execute.removeDeve(codigo);
-        await Execute.removeDevo(codigo);
-        await Execute.removeM1andR1(idsArray);
-      }
+        console.log(
+          "Caiu em Se pix e real ou a soma dos dois forem estritamente igual a total (valor em amarelo).",
+        );
+        //Se pix e real ou a soma dos dois forem estritamente igual a total (valor em amarelo).
 
-      // Limpar campos após o envio
+        // Troco é Igual o valor Verde (Total Geral) é igual troco com real e pix sendo nulo ou zero.
+      } else if (
+        trocoValue === totalGeral &&
+        Number(pix) == 0 &&
+        Number(real) == 0
+      ) {
+        if (total > 0) {
+          await Execute.removeDevo(codigo);
+          await Execute.sendToDeve({
+            nome,
+            codigo,
+            valor: total,
+          });
+        } else {
+          setShowError(true);
+        }
+
+        console.log("Caiu no o valor verde(Total Geral) é igual ao troco");
+        // Troco é Igual o valor Verde (Total Geral) é igual troco com real e pix sendo nulo ou zero
+
+        //Foi tudo pago
+      } else {
+        const exists = await Execute.reciveFromC1Data(codigo, data);
+
+        if (exists) {
+          const dataEncoded = encodeURIComponent(data);
+          handleUpdateC1(codigo, dataEncoded);
+          await Execute.removeDeve(codigo);
+          await Execute.removeDevo(codigo);
+          await Execute.removeM1andR1(idsArray);
+        } else {
+          console.log(data);
+          await Execute.sendToC1(ObjC1);
+          await Execute.sendToPapelC1(ObjPapelC1);
+          await Execute.removeDeve(codigo);
+          await Execute.removeDevo(codigo);
+          await Execute.removeM1andR1(idsArray);
+        }
+        console.log("Caiu em sem condição ou foi tudo pago");
+      }
+      //Foi tudo pago
+
       setPix("");
       setPlus(0);
       setReal("");
@@ -297,6 +379,45 @@ const Calculadora = ({ codigo, nome, onCodigoChange, onNomeChange, data }) => {
       console.error("Erro ao salvar:", error);
       alert("Erro ao salvar os dados!");
     }
+  };
+
+  const ObjC1 = {
+    codigo,
+    data,
+    nome,
+    sis,
+    alt,
+    base,
+    real: Number(real),
+    pix: Number(pix),
+  };
+  const ObjPapelC1 = {
+    codigo,
+    data,
+    nome,
+    multi: multiplier,
+    papel: papel || 0,
+    papelpix: Number(pix) > 0 ? Math.min(Number(pix), papel) : 0,
+    papelreal:
+      Number(real) > 0
+        ? Math.min(
+            Number(real),
+            papel - (Number(pix) > 0 ? Math.min(Number(pix), papel) : 0),
+          )
+        : 0,
+    encaixepix: Number(pix) > 0 ? Math.min(Number(pix), comitions) : 0,
+    encaixereal:
+      Number(real) > 0
+        ? Math.min(
+            Number(real),
+            comitions -
+              (Number(pix) > 0 ? Math.min(Number(pix), comitions) : 0),
+          )
+        : 0,
+    desperdicio: 0.06,
+    util: sumValues,
+    perdida: perdida || 0,
+    comentario,
   };
 
   return (
@@ -415,8 +536,10 @@ const Calculadora = ({ codigo, nome, onCodigoChange, onNomeChange, data }) => {
           />
         </div>
       </form>
+      {typeof window !== "undefined" && showError && (
+        <ErrorComponent errorCode="Nulo" />
+      )}
     </div>
   );
 };
-
 export default Calculadora;
