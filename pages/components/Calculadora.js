@@ -17,12 +17,13 @@ const Calculadora = ({ codigo, nome, onCodigoChange, onNomeChange, data }) => {
     }
     return () => clearTimeout(timer);
   }, [showError]);
-
   const [dadosR1, setDadosR1] = useState(0);
   const [idsArray, setIdsArray] = useState(0);
   const [valorDevo, setValorDevo] = useState(0);
   const [valorDeve, setValorDeve] = useState(0);
-  const [multiplier, setMultiplier] = useState(7);
+  const [multiplier, setMultiplier] = useState(0);
+  const [comissi, setComissi] = useState(0);
+  const [desperdicio, setDesperdicio] = useState(0);
   const [plus, setPlus] = useState(0);
   const [values, setValues] = useState(Array(28).fill(""));
   const [pix, setPix] = useState("");
@@ -32,7 +33,6 @@ const Calculadora = ({ codigo, nome, onCodigoChange, onNomeChange, data }) => {
   const [base, setBase] = useState("");
   const [sis, setSis] = useState("");
   const [alt, setAlt] = useState("");
-
   // Calcula a soma bruta dos valores (novo cálculo)
   const sumValues = values.reduce((sum, current) => {
     const num = current === "" ? 0 : Number(current);
@@ -54,7 +54,7 @@ const Calculadora = ({ codigo, nome, onCodigoChange, onNomeChange, data }) => {
   };
 
   // calculos da calculadora
-  const comitions = plus * 5;
+  const comitions = plus * comissi;
   const papel = values.some((val) => val !== "")
     ? values.reduce((sum, current) => {
         const num = current === "" ? 0 : Number(current);
@@ -135,6 +135,21 @@ const Calculadora = ({ codigo, nome, onCodigoChange, onNomeChange, data }) => {
     buscarDados();
   }, [codigo]);
 
+  useEffect(() => {
+    const fetchData = async () => {
+      const dataConfig = await Execute.reciveFromConfig();
+
+      if (dataConfig.length > 0) {
+        setMultiplier(dataConfig[0].m);
+        setDesperdicio(dataConfig[0].d);
+        setComissi(dataConfig[0].e);
+      }
+    };
+    fetchData();
+    const intervalId = setInterval(fetchData, 5000);
+    return () => clearInterval(intervalId);
+  }, []);
+
   const handleSave = async (editedData) => {
     try {
       const response = await fetch("/api/v1/tables/R1/calculadora", {
@@ -187,7 +202,7 @@ const Calculadora = ({ codigo, nome, onCodigoChange, onNomeChange, data }) => {
       // Troco é maior que zero e é diferetnte do total(o em amerelo) e pix ou real maior que zero.
       if (
         (trocoValue > 0 && trocoValue !== total && Number(pix) > 0) ||
-        Number(real) > 0
+        (trocoValue > 0 && trocoValue !== total && Number(real) > 0)
       ) {
         await Execute.removeDevo(codigo);
 
@@ -295,6 +310,7 @@ const Calculadora = ({ codigo, nome, onCodigoChange, onNomeChange, data }) => {
           }
           await Execute.sendToPapelC1(ObjPapelC1);
         }
+        console.log(trocoValue);
         console.log("caiu em troco Maior que 0 diferente de total");
         // Troco é maior que zero e é diferetnte do total(o em amerelo) e pix ou real maior que zero.
 
@@ -346,6 +362,24 @@ const Calculadora = ({ codigo, nome, onCodigoChange, onNomeChange, data }) => {
         // Troco é Igual o valor Verde (Total Geral) é igual troco com real e pix sendo nulo ou zero
 
         //Foi tudo pago
+      } else if (!trocoValue) {
+        const exists = await Execute.reciveFromC1Data(codigo, data);
+
+        if (exists) {
+          const dataEncoded = encodeURIComponent(data);
+          handleUpdateC1(codigo, dataEncoded);
+          await Execute.removeDeve(codigo);
+          await Execute.removeDevo(codigo);
+          await Execute.removeM1andR1(idsArray);
+        } else {
+          console.log(data);
+          await Execute.sendToC1(ObjC1);
+          await Execute.sendToPapelC1(ObjPapelC1);
+          await Execute.removeDeve(codigo);
+          await Execute.removeDevo(codigo);
+          await Execute.removeM1andR1(idsArray);
+        }
+        console.log("Caiu em foi tudo pago");
       } else {
         const exists = await Execute.reciveFromC1Data(codigo, data);
 
@@ -363,7 +397,7 @@ const Calculadora = ({ codigo, nome, onCodigoChange, onNomeChange, data }) => {
           await Execute.removeDevo(codigo);
           await Execute.removeM1andR1(idsArray);
         }
-        console.log("Caiu em sem condição ou foi tudo pago");
+        console.log("Caiu em sem condição");
       }
       //Foi tudo pago
 
@@ -414,7 +448,7 @@ const Calculadora = ({ codigo, nome, onCodigoChange, onNomeChange, data }) => {
               (Number(pix) > 0 ? Math.min(Number(pix), comitions) : 0),
           )
         : 0,
-    desperdicio: 0.06,
+    desperdicio,
     util: sumValues,
     perdida: perdida || 0,
     comentario,
@@ -521,7 +555,7 @@ const Calculadora = ({ codigo, nome, onCodigoChange, onNomeChange, data }) => {
           <input
             type="text"
             placeholder="Comentário"
-            className="input input-defaut w-42 input-xs join-item"
+            className="input input-primary w-42 input-xs join-item"
             value={comentario}
             onChange={(e) => setComentario(e.target.value)}
           />
@@ -530,7 +564,7 @@ const Calculadora = ({ codigo, nome, onCodigoChange, onNomeChange, data }) => {
             step={0.01}
             type="number"
             placeholder="Desperdício"
-            className="input input-defaut w-20 input-xs join-item"
+            className="input input-primary w-20 input-xs join-item"
             value={perdida}
             onChange={(e) => setPerdida(e.target.value)}
           />

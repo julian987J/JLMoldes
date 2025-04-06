@@ -185,6 +185,18 @@ async function reciveFromR1() {
   }
 }
 
+async function reciveFromConfig() {
+  try {
+    const response = await fetch("/api/v1/tables/Config");
+    if (!response.ok) throw new Error("Erro ao carregar os dados");
+    const data = await response.json();
+    return Array.isArray(data.rows) ? data.rows : [];
+  } catch (error) {
+    console.error("Erro ao buscar dados Config:", error);
+    return [];
+  }
+}
+
 async function reciveFromDeve() {
   try {
     const response = await fetch("/api/v1/tables/deve");
@@ -409,6 +421,7 @@ const execute = {
   sendToPapelC1,
   reciveFromC1,
   reciveFromC1Data,
+  reciveFromConfig,
   reciveFromPapelC1,
   reciveFromR1DeveDevo,
   reciveFromDeve,

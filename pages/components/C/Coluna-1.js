@@ -80,142 +80,184 @@ const Coluna = () => {
 
   return (
     <div className="overflow-x-auto rounded-box border border-base-content/5 bg-base-100">
-      {Object.entries(groupedResults).map(([date, items]) => (
-        <div key={date} className="mb-2">
-          {/* Cabeçalho com a data */}
-          <div className="font-bold text-sm bg-gray-200 text-center p-1">
-            {date}
-          </div>
+      {Object.entries(groupedResults).map(([date, items]) => {
+        // Calcula os totais para cada dia
+        const totalReal = items.reduce(
+          (sum, item) => sum + (Number(item.real) || 0),
+          0,
+        );
+        const totalPix = items.reduce(
+          (sum, item) => sum + (Number(item.pix) || 0),
+          0,
+        );
+        const totalDia = totalReal + totalPix;
 
-          {/* Tabela para os itens da data */}
-          <table className="table table-xs w-full">
-            <thead>
-              <tr>
-                <th className="hidden">ID</th>
-                <th className="hidden">Codigo</th>
-                <th>Nome</th>
-                <th>Base</th>
-                <th>Sis</th>
-                <th>Alt</th>
-                <th>R$</th>
-                <th>PIX</th>
-                <th>Ações</th>
-              </tr>
-            </thead>
-            <tbody>
-              {items.map((item) => (
-                <tr key={item.id} className="border-b border-base-content/5">
-                  <td className="hidden">{item.id}</td>
-                  <td className="hidden">{item.codigo}</td>
-                  <td>
-                    {editingId === item.id ? (
-                      <input
-                        type="text"
-                        value={editedData.nome}
-                        onChange={(e) =>
-                          handleInputChange("nome", e.target.value)
-                        }
-                        className="input input-xs p-0 m-0 text-center"
-                      />
-                    ) : (
-                      item.nome
-                    )}
-                  </td>
-                  <td>
-                    {editingId === item.id ? (
-                      <input
-                        type="number"
-                        min="1"
-                        value={editedData.base}
-                        onChange={(e) =>
-                          handleInputChange("base", e.target.value)
-                        }
-                        className="input input-xs p-0 m-0 text-center"
-                      />
-                    ) : (
-                      item.base
-                    )}
-                  </td>
-                  <td>
-                    {editingId === item.id ? (
-                      <input
-                        type="number"
-                        min="1"
-                        value={editedData.sis}
-                        onChange={(e) =>
-                          handleInputChange("sis", e.target.value)
-                        }
-                        className="input input-xs p-0 m-0 text-center"
-                      />
-                    ) : (
-                      item.sis
-                    )}
-                  </td>
-                  <td>
-                    {editingId === item.id ? (
-                      <input
-                        type="number"
-                        min="1"
-                        value={editedData.alt}
-                        onChange={(e) =>
-                          handleInputChange("alt", e.target.value)
-                        }
-                        className="input input-xs p-0 m-0 text-center"
-                      />
-                    ) : (
-                      item.alt
-                    )}
-                  </td>
-                  <td>
-                    {editingId === item.id ? (
-                      <input
-                        type="number"
-                        min="1"
-                        value={formatCurrency(editedData.real)}
-                        onChange={(e) =>
-                          handleInputChange("real", e.target.value)
-                        }
-                        className="input input-xs p-0 m-0 text-center"
-                      />
-                    ) : (
-                      formatCurrency(item.real)
-                    )}
-                  </td>
-                  <td>
-                    {editingId === item.id ? (
-                      <input
-                        type="number"
-                        min="1"
-                        value={formatCurrency(editedData.pix)}
-                        onChange={(e) =>
-                          handleInputChange("pix", e.target.value)
-                        }
-                        className="input input-xs p-0 m-0 text-center"
-                      />
-                    ) : (
-                      formatCurrency(item.pix)
-                    )}
-                  </td>
-                  <td>
-                    <Edit
-                      isEditing={editingId === item.id}
-                      onEdit={() => startEditing(item)}
-                      onSave={() => handleSave(editedData)}
-                      onCancel={() => setEditingId(null)}
-                    />
-                    <button
-                      className={`btn btn-xs btn-soft btn-error ${editingId === item.id ? "hidden" : ""}`}
-                      onClick={() => Execute.removeC1(item.id)}
-                    >
-                      Excluir
-                    </button>
-                  </td>
+        return (
+          <div key={date} className="mb-2">
+            {/* Cabeçalho com a data */}
+            <div className="font-bold text-sm bg-gray-200 text-center p-1">
+              {date}
+            </div>
+
+            {/* Tabela para os itens da data */}
+            <table className="table table-xs w-full">
+              <thead>
+                {/* Linha para o total geral do dia */}
+                <tr>
+                  <th colSpan={4}></th>
+                  <th colSpan={2} className="text-center text-xs bg-success/30">
+                    {formatCurrency(totalDia)}
+                  </th>
+                  <th></th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      ))}
+
+                {/* Linha para os totais individuais */}
+                <tr>
+                  <th className="hidden"></th>
+                  <th className="hidden"></th>
+                  <th></th>
+                  <th></th>
+                  <th></th>
+                  <th></th>
+                  <th className="text-center text-xs bg-success/30 ">
+                    {formatCurrency(totalReal)}
+                  </th>
+                  <th className="text-center text-xs bg-success/30">
+                    {formatCurrency(totalPix)}
+                  </th>
+                  <th></th>
+                </tr>
+
+                {/* Linha com os nomes das colunas */}
+                <tr>
+                  <th className="hidden">ID</th>
+                  <th className="hidden">Codigo</th>
+                  <th>Nome</th>
+                  <th>Base</th>
+                  <th>Sis</th>
+                  <th>Alt</th>
+                  <th className="bg-accent">R$</th>
+                  <th className="bg-accent">PIX</th>
+                  <th>Ações</th>
+                </tr>
+              </thead>
+              <tbody>
+                {items.map((item) => (
+                  <tr key={item.id} className="border-b border-base-content/5">
+                    <td className="hidden">{item.id}</td>
+                    <td className="hidden">{item.codigo}</td>
+                    <td>
+                      {editingId === item.id ? (
+                        <input
+                          type="text"
+                          value={editedData.nome}
+                          onChange={(e) =>
+                            handleInputChange("nome", e.target.value)
+                          }
+                          className="input input-xs p-0 m-0 text-center"
+                        />
+                      ) : (
+                        item.nome
+                      )}
+                    </td>
+                    <td>
+                      {editingId === item.id ? (
+                        <input
+                          type="number"
+                          min="1"
+                          value={editedData.base}
+                          onChange={(e) =>
+                            handleInputChange("base", e.target.value)
+                          }
+                          className="input input-xs p-0 m-0 text-center"
+                        />
+                      ) : (
+                        item.base
+                      )}
+                    </td>
+                    <td>
+                      {editingId === item.id ? (
+                        <input
+                          type="number"
+                          min="1"
+                          value={editedData.sis}
+                          onChange={(e) =>
+                            handleInputChange("sis", e.target.value)
+                          }
+                          className="input input-xs p-0 m-0 text-center"
+                        />
+                      ) : (
+                        item.sis
+                      )}
+                    </td>
+                    <td>
+                      {editingId === item.id ? (
+                        <input
+                          type="number"
+                          min="1"
+                          value={editedData.alt}
+                          onChange={(e) =>
+                            handleInputChange("alt", e.target.value)
+                          }
+                          className="input input-xs p-0 m-0 text-center"
+                        />
+                      ) : (
+                        item.alt
+                      )}
+                    </td>
+                    <td className="bg-accent/20">
+                      {editingId === item.id ? (
+                        <input
+                          type="number"
+                          min="1"
+                          value={formatCurrency(editedData.real)}
+                          onChange={(e) =>
+                            handleInputChange("real", e.target.value)
+                          }
+                          className="input input-xs p-0 m-0 text-center"
+                        />
+                      ) : (
+                        formatCurrency(item.real)
+                      )}
+                    </td>
+                    <td className="bg-accent/20">
+                      {editingId === item.id ? (
+                        <input
+                          type="number"
+                          min="1"
+                          value={formatCurrency(editedData.pix)}
+                          onChange={(e) =>
+                            handleInputChange("pix", e.target.value)
+                          }
+                          className="input input-xs p-0 m-0 text-center"
+                        />
+                      ) : (
+                        formatCurrency(item.pix)
+                      )}
+                    </td>
+                    <td>
+                      <Edit
+                        isEditing={editingId === item.id}
+                        onEdit={() => startEditing(item)}
+                        onSave={() => handleSave(editedData)}
+                        onCancel={() => setEditingId(null)}
+                      />
+                      <button
+                        className={`btn btn-xs btn-soft btn-error ${
+                          editingId === item.id ? "hidden" : ""
+                        }`}
+                        onClick={() => Execute.removeC1(item.id)}
+                      >
+                        Excluir
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        );
+      })}
     </div>
   );
 };

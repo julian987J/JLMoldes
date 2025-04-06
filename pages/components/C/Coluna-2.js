@@ -53,8 +53,9 @@ const Coluna = () => {
         acc[rawDate].push({
           ...item,
           horaSeparada: horaFormatada,
-          real: Number(item.papelreal) || 0,
-          pix: Number(item.papelpix) || 0,
+          // Conversão dos valores
+          papelreal: Number(item.papelreal) || 0,
+          papelpix: Number(item.papelpix) || 0,
           encaixereal: Number(item.encaixereal) || 0,
           encaixepix: Number(item.encaixepix) || 0,
           desperdicio: Number(item.desperdicio) || 0,
@@ -93,234 +94,321 @@ const Coluna = () => {
 
   return (
     <div className="w-240 overflow-x-auto rounded-box border border-success bg-base-100">
-      {Object.entries(groupedResults).map(([date, items]) => (
-        <div key={date} className="mb-2">
-          {/* Cabeçalho da data */}
-          <div className="font-bold text-sm bg-success/20 text-center p-1">
-            {date}
-          </div>
+      {Object.entries(groupedResults).map(([date, items]) => {
+        // Cálculo dos totais para cada coluna
+        const totalPapelReal = items.reduce(
+          (sum, item) => sum + (Number(item.papelreal) || 0),
+          0,
+        );
+        const totalPapelPix = items.reduce(
+          (sum, item) => sum + (Number(item.papelpix) || 0),
+          0,
+        );
+        const totalEncaixeReal = items.reduce(
+          (sum, item) => sum + (Number(item.encaixereal) || 0),
+          0,
+        );
+        const totalEncaixePix = items.reduce(
+          (sum, item) => sum + (Number(item.encaixepix) || 0),
+          0,
+        );
+        const totalDesperdicio = items.reduce(
+          (sum, item) => sum + (Number(item.desperdicio) || 0),
+          0,
+        );
+        const totalUtil = items.reduce(
+          (sum, item) => sum + (Number(item.util) || 0),
+          0,
+        );
+        const totalPerdida = items.reduce(
+          (sum, item) => sum + (Number(item.perdida) || 0),
+          0,
+        );
 
-          {/* Tabela para os itens da data */}
-          <table className="table table-xs">
-            <thead>
-              <tr>
-                <th className="hidden">ID</th>
-                <th className="hidden">Codigo</th>
-                <th>Hora</th>
-                <th>Nome</th>
-                <th>M</th>
-                <th>Papel</th>
-                <th className="bg-accent">R$</th>
-                <th className="bg-accent">PIX</th>
-                <th className="bg-success">Enc-R$</th>
-                <th className="bg-success">Enc-PIX</th>
-                <th className="bg-warning-content/50">Des</th>
-                <th className="bg-warning-content/50">Util</th>
-                <th className="bg-warning-content/50">Perdida</th>
-                <th>Comentarios</th>
-                <th>Ações</th>
-              </tr>
-            </thead>
-            <tbody>
-              {items.map((item) => (
-                <tr key={item.id} className="border-b border-success">
-                  <td className="hidden">{item.id}</td>
-                  <td className="hidden">{item.codigo}</td>
-                  <td>{item.horaSeparada}</td>
-                  <td>
-                    {editingId === item.id ? (
-                      <input
-                        type="text"
-                        value={editedData.nome}
-                        onChange={(e) =>
-                          handleInputChange("nome", e.target.value)
-                        }
-                        className="input input-xs p-0 m-0 text-center"
-                      />
-                    ) : (
-                      item.nome
-                    )}
-                  </td>
-                  <td>
-                    {editingId === item.id ? (
-                      <input
-                        type="number"
-                        value={editedData.multi}
-                        onChange={(e) =>
-                          handleInputChange("multi", e.target.value)
-                        }
-                        className="input input-xs p-0 m-0 text-center"
-                      />
-                    ) : (
-                      item.multi
-                    )}
-                  </td>
-                  <td>
-                    {editingId === item.id ? (
-                      <input
-                        type="number"
-                        min="1"
-                        value={editedData.papel}
-                        onChange={(e) => {
-                          if (isNaN(e.target.value) || e.target.value <= 0) {
-                            handleInputChange("papel", 1);
-                          } else {
-                            handleInputChange("papel", e.target.value);
-                          }
-                        }}
-                        className="input input-xs p-0 m-0 text-center"
-                      />
-                    ) : (
-                      item.papel
-                    )}
-                  </td>
-                  <td>
-                    {editingId === item.id ? (
-                      <input
-                        type="number"
-                        min="1"
-                        value={formatCurrency(editedData.papelreal)}
-                        onChange={(e) =>
-                          handleInputChange("papelreal", e.target.value)
-                        }
-                        className="input input-xs p-0 m-0 text-center"
-                      />
-                    ) : (
-                      formatCurrency(item.papelreal)
-                    )}
-                  </td>
-                  <td>
-                    {editingId === item.id ? (
-                      <input
-                        type="number"
-                        min="1"
-                        value={formatCurrency(editedData.papelpix)}
-                        onChange={(e) =>
-                          handleInputChange("papelpix", e.target.value)
-                        }
-                        className="input input-xs p-0 m-0 text-center"
-                      />
-                    ) : (
-                      formatCurrency(item.papelpix)
-                    )}
-                  </td>
-                  <td>
-                    {editingId === item.id ? (
-                      <input
-                        type="number"
-                        min="1"
-                        value={formatCurrency(editedData.encaixereal)}
-                        onChange={(e) =>
-                          handleInputChange("encaixereal", e.target.value)
-                        }
-                        className="input input-xs p-0 m-0 text-center"
-                      />
-                    ) : (
-                      formatCurrency(item.encaixereal)
-                    )}
-                  </td>
-                  <td>
-                    {editingId === item.id ? (
-                      <input
-                        type="number"
-                        min="1"
-                        value={formatCurrency(editedData.encaixepix)}
-                        onChange={(e) =>
-                          handleInputChange("encaixepix", e.target.value)
-                        }
-                        className="input input-xs p-0 m-0 text-center"
-                      />
-                    ) : (
-                      formatCurrency(item.encaixepix)
-                    )}
-                  </td>
-                  <td>
-                    {editingId === item.id ? (
-                      <input
-                        type="number"
-                        min="1"
-                        value={formatCurrency(editedData.desperdicio)}
-                        onChange={(e) => {
-                          if (isNaN(e.target.value) || e.target.value <= 0) {
-                            handleInputChange("desperdicio", 1);
-                          } else {
-                            handleInputChange("desperdicio", e.target.value);
-                          }
-                        }}
-                        className="input input-xs p-0 m-0 text-center"
-                      />
-                    ) : (
-                      formatCurrency(item.desperdicio)
-                    )}
-                  </td>
-                  <td>
-                    {editingId === item.id ? (
-                      <input
-                        type="number"
-                        min="1"
-                        value={editedData.util}
-                        onChange={(e) => {
-                          if (isNaN(e.target.value) || e.target.value <= 0) {
-                            handleInputChange("util", 1);
-                          } else {
-                            handleInputChange("util", e.target.value);
-                          }
-                        }}
-                        className="input input-xs p-0 m-0 text-center"
-                      />
-                    ) : (
-                      item.util
-                    )}
-                  </td>
-                  <td>
-                    {editingId === item.id ? (
-                      <input
-                        type="number"
-                        min="1"
-                        value={editedData.perdida}
-                        onChange={(e) =>
-                          handleInputChange("perdida", e.target.value)
-                        }
-                        className="input input-xs p-0 m-0 text-center"
-                      />
-                    ) : (
-                      item.perdida
-                    )}
-                  </td>
-                  <td>
-                    {editingId === item.id ? (
-                      <input
-                        type="text"
-                        value={editedData.comentarios}
-                        onChange={(e) =>
-                          handleInputChange("comentarios", e.target.value)
-                        }
-                        className="input input-xs p-0 m-0 text-center"
-                      />
-                    ) : (
-                      item.comentarios
-                    )}
-                  </td>
-                  <td>
-                    <Edit
-                      isEditing={editingId === item.id}
-                      onEdit={() => startEditing(item)}
-                      onSave={() => handleSave(editedData)}
-                      onCancel={() => setEditingId(null)}
-                    />
-                    <button
-                      className={`btn btn-xs btn-soft btn-error ${editingId === item.id ? "hidden" : ""}`}
-                      onClick={() => Execute.removePapelC1(item.id)}
-                    >
-                      Excluir
-                    </button>
-                  </td>
+        const totalRP = totalPapelReal + totalPapelPix;
+        const totalEnc = totalEncaixeReal + totalEncaixePix;
+
+        const totaldeReais = totalPapelReal + totalEncaixeReal;
+        const totalDePixes = totalPapelPix + totalEncaixePix;
+
+        return (
+          <div key={date} className="mb-2">
+            {/* Cabeçalho da data */}
+            <div className="font-bold text-sm bg-success/20 text-center p-1">
+              {date}
+            </div>
+
+            {/* Tabela para os itens da data */}
+            <table className="table table-xs">
+              <thead>
+                <tr>
+                  <th colSpan={4}></th>
+                  <th colSpan={2} className="text-center text-xs bg-accent/30">
+                    {formatCurrency(totalRP)}
+                  </th>
+                  <th colSpan={2} className="text-center text-xs bg-success/30">
+                    {formatCurrency(totalEnc)}
+                  </th>
+                  <th colSpan={4}></th>
+                  <th className="text-center text-xs bg-info/30">
+                    {formatCurrency(totaldeReais)}
+                  </th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      ))}
+                {/* Linha com os totais de cada coluna */}
+                <tr>
+                  {/* Colunas vazias até "Papel" (6 colunas: ID, Código, Hora, Nome, M, Papel) */}
+                  <th colSpan={4}></th>
+                  <th className="text-center text-xs bg-accent/30">
+                    {formatCurrency(totalPapelReal)}
+                  </th>
+                  <th className="text-center text-xs bg-accent/30">
+                    {formatCurrency(totalPapelPix)}
+                  </th>
+                  <th className="text-center text-xs bg-success/30">
+                    {formatCurrency(totalEncaixeReal)}
+                  </th>
+                  <th className="text-center text-xs bg-success/30">
+                    {formatCurrency(totalEncaixePix)}
+                  </th>
+                  <th className="text-center text-xs bg-warning-content/30">
+                    {formatCurrency(totalDesperdicio)}
+                  </th>
+                  <th className="text-center text-xs bg-warning-content/30">
+                    {formatCurrency(totalUtil)}
+                  </th>
+                  <th className="text-center text-xs bg-warning-content/30">
+                    {formatCurrency(totalPerdida)}
+                  </th>
+                  {/* Últimas 2 colunas vazias (Comentários e Ações) */}
+                  <th colSpan={1}></th>
+
+                  <th className="text-center text-xs bg-info/30">
+                    {formatCurrency(totalDePixes)}
+                  </th>
+                </tr>
+
+                {/* Linha com os nomes das colunas */}
+                <tr>
+                  <th className="hidden">ID</th>
+                  <th className="hidden">Codigo</th>
+                  <th>Hora</th>
+                  <th>Nome</th>
+                  <th>M</th>
+                  <th>Papel</th>
+                  <th className="bg-accent">R$</th>
+                  <th className="bg-accent">PIX</th>
+                  <th className="bg-success">Enc-R$</th>
+                  <th className="bg-success">Enc-PIX</th>
+                  <th className="bg-warning-content/50">Des</th>
+                  <th className="bg-warning-content/50">Util</th>
+                  <th className="bg-warning-content/50">Perdida</th>
+                  <th>Comentarios</th>
+                  <th>Ações</th>
+                </tr>
+              </thead>
+              <tbody>
+                {items.map((item) => (
+                  <tr key={item.id} className="border-b border-success">
+                    <td className="hidden">{item.id}</td>
+                    <td className="hidden">{item.codigo}</td>
+                    <td>{item.horaSeparada}</td>
+                    <td>
+                      {editingId === item.id ? (
+                        <input
+                          type="text"
+                          value={editedData.nome}
+                          onChange={(e) =>
+                            handleInputChange("nome", e.target.value)
+                          }
+                          className="input input-xs p-0 m-0 text-center"
+                        />
+                      ) : (
+                        item.nome
+                      )}
+                    </td>
+                    <td>
+                      {editingId === item.id ? (
+                        <input
+                          type="number"
+                          value={editedData.multi}
+                          onChange={(e) =>
+                            handleInputChange("multi", e.target.value)
+                          }
+                          className="input input-xs p-0 m-0 text-center"
+                        />
+                      ) : (
+                        item.multi
+                      )}
+                    </td>
+                    <td>
+                      {editingId === item.id ? (
+                        <input
+                          type="number"
+                          min="1"
+                          value={editedData.papel}
+                          onChange={(e) => {
+                            if (isNaN(e.target.value) || e.target.value <= 0) {
+                              handleInputChange("papel", 1);
+                            } else {
+                              handleInputChange("papel", e.target.value);
+                            }
+                          }}
+                          className="input input-xs p-0 m-0 text-center"
+                        />
+                      ) : (
+                        item.papel
+                      )}
+                    </td>
+                    <td>
+                      {editingId === item.id ? (
+                        <input
+                          type="number"
+                          min="1"
+                          value={formatCurrency(editedData.papelreal)}
+                          onChange={(e) =>
+                            handleInputChange("papelreal", e.target.value)
+                          }
+                          className="input input-xs p-0 m-0 text-center"
+                        />
+                      ) : (
+                        formatCurrency(item.papelreal)
+                      )}
+                    </td>
+                    <td>
+                      {editingId === item.id ? (
+                        <input
+                          type="number"
+                          min="1"
+                          value={formatCurrency(editedData.papelpix)}
+                          onChange={(e) =>
+                            handleInputChange("papelpix", e.target.value)
+                          }
+                          className="input input-xs p-0 m-0 text-center"
+                        />
+                      ) : (
+                        formatCurrency(item.papelpix)
+                      )}
+                    </td>
+                    <td>
+                      {editingId === item.id ? (
+                        <input
+                          type="number"
+                          min="1"
+                          value={formatCurrency(editedData.encaixereal)}
+                          onChange={(e) =>
+                            handleInputChange("encaixereal", e.target.value)
+                          }
+                          className="input input-xs p-0 m-0 text-center"
+                        />
+                      ) : (
+                        formatCurrency(item.encaixereal)
+                      )}
+                    </td>
+                    <td>
+                      {editingId === item.id ? (
+                        <input
+                          type="number"
+                          min="1"
+                          value={formatCurrency(editedData.encaixepix)}
+                          onChange={(e) =>
+                            handleInputChange("encaixepix", e.target.value)
+                          }
+                          className="input input-xs p-0 m-0 text-center"
+                        />
+                      ) : (
+                        formatCurrency(item.encaixepix)
+                      )}
+                    </td>
+                    <td>
+                      {editingId === item.id ? (
+                        <input
+                          type="number"
+                          min="1"
+                          value={formatCurrency(editedData.desperdicio)}
+                          onChange={(e) => {
+                            if (isNaN(e.target.value) || e.target.value <= 0) {
+                              handleInputChange("desperdicio", 1);
+                            } else {
+                              handleInputChange("desperdicio", e.target.value);
+                            }
+                          }}
+                          className="input input-xs p-0 m-0 text-center"
+                        />
+                      ) : (
+                        formatCurrency(item.desperdicio)
+                      )}
+                    </td>
+                    <td>
+                      {editingId === item.id ? (
+                        <input
+                          type="number"
+                          min="1"
+                          value={editedData.util}
+                          onChange={(e) => {
+                            if (isNaN(e.target.value) || e.target.value <= 0) {
+                              handleInputChange("util", 1);
+                            } else {
+                              handleInputChange("util", e.target.value);
+                            }
+                          }}
+                          className="input input-xs p-0 m-0 text-center"
+                        />
+                      ) : (
+                        item.util
+                      )}
+                    </td>
+                    <td>
+                      {editingId === item.id ? (
+                        <input
+                          type="number"
+                          min="1"
+                          value={editedData.perdida}
+                          onChange={(e) =>
+                            handleInputChange("perdida", e.target.value)
+                          }
+                          className="input input-xs p-0 m-0 text-center"
+                        />
+                      ) : (
+                        item.perdida
+                      )}
+                    </td>
+                    <td>
+                      {editingId === item.id ? (
+                        <input
+                          type="text"
+                          value={editedData.comentarios}
+                          onChange={(e) =>
+                            handleInputChange("comentarios", e.target.value)
+                          }
+                          className="input input-xs p-0 m-0 text-center"
+                        />
+                      ) : (
+                        item.comentarios
+                      )}
+                    </td>
+                    <td>
+                      <Edit
+                        isEditing={editingId === item.id}
+                        onEdit={() => startEditing(item)}
+                        onSave={() => handleSave(editedData)}
+                        onCancel={() => setEditingId(null)}
+                      />
+                      <button
+                        className={`btn btn-xs btn-soft btn-error ${
+                          editingId === item.id ? "hidden" : ""
+                        }`}
+                        onClick={() => Execute.removePapelC1(item.id)}
+                      >
+                        Excluir
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        );
+      })}
     </div>
   );
 };

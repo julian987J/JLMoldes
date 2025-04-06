@@ -177,6 +177,23 @@ async function updateC1(updatedData) {
   return result;
 }
 
+async function updateConfig(updatedData) {
+  const result = await database.query({
+    text: `
+      UPDATE "config"
+      SET 
+        m = $1,
+        e = $2,
+        d = $3
+      WHERE id = $4
+      RETURNING *;
+    `,
+    values: [updatedData.m, updatedData.e, updatedData.d, updatedData.id],
+  });
+
+  return result;
+}
+
 async function updateC1BSA(updatedData) {
   const result = await database.query({
     text: `
@@ -360,6 +377,13 @@ async function getC1() {
   return result;
 }
 
+async function getConfig() {
+  const result = await database.query({
+    text: `SELECT * FROM "config"`,
+  });
+  return result;
+}
+
 // Modificação no getC1Data
 async function getC1Data(codigo, data) {
   const result = await database.query({
@@ -531,6 +555,7 @@ const ordem = {
   getC1,
   getC1Data,
   getPapelC1,
+  getConfig,
   getR1BSA,
   getR1JustBSA,
   getM1TableAltSis,
@@ -546,6 +571,7 @@ const ordem = {
   deleteR1,
   deleteDeve,
   deleteDevo,
+  updateConfig,
   updateC1,
   updateC1BSA,
   updatePapelC1,
