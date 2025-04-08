@@ -73,6 +73,8 @@ const Calculadora = ({ codigo, nome, onCodigoChange, onNomeChange, data }) => {
     comitions;
 
   const totalTroco = totalGeral - (Number(pix) || 0) - (Number(real) || 0);
+
+  const pixMaisReal = Number(pix) + Number(real);
   // fim dos calculos
 
   // No seu useEffect de busca de dados, atualize para garantir conversão numérica
@@ -164,11 +166,7 @@ const Calculadora = ({ codigo, nome, onCodigoChange, onNomeChange, data }) => {
     }
   };
 
-  const handleUpdateC1 = async (
-    codigo,
-    data,
-    { sis: newSis, alt: newAlt, base: newBase },
-  ) => {
+  async function handleUpdateC1(codigo, data, New, currentTotal) {
     try {
       const decodedData = decodeURIComponent(data);
 
@@ -180,11 +178,40 @@ const Calculadora = ({ codigo, nome, onCodigoChange, onNomeChange, data }) => {
           body: JSON.stringify({
             codigo,
             data: decodedData,
-            sis: newSis || 0,
-            alt: newAlt || 0,
-            base: newBase || 0, // Corrigido de 'real' para 'newBase'
-            real: real || 0,
-            pix: pix || 0,
+            sis: New.sis || 0,
+            alt: New.alt || 0,
+            base: New.base || 0,
+            ...(function () {
+              // Valores originais do ObjC1
+              let adjustedReal = ObjC1.real || 0;
+              let adjustedPix = ObjC1.pix || 0;
+
+              // Garante que nenhum valor individual exceda o currentTotal
+              adjustedReal = Math.min(adjustedReal, currentTotal);
+              adjustedPix = Math.min(adjustedPix, currentTotal);
+
+              // Ajusta a soma se necessário
+              const soma = adjustedReal + adjustedPix;
+              if (soma > currentTotal) {
+                const excesso = soma - currentTotal;
+                const ratioReal = adjustedReal / soma;
+                const ratioPix = adjustedPix / soma;
+
+                adjustedReal -= Math.round(excesso * ratioReal);
+                adjustedPix -= Math.round(excesso * ratioPix);
+
+                // Garantir valores não negativos
+                adjustedReal = Math.max(adjustedReal, 0);
+                adjustedPix = Math.max(adjustedPix, 0);
+
+                // Correção de arredondamento
+                if (adjustedReal + adjustedPix > currentTotal) {
+                  adjustedReal -= adjustedReal + adjustedPix - currentTotal;
+                }
+              }
+
+              return { real: adjustedReal, pix: adjustedPix };
+            })(),
           }),
         },
       );
@@ -193,13 +220,13 @@ const Calculadora = ({ codigo, nome, onCodigoChange, onNomeChange, data }) => {
     } catch (error) {
       console.error("Erro ao salvar:", error);
     }
-  };
+  }
 
-  async function sendToC1AndUpdateR1(trocoValue) {
+  async function sendToC1AndUpdateR1(value) {
     await Execute.removeDevo(codigo);
 
     const currentTotal = base + sis + alt;
-    const excessoTotal = currentTotal - trocoValue;
+    const excessoTotal = currentTotal - value;
     const exists = await Execute.reciveFromC1Data(codigo, data);
 
     if (exists) {
@@ -237,7 +264,7 @@ const Calculadora = ({ codigo, nome, onCodigoChange, onNomeChange, data }) => {
           base: (exists.base || 0) + (base - novosDados.base),
         };
 
-        await handleUpdateC1(codigo, dataEncoded, updateData);
+        await handleUpdateC1(codigo, dataEncoded, updateData, currentTotal);
       }
     } else {
       if (excessoTotal > 0) {
@@ -270,6 +297,38 @@ const Calculadora = ({ codigo, nome, onCodigoChange, onNomeChange, data }) => {
           sis: sis - novosDados.sis,
           alt: alt - novosDados.alt,
           base: base - novosDados.base,
+          // Ajustar real e pix para não ultrapassar currentTotal
+          ...(function () {
+            // Valores originais do ObjC1
+            let adjustedReal = ObjC1.real || 0;
+            let adjustedPix = ObjC1.pix || 0;
+
+            // Garante que nenhum valor individual exceda o currentTotal
+            adjustedReal = Math.min(adjustedReal, currentTotal);
+            adjustedPix = Math.min(adjustedPix, currentTotal);
+
+            // Ajusta a soma se necessário
+            const soma = adjustedReal + adjustedPix;
+            if (soma > currentTotal) {
+              const excesso = soma - currentTotal;
+              const ratioReal = adjustedReal / soma;
+              const ratioPix = adjustedPix / soma;
+
+              adjustedReal -= Math.round(excesso * ratioReal);
+              adjustedPix -= Math.round(excesso * ratioPix);
+
+              // Garantir valores não negativos
+              adjustedReal = Math.max(adjustedReal, 0);
+              adjustedPix = Math.max(adjustedPix, 0);
+
+              // Correção de arredondamento
+              if (adjustedReal + adjustedPix > currentTotal) {
+                adjustedReal -= adjustedReal + adjustedPix - currentTotal;
+              }
+            }
+
+            return { real: adjustedReal, pix: adjustedPix };
+          })(),
         });
       } else if (excessoTotal === 0) {
         await Execute.sendToC1({
@@ -289,7 +348,7 @@ const Calculadora = ({ codigo, nome, onCodigoChange, onNomeChange, data }) => {
     const trocoValue = Number(totalTroco);
 
     try {
-      if (dadosR1 && trocoValue > 0 && !Number(total)) {
+      if (dadosR1 && !valorDeve && trocoValue > 0 && !Number(total)) {
         await sendToC1AndUpdateR1(trocoValue);
         console.log("caiu em Pago Parte do R1");
 
@@ -338,11 +397,12 @@ const Calculadora = ({ codigo, nome, onCodigoChange, onNomeChange, data }) => {
         const exists = await Execute.reciveFromC1Data(codigo, data);
 
         if (exists) {
-          const dataEncoded = encodeURIComponent(data);
-          await handleUpdateC1(codigo, dataEncoded);
+          const values = totalGeral - Number(total) - pixMaisReal;
+          await sendToC1AndUpdateR1(values);
           await Execute.removeDeve(codigo);
           await Execute.removeDevo(codigo);
           await Execute.removeM1andR1(idsArray);
+          console.log("Existe no C1");
         } else {
           await Execute.sendToC1(ObjC1);
           await Execute.sendToPapelC1(ObjPapelC1);
@@ -357,7 +417,7 @@ const Calculadora = ({ codigo, nome, onCodigoChange, onNomeChange, data }) => {
         await Execute.removeDevo(codigo);
         console.log("Caiu em Foi pago todo o papel.");
         //
-      } else if (valorDeve && trocoValue) {
+      } else if (valorDeve && trocoValue && !dadosR1) {
         await Execute.sendToDeveUpdate(codigo, trocoValue);
         await Execute.removeDevo(codigo);
         console.log("Caiu em Foi pago Parte do Valor do Papel.");
@@ -374,7 +434,7 @@ const Calculadora = ({ codigo, nome, onCodigoChange, onNomeChange, data }) => {
         console.log("Caiu em foi pago todo o R1 e Papel.");
         //
       } else if (dadosR1 > 0 && trocoValue && Number(total)) {
-        if (dadosR1 === Number(pix) + Number(real)) {
+        if (dadosR1 === pixMaisReal) {
           await Execute.sendToC1(ObjC1);
           await Execute.removeM1andR1(idsArray);
           if (total > 0) {
@@ -395,9 +455,53 @@ const Calculadora = ({ codigo, nome, onCodigoChange, onNomeChange, data }) => {
           }
           console.log("Caiu em foi pago todo o R1 e deve todo o Papel.");
           //
-        } else if (dadosR1 < Number(pix) + Number(real)) {
-          console.log("criando");
-        } else if (Number(total) === Number(pix) + Number(real)) {
+        } else if (
+          (pixMaisReal < dadosR1 && pixMaisReal < Number(total)) ||
+          (pixMaisReal < dadosR1 && pixMaisReal > Number(total))
+        ) {
+          const values = totalGeral - Number(total) - pixMaisReal;
+          await sendToC1AndUpdateR1(values);
+          if (total > 0) {
+            await Execute.removeDevo(codigo);
+            await Execute.removeDeve(codigo);
+            await Execute.sendToDeve({
+              nome,
+              data: Use.NowData(),
+              codigo,
+              valor: Number(total),
+            });
+            await Execute.sendToPapelC1({
+              ...ObjPapelC1,
+              data: Use.NowData(),
+            });
+          } else {
+            setShowError(true);
+          }
+          console.log("Caiu em foi pago parte do R1 deve o Papel.");
+          //
+        } else if (pixMaisReal > dadosR1 && Number(total)) {
+          await sendToC1AndUpdateR1(0);
+          await Execute.removeM1andR1(idsArray);
+          if (total > 0) {
+            const value = Math.abs(totalGeral - pixMaisReal);
+            await Execute.removeDevo(codigo);
+            await Execute.removeDeve(codigo);
+            await Execute.sendToDeve({
+              nome,
+              data: Use.NowData(),
+              codigo,
+              valor: value,
+            });
+            await Execute.sendToPapelC1({
+              ...ObjPapelC1,
+              data: Use.NowData(),
+            });
+          } else {
+            setShowError(true);
+          }
+          console.log("Caiu em foi pago todo o R1 e parte do Papel.");
+          //
+        } else if (Number(total) === pixMaisReal) {
           await Execute.sendToPapelC1(ObjPapelC1);
           await sendToC1AndUpdateR1(trocoValue);
           console.log("Caiu em foi pago todo o Papel e deve todo o R1.");
@@ -405,22 +509,30 @@ const Calculadora = ({ codigo, nome, onCodigoChange, onNomeChange, data }) => {
         }
         console.log("Caiu em foi pago Parte do R1 e Papel.");
         //
-      } else {
-        const exists = await Execute.reciveFromC1Data(codigo, data);
+      } else if (
+        dadosR1 > 0 &&
+        valorDeve > 0 &&
+        trocoValue > 0 &&
+        !Number(total)
+      ) {
+        if (dadosR1 === pixMaisReal) {
+          await sendToC1AndUpdateR1(0);
+          await Execute.removeDevo(codigo);
+          await Execute.removeM1andR1(idsArray);
 
-        if (exists) {
-          const dataEncoded = encodeURIComponent(data);
-          await handleUpdateC1(codigo, dataEncoded);
-          await Execute.removeDeve(codigo);
-          await Execute.removeDevo(codigo);
+          console.log("Caiu em foi pago todo R1 deve o Papel.");
+          //
+        } else if (pixMaisReal < dadosR1) {
+          await sendToC1AndUpdateR1(pixMaisReal);
+          console.log("Caiu em foi pago Parte R1 deve o Papel.");
+        } else if (pixMaisReal > dadosR1) {
+          await sendToC1AndUpdateR1(pixMaisReal);
           await Execute.removeM1andR1(idsArray);
-        } else {
-          await Execute.sendToC1(ObjC1);
-          await Execute.sendToPapelC1(ObjPapelC1);
-          await Execute.removeDeve(codigo);
-          await Execute.removeDevo(codigo);
-          await Execute.removeM1andR1(idsArray);
+          await Execute.sendToDeveUpdate(codigo, trocoValue);
+          console.log("Caiu em foi Todo R1 e Parte Papel.");
         }
+        console.log("Caiu em Tem R1 e Tem DEVE");
+      } else {
         console.log("Caiu em sem condições");
       }
 
