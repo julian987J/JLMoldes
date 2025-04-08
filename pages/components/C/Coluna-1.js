@@ -14,6 +14,7 @@ const Coluna = () => {
   const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState(null);
   const [editedData, setEditedData] = useState({});
+  const [exists, setExists] = useState([]);
 
   const handleSave = async (editedData) => {
     try {
@@ -38,13 +39,23 @@ const Coluna = () => {
   const fetchData = async () => {
     try {
       const results = await Execute.reciveFromC1();
+      const existsData = await Execute.reciveFromR1();
+      setExists(existsData);
 
       const grouped = results.reduce((acc, item) => {
         // Remove a parte do horário da data
         const rawDate = Use.formatarData(item.data);
+
+        // Formata a hora para 00:00
+        const dateObj = new Date(item.data);
+        const horas = String(dateObj.getHours()).padStart(2, "0");
+        const minutos = String(dateObj.getMinutes()).padStart(2, "0");
+        const horaFormatada = `${horas}:${minutos}`;
+
         acc[rawDate] = acc[rawDate] || [];
         acc[rawDate].push({
           ...item,
+          horaSeparada: horaFormatada,
           valor: Number(item.valor) || 0,
           pix: Number(item.pix) || 0,
         });
@@ -104,7 +115,7 @@ const Coluna = () => {
               <thead>
                 {/* Linha para o total geral do dia */}
                 <tr>
-                  <th colSpan={4}></th>
+                  <th colSpan={5}></th>
                   <th colSpan={2} className="text-center text-xs bg-success/30">
                     {formatCurrency(totalDia)}
                   </th>
@@ -115,10 +126,7 @@ const Coluna = () => {
                 <tr>
                   <th className="hidden"></th>
                   <th className="hidden"></th>
-                  <th></th>
-                  <th></th>
-                  <th></th>
-                  <th></th>
+                  <th colSpan={5}></th>
                   <th className="text-center text-xs bg-success/30 ">
                     {formatCurrency(totalReal)}
                   </th>
@@ -132,6 +140,7 @@ const Coluna = () => {
                 <tr>
                   <th className="hidden">ID</th>
                   <th className="hidden">Codigo</th>
+                  <th>Hora</th>
                   <th>Nome</th>
                   <th>Base</th>
                   <th>Sis</th>
@@ -143,9 +152,21 @@ const Coluna = () => {
               </thead>
               <tbody>
                 {items.map((item) => (
-                  <tr key={item.id} className="border-b border-base-content/5">
+                  <tr
+                    key={item.id}
+                    className={`border-b border-base-content/5 ${
+                      exists.some(
+                        (e) =>
+                          e.codigo === item.codigo &&
+                          Use.formatarData(e.data) === date,
+                      )
+                        ? "bg-error/70"
+                        : ""
+                    }`}
+                  >
                     <td className="hidden">{item.id}</td>
                     <td className="hidden">{item.codigo}</td>
+                    <td>{item.horaSeparada}</td>
                     <td>
                       {editingId === item.id ? (
                         <input

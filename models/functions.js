@@ -55,6 +55,7 @@ async function sendToDeve(itemData) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         nome: itemData.nome,
+        data: itemData.data,
         codigo: itemData.codigo,
         valor: itemData.valor,
       }),
@@ -69,6 +70,26 @@ async function sendToDeve(itemData) {
   } catch (error) {
     console.error("Erro no createDeve:", error);
     throw error;
+  }
+}
+
+async function sendToDeveUpdate(codigo, valor) {
+  try {
+    const response = await fetch(
+      `/api/v1/tables/deve?codigo=${codigo}&valor=${valor}`,
+      {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          codigo,
+          valor,
+        }),
+      },
+    );
+
+    if (!response.ok) throw new Error("Erro ao atualizar");
+  } catch (error) {
+    console.error("Erro ao salvar:", error);
   }
 }
 
@@ -416,6 +437,7 @@ const execute = {
   sendTrueMR1,
   sendToR1,
   sendToDeve,
+  sendToDeveUpdate,
   sendToDevo,
   sendToC1,
   sendToPapelC1,

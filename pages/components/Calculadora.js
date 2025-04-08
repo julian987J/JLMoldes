@@ -1,6 +1,7 @@
 import Execute from "models/functions";
 import { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
+import Use from "models/utils.js";
 
 const Calculadora = ({ codigo, nome, onCodigoChange, onNomeChange, data }) => {
   const ErrorComponent = dynamic(() => import("./Errors.js"), { ssr: false });
@@ -79,7 +80,6 @@ const Calculadora = ({ codigo, nome, onCodigoChange, onNomeChange, data }) => {
     const buscarDados = async () => {
       try {
         const resultado = await Execute.reciveFromR1JustBSA(codigo);
-
         // Garantir conversão numérica correta
         const newBase = Number(resultado.total_base) || 0;
         const newSis = Number(resultado.total_sis) || 0;
@@ -164,22 +164,25 @@ const Calculadora = ({ codigo, nome, onCodigoChange, onNomeChange, data }) => {
     }
   };
 
-  const handleUpdateC1 = async (codigo, data) => {
+  const handleUpdateC1 = async (
+    codigo,
+    data,
+    { sis: newSis, alt: newAlt, base: newBase },
+  ) => {
     try {
-      // Decodifica a data (que já é uma string ISO)
       const decodedData = decodeURIComponent(data);
 
       const response = await fetch(
-        `/api/v1/tables/c1/calculadora?codigo=${codigo}&data=${data}`, // Mantém a data codificada na URL
+        `/api/v1/tables/c1/calculadora?codigo=${codigo}&data=${data}`,
         {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             codigo,
-            data: decodedData, // Usa a data decodificada diretamente (sem JSON.parse)
-            sis: sis || 0,
-            alt: alt || 0,
-            base: base || 0,
+            data: decodedData,
+            sis: newSis || 0,
+            alt: newAlt || 0,
+            base: newBase || 0, // Corrigido de 'real' para 'newBase'
             real: real || 0,
             pix: pix || 0,
           }),
@@ -192,129 +195,110 @@ const Calculadora = ({ codigo, nome, onCodigoChange, onNomeChange, data }) => {
     }
   };
 
+  async function sendToC1AndUpdateR1(trocoValue) {
+    await Execute.removeDevo(codigo);
+
+    const currentTotal = base + sis + alt;
+    const excessoTotal = currentTotal - trocoValue;
+    const exists = await Execute.reciveFromC1Data(codigo, data);
+
+    if (exists) {
+      const dataEncoded = encodeURIComponent(data);
+
+      if (excessoTotal > 0) {
+        const valores = [
+          { nome: "base", valor: base },
+          { nome: "sis", valor: sis },
+          { nome: "alt", valor: alt },
+        ];
+        valores.sort((a, b) => b.valor - a.valor);
+
+        let resto = excessoTotal;
+        for (const item of valores) {
+          if (resto <= 0) break;
+          const subtrair = Math.min(item.valor, resto);
+          item.valor -= subtrair;
+          resto -= subtrair;
+        }
+
+        const novosDados = {
+          base: valores.find((v) => v.nome === "base").valor,
+          sis: valores.find((v) => v.nome === "sis").valor,
+          alt: valores.find((v) => v.nome === "alt").valor,
+          codigo,
+        };
+
+        await handleSave(novosDados);
+
+        // Calcular os novos valores para C1 (excesso)
+        const updateData = {
+          sis: (exists.sis || 0) + (sis - novosDados.sis),
+          alt: (exists.alt || 0) + (alt - novosDados.alt),
+          base: (exists.base || 0) + (base - novosDados.base),
+        };
+
+        await handleUpdateC1(codigo, dataEncoded, updateData);
+      }
+    } else {
+      if (excessoTotal > 0) {
+        const valores = [
+          { nome: "base", valor: base },
+          { nome: "sis", valor: sis },
+          { nome: "alt", valor: alt },
+        ];
+        valores.sort((a, b) => b.valor - a.valor);
+
+        let resto = excessoTotal;
+        for (const item of valores) {
+          if (resto <= 0) break;
+          const subtrair = Math.min(item.valor, resto);
+          item.valor -= subtrair;
+          resto -= subtrair;
+        }
+
+        const novosDados = {
+          base: valores.find((v) => v.nome === "base").valor,
+          sis: valores.find((v) => v.nome === "sis").valor,
+          alt: valores.find((v) => v.nome === "alt").valor,
+          codigo,
+        };
+
+        await handleSave(novosDados);
+
+        await Execute.sendToC1({
+          ...ObjC1,
+          sis: sis - novosDados.sis,
+          alt: alt - novosDados.alt,
+          base: base - novosDados.base,
+        });
+      } else if (excessoTotal === 0) {
+        await Execute.sendToC1({
+          ...ObjC1,
+          sis: 0,
+          alt: 0,
+          base: 0,
+          pix: 0,
+          real: 0,
+        });
+      }
+    }
+  }
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     const trocoValue = Number(totalTroco);
 
     try {
-      //Inicio das condições.
+      if (dadosR1 && trocoValue > 0 && !Number(total)) {
+        await sendToC1AndUpdateR1(trocoValue);
+        console.log("caiu em Pago Parte do R1");
 
-      // Troco é maior que zero e é diferetnte do total(o em amerelo) e pix ou real maior que zero.
-      if (
-        (trocoValue > 0 && trocoValue !== total && Number(pix) > 0) ||
-        (trocoValue > 0 && trocoValue !== total && Number(real) > 0)
-      ) {
-        await Execute.removeDevo(codigo);
-
-        const currentTotal = base + sis + alt;
-        const excessoTotal = currentTotal - trocoValue;
-        const exists = await Execute.reciveFromC1Data(codigo, data);
-
-        if (exists) {
-          const dataEncoded = encodeURIComponent(data);
-          handleUpdateC1(codigo, dataEncoded);
-
-          if (excessoTotal > 0) {
-            const valores = [
-              { nome: "base", valor: base },
-              { nome: "sis", valor: sis },
-              { nome: "alt", valor: alt },
-            ];
-            valores.sort((a, b) => b.valor - a.valor);
-
-            let resto = excessoTotal;
-            for (const item of valores) {
-              if (resto <= 0) break;
-              const subtrair = Math.min(item.valor, resto);
-              item.valor -= subtrair;
-              resto -= subtrair;
-            }
-
-            const novosDados = {
-              base: valores.find((v) => v.nome === "base").valor,
-              sis: valores.find((v) => v.nome === "sis").valor,
-              alt: valores.find((v) => v.nome === "alt").valor,
-              codigo,
-            };
-
-            handleSave(novosDados);
-
-            if (resto > 0) {
-              await Execute.sendToDeve({
-                nome,
-                codigo,
-                valor: resto,
-              });
-              await Execute.removeM1andR1(idsArray);
-            }
-          } else if (excessoTotal < 0) {
-            const diferenca = trocoValue - currentTotal;
-            await Execute.sendToDeve({
-              nome,
-              codigo,
-              valor: diferenca,
-            });
-            handleSave({ base: 0, sis: 0, alt: 0, codigo });
-            await Execute.removeM1andR1(idsArray);
-          }
-        } else {
-          if (excessoTotal > 0) {
-            const valores = [
-              { nome: "base", valor: base },
-              { nome: "sis", valor: sis },
-              { nome: "alt", valor: alt },
-            ];
-            valores.sort((a, b) => b.valor - a.valor);
-
-            let resto = excessoTotal;
-            for (const item of valores) {
-              if (resto <= 0) break;
-              const subtrair = Math.min(item.valor, resto);
-              item.valor -= subtrair;
-              resto -= subtrair;
-            }
-
-            const novosDados = {
-              base: valores.find((v) => v.nome === "base").valor,
-              sis: valores.find((v) => v.nome === "sis").valor,
-              alt: valores.find((v) => v.nome === "alt").valor,
-              codigo,
-            };
-
-            handleSave(novosDados);
-
-            await Execute.sendToC1({
-              ...ObjC1,
-              sis: sis - novosDados.sis,
-              alt: alt - novosDados.alt,
-              base: base - novosDados.base,
-            });
-
-            if (resto > 0) {
-              await Execute.sendToDeve({
-                nome,
-                codigo,
-                valor: resto,
-              });
-              await Execute.removeM1andR1(idsArray);
-            }
-          } else if (excessoTotal < 0) {
-            const diferenca = trocoValue - currentTotal;
-            await Execute.sendToDeve({
-              nome,
-              codigo,
-              valor: diferenca,
-            });
-            handleSave({ base: 0, sis: 0, alt: 0, codigo });
-            await Execute.removeM1andR1(idsArray);
-          }
-          await Execute.sendToPapelC1(ObjPapelC1);
-        }
-        console.log(trocoValue);
-        console.log("caiu em troco Maior que 0 diferente de total");
-        // Troco é maior que zero e é diferetnte do total(o em amerelo) e pix ou real maior que zero.
-
-        //Troco Menor que Zero
+        //
+      } else if (dadosR1 && !trocoValue && !Number(total) && !valorDeve) {
+        await sendToC1AndUpdateR1(trocoValue);
+        await Execute.removeM1andR1(idsArray);
+        console.log("caiu em Pago todo R1");
+        //
       } else if (trocoValue < 0) {
         await Execute.removeDeve(codigo);
         await Execute.sendToDevo({
@@ -324,24 +308,6 @@ const Calculadora = ({ codigo, nome, onCodigoChange, onNomeChange, data }) => {
         });
         await Execute.removeM1andR1(idsArray);
         console.log("Caiu em Troco Menor que Zero.");
-        //Troco Menor que Zero.
-
-        //Se pix e real ou a soma dos dois forem estritamente igual a total (valor em amarelo).
-      } else if (
-        Number(pix) === total ||
-        Number(real) === total ||
-        Number(pix) + Number(real) === total
-      ) {
-        await Execute.sendToPapelC1({
-          ...ObjPapelC1,
-          data: new Date().toISOString(),
-        });
-        console.log(
-          "Caiu em Se pix e real ou a soma dos dois forem estritamente igual a total (valor em amarelo).",
-        );
-        //Se pix e real ou a soma dos dois forem estritamente igual a total (valor em amarelo).
-
-        // Troco é Igual o valor Verde (Total Geral) é igual troco com real e pix sendo nulo ou zero.
       } else if (
         trocoValue === totalGeral &&
         Number(pix) == 0 &&
@@ -349,57 +315,114 @@ const Calculadora = ({ codigo, nome, onCodigoChange, onNomeChange, data }) => {
       ) {
         if (total > 0) {
           await Execute.removeDevo(codigo);
+          await Execute.removeDeve(codigo);
           await Execute.sendToDeve({
             nome,
+            data: Use.NowData(),
             codigo,
-            valor: total,
+            valor: trocoValue,
+          });
+          await Execute.sendToPapelC1({
+            ...ObjPapelC1,
+            data: Use.NowData(),
+            papelreal: papel,
+            encaixereal: comitions,
           });
         } else {
           setShowError(true);
         }
 
-        console.log("Caiu no o valor verde(Total Geral) é igual ao troco");
-        // Troco é Igual o valor Verde (Total Geral) é igual troco com real e pix sendo nulo ou zero
-
-        //Foi tudo pago
-      } else if (!trocoValue) {
+        console.log("Deve Todo o Papel");
+        //
+      } else if (!trocoValue && valorDeve && dadosR1) {
         const exists = await Execute.reciveFromC1Data(codigo, data);
 
         if (exists) {
           const dataEncoded = encodeURIComponent(data);
-          handleUpdateC1(codigo, dataEncoded);
+          await handleUpdateC1(codigo, dataEncoded);
           await Execute.removeDeve(codigo);
           await Execute.removeDevo(codigo);
           await Execute.removeM1andR1(idsArray);
         } else {
-          console.log(data);
           await Execute.sendToC1(ObjC1);
           await Execute.sendToPapelC1(ObjPapelC1);
           await Execute.removeDeve(codigo);
           await Execute.removeDevo(codigo);
           await Execute.removeM1andR1(idsArray);
         }
-        console.log("Caiu em foi tudo pago");
+        console.log("Caiu em foi tudo pago Papel e R1.");
+        //
+      } else if (valorDeve && !trocoValue) {
+        await Execute.removeDeve(codigo);
+        await Execute.removeDevo(codigo);
+        console.log("Caiu em Foi pago todo o papel.");
+        //
+      } else if (valorDeve && trocoValue) {
+        await Execute.sendToDeveUpdate(codigo, trocoValue);
+        await Execute.removeDevo(codigo);
+        console.log("Caiu em Foi pago Parte do Valor do Papel.");
+        //
+      } else if (dadosR1 > 0 && !trocoValue && !Number(total)) {
+        await sendToC1AndUpdateR1(trocoValue);
+        await Execute.removeM1andR1(idsArray);
+        console.log("Caiu em foi pago todo o R1.");
+        //
+      } else if (dadosR1 > 0 && !trocoValue && Number(total)) {
+        await sendToC1AndUpdateR1(trocoValue);
+        await Execute.sendToPapelC1(ObjPapelC1);
+        await Execute.removeM1andR1(idsArray);
+        console.log("Caiu em foi pago todo o R1 e Papel.");
+        //
+      } else if (dadosR1 > 0 && trocoValue && Number(total)) {
+        if (dadosR1 === Number(pix) + Number(real)) {
+          await Execute.sendToC1(ObjC1);
+          await Execute.removeM1andR1(idsArray);
+          if (total > 0) {
+            await Execute.removeDevo(codigo);
+            await Execute.removeDeve(codigo);
+            await Execute.sendToDeve({
+              nome,
+              data: Use.NowData(),
+              codigo,
+              valor: trocoValue,
+            });
+            await Execute.sendToPapelC1({
+              ...ObjPapelC1,
+              data: Use.NowData(),
+            });
+          } else {
+            setShowError(true);
+          }
+          console.log("Caiu em foi pago todo o R1 e deve todo o Papel.");
+          //
+        } else if (dadosR1 < Number(pix) + Number(real)) {
+          console.log("criando");
+        } else if (Number(total) === Number(pix) + Number(real)) {
+          await Execute.sendToPapelC1(ObjPapelC1);
+          await sendToC1AndUpdateR1(trocoValue);
+          console.log("Caiu em foi pago todo o Papel e deve todo o R1.");
+          //
+        }
+        console.log("Caiu em foi pago Parte do R1 e Papel.");
+        //
       } else {
         const exists = await Execute.reciveFromC1Data(codigo, data);
 
         if (exists) {
           const dataEncoded = encodeURIComponent(data);
-          handleUpdateC1(codigo, dataEncoded);
+          await handleUpdateC1(codigo, dataEncoded);
           await Execute.removeDeve(codigo);
           await Execute.removeDevo(codigo);
           await Execute.removeM1andR1(idsArray);
         } else {
-          console.log(data);
           await Execute.sendToC1(ObjC1);
           await Execute.sendToPapelC1(ObjPapelC1);
           await Execute.removeDeve(codigo);
           await Execute.removeDevo(codigo);
           await Execute.removeM1andR1(idsArray);
         }
-        console.log("Caiu em sem condição");
+        console.log("Caiu em sem condições");
       }
-      //Foi tudo pago
 
       setPix("");
       setPlus(0);

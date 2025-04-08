@@ -14,6 +14,7 @@ const Coluna = () => {
   const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState(null);
   const [editedData, setEditedData] = useState({});
+  const [exists, setExists] = useState([]); // Adicione junto aos outros estados
 
   const handleSave = async (editedData) => {
     try {
@@ -38,6 +39,9 @@ const Coluna = () => {
   const fetchData = async () => {
     try {
       const results = await Execute.reciveFromPapelC1();
+
+      const existsData = await Execute.reciveFromDeve();
+      setExists(existsData);
 
       const grouped = results.reduce((acc, item) => {
         // Formata a data removendo o horário
@@ -93,7 +97,7 @@ const Coluna = () => {
   };
 
   return (
-    <div className="w-240 overflow-x-auto rounded-box border border-success bg-base-100">
+    <div className=" overflow-x-auto rounded-box border border-success bg-base-100">
       {Object.entries(groupedResults).map(([date, items]) => {
         // Cálculo dos totais para cada coluna
         const totalPapelReal = items.reduce(
@@ -197,18 +201,29 @@ const Coluna = () => {
                   <th>Papel</th>
                   <th className="bg-accent">R$</th>
                   <th className="bg-accent">PIX</th>
-                  <th className="bg-success">Enc-R$</th>
-                  <th className="bg-success">Enc-PIX</th>
+                  <th className="bg-success">E R$</th>
+                  <th className="bg-success">E PIX</th>
                   <th className="bg-warning-content/50">Des</th>
                   <th className="bg-warning-content/50">Util</th>
-                  <th className="bg-warning-content/50">Perdida</th>
+                  <th className="bg-warning-content/50">Perda</th>
                   <th>Comentarios</th>
                   <th>Ações</th>
                 </tr>
               </thead>
               <tbody>
                 {items.map((item) => (
-                  <tr key={item.id} className="border-b border-success">
+                  <tr
+                    key={item.id}
+                    className={`border-b border-success ${
+                      exists.some(
+                        (e) =>
+                          e.codigo === item.codigo &&
+                          Use.formatarData(e.data) === date,
+                      )
+                        ? "bg-error/70"
+                        : ""
+                    }`}
+                  >
                     <td className="hidden">{item.id}</td>
                     <td className="hidden">{item.codigo}</td>
                     <td>{item.horaSeparada}</td>

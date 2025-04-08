@@ -29,8 +29,17 @@ function formatarData(dataStr) {
   }`;
 }
 
+function NowData() {
+  const data = new Date();
+  const isoString = data.toISOString();
+  const [dataParte, tempoParte] = isoString.split("T");
+  const [tempo] = tempoParte.split(".");
+  return `${dataParte} ${tempo}.000000+00`;
+}
+
 const use = {
   formatarData,
+  NowData,
 };
 
 export default use;

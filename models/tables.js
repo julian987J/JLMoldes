@@ -109,14 +109,15 @@ async function createDevo(ordemInputValues) {
 async function createDeve(ordemInputValues) {
   const result = await database.query({
     text: `
-      INSERT INTO "Deve" (codigo, nome, valor) 
-      VALUES ($1, $2, $3)
+      INSERT INTO "Deve" (codigo, nome, valor, data) 
+      VALUES ($1, $2, $3, $4)
       RETURNING *;
     `,
     values: [
       ordemInputValues.codigo,
       ordemInputValues.nome,
       ordemInputValues.valor,
+      ordemInputValues.data,
     ],
   });
 
@@ -370,6 +371,21 @@ async function updateBase(updatedData) {
   return result;
 }
 
+async function updateDeve(updatedData) {
+  const result = await database.query({
+    text: `
+      UPDATE "Deve"
+      SET 
+        valor = $1
+      WHERE codigo = $2
+      RETURNING *;
+    `,
+    values: [updatedData.valor, updatedData.codigo],
+  });
+
+  return result;
+}
+
 async function getC1() {
   const result = await database.query({
     text: `SELECT * FROM "C1"`,
@@ -571,6 +587,7 @@ const ordem = {
   deleteR1,
   deleteDeve,
   deleteDevo,
+  updateDeve,
   updateConfig,
   updateC1,
   updateC1BSA,
