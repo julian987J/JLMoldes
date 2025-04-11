@@ -37,7 +37,7 @@ const R1content = ({ codigoExterno }) => {
       try {
         let foundItem = null;
         for (const table of tablesToSearch.current) {
-          const items = await Execute.reciveFromR1DeveDevo(table);
+          const items = await Execute.receiveFromR1DeveDevo(table);
           foundItem = items.find((item) => item.codigo === codigo);
           if (foundItem) break;
         }
@@ -76,7 +76,7 @@ const R1content = ({ codigoExterno }) => {
       try {
         let foundCodigo = "";
         for (const table of tablesToSearch.current) {
-          const items = await Execute.reciveFromR1DeveDevo(table);
+          const items = await Execute.receiveFromR1DeveDevo(table);
           const foundItem = items.find((item) => item.nome === nome);
           if (foundItem) {
             foundCodigo = foundItem.codigo;

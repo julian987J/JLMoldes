@@ -9,7 +9,7 @@ const Config = () => {
 
   useEffect(() => {
     const fetchData = async () => {
-      const data = await Execute.reciveFromConfig();
+      const data = await Execute.receiveFromConfig();
       setResult(data);
     };
     fetchData();

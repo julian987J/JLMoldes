@@ -81,7 +81,7 @@ const Calculadora = ({ codigo, nome, onCodigoChange, onNomeChange, data }) => {
   useEffect(() => {
     const buscarDados = async () => {
       try {
-        const resultado = await Execute.reciveFromR1JustBSA(codigo);
+        const resultado = await Execute.receiveFromR1JustBSA(codigo);
         // Garantir conversão numérica correta
         const newBase = Number(resultado.total_base) || 0;
         const newSis = Number(resultado.total_sis) || 0;
@@ -107,7 +107,7 @@ const Calculadora = ({ codigo, nome, onCodigoChange, onNomeChange, data }) => {
   useEffect(() => {
     const buscarDados = async () => {
       try {
-        const resultado = await Execute.reciveFromDeveJustValor(codigo);
+        const resultado = await Execute.receiveFromDeveJustValor(codigo);
         // Soma todos os valores
         const somaTotal = Number(resultado.total_valor || 0);
 
@@ -123,7 +123,7 @@ const Calculadora = ({ codigo, nome, onCodigoChange, onNomeChange, data }) => {
   useEffect(() => {
     const buscarDados = async () => {
       try {
-        const resultado = await Execute.reciveFromDevoJustValor(codigo);
+        const resultado = await Execute.receiveFromDevoJustValor(codigo);
 
         // Soma todos os valores
         const somaTotal = Number(resultado.total_valor || 0);
@@ -139,7 +139,7 @@ const Calculadora = ({ codigo, nome, onCodigoChange, onNomeChange, data }) => {
 
   useEffect(() => {
     const fetchData = async () => {
-      const dataConfig = await Execute.reciveFromConfig();
+      const dataConfig = await Execute.receiveFromConfig();
 
       if (dataConfig.length > 0) {
         setMultiplier(dataConfig[0].m);
@@ -227,7 +227,7 @@ const Calculadora = ({ codigo, nome, onCodigoChange, onNomeChange, data }) => {
 
     const currentTotal = base + sis + alt;
     const excessoTotal = currentTotal - value;
-    const exists = await Execute.reciveFromC1Data(codigo, data);
+    const exists = await Execute.receiveFromC1Data(codigo, data);
 
     if (exists) {
       const dataEncoded = encodeURIComponent(data);
@@ -372,15 +372,15 @@ const Calculadora = ({ codigo, nome, onCodigoChange, onNomeChange, data }) => {
         Number(pix) == 0 &&
         Number(real) == 0
       ) {
-        if (total > 0) {
+        if (Number(total) > 0) {
           await Execute.removeDevo(codigo);
-          await Execute.removeDeve(codigo);
           await Execute.sendToDeve({
             nome,
             data: Use.NowData(),
             codigo,
-            valor: trocoValue,
+            valor: Number(total),
           });
+
           await Execute.sendToPapelC1({
             ...ObjPapelC1,
             data: Use.NowData(),
@@ -394,7 +394,7 @@ const Calculadora = ({ codigo, nome, onCodigoChange, onNomeChange, data }) => {
         console.log("Deve Todo o Papel");
         //
       } else if (!trocoValue && valorDeve && dadosR1) {
-        const exists = await Execute.reciveFromC1Data(codigo, data);
+        const exists = await Execute.receiveFromC1Data(codigo, data);
 
         if (exists) {
           const values = totalGeral - Number(total) - pixMaisReal;
@@ -416,6 +416,7 @@ const Calculadora = ({ codigo, nome, onCodigoChange, onNomeChange, data }) => {
         await Execute.removeDeve(codigo);
         await Execute.removeDevo(codigo);
         console.log("Caiu em Foi pago todo o papel.");
+
         //
       } else if (valorDeve && trocoValue && !dadosR1) {
         await Execute.sendToDeveUpdate(codigo, trocoValue);
@@ -526,9 +527,9 @@ const Calculadora = ({ codigo, nome, onCodigoChange, onNomeChange, data }) => {
           await sendToC1AndUpdateR1(pixMaisReal);
           console.log("Caiu em foi pago Parte R1 deve o Papel.");
         } else if (pixMaisReal > dadosR1) {
-          await sendToC1AndUpdateR1(pixMaisReal);
-          await Execute.removeM1andR1(idsArray);
           await Execute.sendToDeveUpdate(codigo, trocoValue);
+          await Execute.sendToC1(ObjC1);
+          await Execute.removeM1andR1(idsArray);
           console.log("Caiu em foi Todo R1 e Parte Papel.");
         }
         console.log("Caiu em Tem R1 e Tem DEVE");

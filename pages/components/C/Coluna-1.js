@@ -38,8 +38,8 @@ const Coluna = () => {
 
   const fetchData = async () => {
     try {
-      const results = await Execute.reciveFromC1();
-      const existsData = await Execute.reciveFromR1();
+      const results = await Execute.receiveFromC1();
+      const existsData = await Execute.receiveFromR1();
       setExists(existsData);
 
       const grouped = results.reduce((acc, item) => {

@@ -374,11 +374,58 @@ async function updateBase(updatedData) {
 async function updateDeve(updatedData) {
   const result = await database.query({
     text: `
-      UPDATE "Deve"
-      SET 
-        valor = $1
-      WHERE codigo = $2
-      RETURNING *;
+      -- Passo 1: Calcula a soma total dos valores
+      WITH total_sum AS (
+        SELECT SUM(valor) AS total FROM "Deve" WHERE codigo = $2
+      ),
+      -- Passo 2: Ordena as linhas por data (para identificar a última linha)
+      ordered_rows AS (
+        SELECT 
+          data, 
+          valor,
+          ROW_NUMBER() OVER (ORDER BY data DESC) AS row_num
+        FROM "Deve"
+        WHERE codigo = $2
+      ),
+      -- Passo 3: Atualiza as linhas
+      -- Se soma_total >= valor_a_subtrair: subtrai normalmente
+      -- Se soma_total < valor_a_subtrair: 
+      --    - Zera todas as linhas
+      --    - Insere a diferença positiva na última linha
+      updated_rows AS (
+        UPDATE "Deve" d
+        SET valor = 
+          CASE
+            -- Caso 1: Soma total suficiente (subtrai normalmente)
+            WHEN (SELECT total FROM total_sum) >= $1 THEN
+              (SELECT subtract_amount FROM (
+                SELECT 
+                  data,
+                  CASE
+                    WHEN (SUM(valor) OVER (ORDER BY data) - valor) <= $1 THEN
+                      CASE
+                        WHEN SUM(valor) OVER (ORDER BY data) <= $1 THEN valor
+                        ELSE $1 - (SUM(valor) OVER (ORDER BY data) - valor)
+                      END
+                    ELSE 0
+                  END AS subtract_amount
+                FROM "Deve"
+                WHERE codigo = $2
+              ) s WHERE s.data = d.data)
+            -- Caso 2: Soma total insuficiente (zerar tudo e inserir diferença na última linha)
+            ELSE
+              CASE
+                -- Se for a última linha, insere a diferença positiva
+                WHEN (SELECT row_num FROM ordered_rows o WHERE o.data = d.data) = 1 THEN
+                  ABS((SELECT total FROM total_sum) - $1)
+                -- Outras linhas são zeradas
+                ELSE 0
+              END
+          END
+        WHERE codigo = $2
+        RETURNING *
+      )
+      SELECT * FROM updated_rows;
     `,
     values: [updatedData.valor, updatedData.codigo],
   });
@@ -408,6 +455,25 @@ async function getC1Data(codigo, data) {
   });
 
   return result.rows[0].exists; // Retorna true ou false
+}
+
+async function getPapelData(codigo, data) {
+  const datas = Array.isArray(data) ? data : [data];
+
+  // Cria placeholders dinâmicos ($2, $3, etc.)
+  const placeholders = datas.map((_, i) => `$${i + 2}`).join(",");
+
+  const result = await database.query({
+    text: `SELECT EXISTS(
+             SELECT 1 
+             FROM "Deve" 
+             WHERE codigo = $1 
+             AND data IN (${placeholders})  -- Usa IN com os placeholders
+           ) AS exists;`,
+    values: [codigo, ...datas], // Espalha os valores do array
+  });
+
+  return result.rows[0].exists;
 }
 
 async function getPapelC1() {
@@ -571,6 +637,7 @@ const ordem = {
   getC1,
   getC1Data,
   getPapelC1,
+  getPapelData,
   getConfig,
   getR1BSA,
   getR1JustBSA,

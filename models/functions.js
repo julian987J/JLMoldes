@@ -15,7 +15,7 @@ const sendTrueMR1 = async (id) => {
 
 async function sendToR1(itemData) {
   try {
-    const idExists = await reciveFromR1(itemData.id);
+    const idExists = await receiveFromR1(itemData.id);
     const itemDataNumber = Number(itemData.id);
     const idExistsNumber = idExists.some(
       (item) => Number(item.id) === itemDataNumber,
@@ -180,7 +180,7 @@ async function sendToPapelC1(itemData) {
   }
 }
 
-async function reciveFromR1DeveDevo(tableName) {
+async function receiveFromR1DeveDevo(tableName) {
   try {
     const response = await fetch(`/api/v1/tables/${tableName}`);
     if (!response.ok) return [];
@@ -194,7 +194,7 @@ async function reciveFromR1DeveDevo(tableName) {
   }
 }
 
-async function reciveFromR1() {
+async function receiveFromR1() {
   try {
     const response = await fetch("/api/v1/tables/R1");
     if (!response.ok) throw new Error("Erro ao carregar os dados");
@@ -206,7 +206,7 @@ async function reciveFromR1() {
   }
 }
 
-async function reciveFromConfig() {
+async function receiveFromConfig() {
   try {
     const response = await fetch("/api/v1/tables/Config");
     if (!response.ok) throw new Error("Erro ao carregar os dados");
@@ -218,7 +218,7 @@ async function reciveFromConfig() {
   }
 }
 
-async function reciveFromDeve() {
+async function receiveFromDeve() {
   try {
     const response = await fetch("/api/v1/tables/deve");
     if (!response.ok) throw new Error("Erro ao carregar os dados");
@@ -230,7 +230,7 @@ async function reciveFromDeve() {
   }
 }
 
-async function reciveFromDeveJustValor(codigo) {
+async function receiveFromDeveJustValor(codigo) {
   try {
     const response = await fetch(
       `/api/v1/tables/calculadora/deve?codigo=${codigo}`,
@@ -257,7 +257,7 @@ async function reciveFromDeveJustValor(codigo) {
   }
 }
 
-async function reciveFromDevoJustValor(codigo) {
+async function receiveFromDevoJustValor(codigo) {
   try {
     const response = await fetch(
       `/api/v1/tables/calculadora/devo?codigo=${codigo}`,
@@ -284,7 +284,7 @@ async function reciveFromDevoJustValor(codigo) {
   }
 }
 
-async function reciveFromDevo() {
+async function receiveFromDevo() {
   try {
     const response = await fetch("/api/v1/tables/devo");
     if (!response.ok) throw new Error("Erro ao carregar os dados");
@@ -296,7 +296,7 @@ async function reciveFromDevo() {
   }
 }
 
-async function reciveFromC1() {
+async function receiveFromC1() {
   try {
     const response = await fetch("/api/v1/tables/c1");
     if (!response.ok) throw new Error("Erro ao carregar os dados");
@@ -308,9 +308,8 @@ async function reciveFromC1() {
   }
 }
 
-async function reciveFromC1Data(codigo, data) {
+async function receiveFromC1Data(codigo, data) {
   try {
-    // Codifica 'data' para enviar como parâmetro na URL
     const encodedData = encodeURIComponent(JSON.stringify(data));
 
     const response = await fetch(
@@ -320,7 +319,6 @@ async function reciveFromC1Data(codigo, data) {
     if (!response.ok) throw new Error("Erro ao carregar os dados");
     const result = await response.json();
 
-    // Retorna diretamente o booleano 'exists' vindo do servidor
     return result.exists; // true ou false
   } catch (error) {
     console.error("Erro ao buscar dados:", error);
@@ -328,7 +326,25 @@ async function reciveFromC1Data(codigo, data) {
   }
 }
 
-async function reciveFromPapelC1() {
+async function receiveFromPapelC1Data(codigo, data) {
+  try {
+    const encodedData = encodeURIComponent(JSON.stringify(data));
+
+    const response = await fetch(
+      `/api/v1/tables/c1/papel/calculadora?codigo=${codigo}&data=${encodedData}`,
+    );
+
+    if (!response.ok) throw new Error("Erro ao carregar os dados");
+    const result = await response.json();
+
+    return result.exists; // true ou false
+  } catch (error) {
+    console.error("Erro ao buscar dados:", error);
+    return false;
+  }
+}
+
+async function receiveFromPapelC1() {
   try {
     const response = await fetch("/api/v1/tables/c1/papel");
     if (!response.ok) throw new Error("Erro ao carregar os dados");
@@ -340,7 +356,7 @@ async function reciveFromPapelC1() {
   }
 }
 
-async function reciveFromR1JustBSA(codigo) {
+async function receiveFromR1JustBSA(codigo) {
   try {
     const response = await fetch(`/api/v1/tables/calculadora?codigo=${codigo}`);
 
@@ -415,7 +431,7 @@ async function removeDeve(codigo) {
   const response = await fetch("/api/v1/tables/deve", {
     method: "DELETE",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ codigo }), // Envia o `id` no corpo da requisição
+    body: JSON.stringify({ codigo }),
   });
 
   const result = await response.json();
@@ -441,17 +457,18 @@ const execute = {
   sendToDevo,
   sendToC1,
   sendToPapelC1,
-  reciveFromC1,
-  reciveFromC1Data,
-  reciveFromConfig,
-  reciveFromPapelC1,
-  reciveFromR1DeveDevo,
-  reciveFromDeve,
-  reciveFromDeveJustValor,
-  reciveFromDevo,
-  reciveFromDevoJustValor,
-  reciveFromR1,
-  reciveFromR1JustBSA,
+  receiveFromC1,
+  receiveFromC1Data,
+  receiveFromConfig,
+  receiveFromPapelC1,
+  receiveFromPapelC1Data,
+  receiveFromR1DeveDevo,
+  receiveFromDeve,
+  receiveFromDeveJustValor,
+  receiveFromDevo,
+  receiveFromDevoJustValor,
+  receiveFromR1,
+  receiveFromR1JustBSA,
   removeC1,
   removePapelC1,
   removeM1andR1,

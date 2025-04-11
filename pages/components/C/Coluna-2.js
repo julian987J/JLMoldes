@@ -38,9 +38,9 @@ const Coluna = () => {
 
   const fetchData = async () => {
     try {
-      const results = await Execute.reciveFromPapelC1();
+      const results = await Execute.receiveFromPapelC1();
 
-      const existsData = await Execute.reciveFromDeve();
+      const existsData = await Execute.receiveFromDeve();
       setExists(existsData);
 
       const grouped = results.reduce((acc, item) => {
@@ -51,13 +51,13 @@ const Coluna = () => {
         const dateObj = new Date(item.data);
         const horas = String(dateObj.getHours()).padStart(2, "0");
         const minutos = String(dateObj.getMinutes()).padStart(2, "0");
-        const horaFormatada = `${horas}:${minutos}`;
+        const segundos = String(dateObj.getSeconds()).padStart(2, "0");
+        const horaFormatada = `${horas}:${minutos}:${segundos}`;
 
         acc[rawDate] = acc[rawDate] || [];
         acc[rawDate].push({
           ...item,
           horaSeparada: horaFormatada,
-          // Conversão dos valores
           papelreal: Number(item.papelreal) || 0,
           papelpix: Number(item.papelpix) || 0,
           encaixereal: Number(item.encaixereal) || 0,
@@ -215,11 +215,18 @@ const Coluna = () => {
                   <tr
                     key={item.id}
                     className={`border-b border-success ${
-                      exists.some(
-                        (e) =>
+                      exists.some((e) => {
+                        const itemDate = new Date(item.data);
+                        const eDate = new Date(e.data);
+
+                        return (
                           e.codigo === item.codigo &&
-                          Use.formatarData(e.data) === date,
-                      )
+                          Use.formatarData(e.data) === date &&
+                          itemDate.getHours() === eDate.getHours() &&
+                          itemDate.getMinutes() === eDate.getMinutes() &&
+                          itemDate.getSeconds() === eDate.getSeconds()
+                        );
+                      })
                         ? "bg-error/70"
                         : ""
                     }`}
