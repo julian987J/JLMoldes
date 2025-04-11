@@ -528,7 +528,7 @@ const Calculadora = ({ codigo, nome, onCodigoChange, onNomeChange, data }) => {
           console.log("Caiu em foi pago Parte R1 deve o Papel.");
         } else if (pixMaisReal > dadosR1) {
           await Execute.sendToDeveUpdate(codigo, trocoValue);
-          await Execute.sendToC1(ObjC1);
+          await Execute.sendToC1AndUpdateR1(0);
           await Execute.removeM1andR1(idsArray);
           console.log("Caiu em foi Todo R1 e Parte Papel.");
         }
