@@ -404,8 +404,7 @@ const Calculadora = ({ codigo, nome, onCodigoChange, onNomeChange, data }) => {
           await Execute.removeM1andR1(idsArray);
           console.log("Existe no C1");
         } else {
-          await Execute.sendToC1(ObjC1);
-          await Execute.sendToPapelC1(ObjPapelC1);
+          await sendToC1AndUpdateR1(trocoValue);
           await Execute.removeDeve(codigo);
           await Execute.removeDevo(codigo);
           await Execute.removeM1andR1(idsArray);
