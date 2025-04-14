@@ -7,8 +7,8 @@ exports.up = (pgm) => {
     unidade: { type: "numeric", notNull: true },
     valor: { type: "numeric", notNull: true },
     gastos: { type: "text", notNull: true },
-    dataPago: { type: "timestamptz", notNull: true },
-    dataProximo: { type: "timestamptz", notNull: true },
+    pago: { type: "timestamptz", notNull: true },
+    proximo: { type: "timestamptz", notNull: true },
   });
 };
 

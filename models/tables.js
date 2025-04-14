@@ -22,6 +22,28 @@ async function createC1(ordemInputValues) {
   return result;
 }
 
+async function createPessoal(ordemInputValues) {
+  const result = await database.query({
+    text: `
+      INSERT INTO "Pessoal" (dec, item, quantidade, unidade, valor, gastos, pago, proximo) 
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+      RETURNING *;
+    `,
+    values: [
+      ordemInputValues.letras,
+      ordemInputValues.item,
+      ordemInputValues.quantidade,
+      ordemInputValues.unidade,
+      ordemInputValues.valor,
+      ordemInputValues.gastos,
+      ordemInputValues.pago,
+      ordemInputValues.proximo,
+    ],
+  });
+
+  return result;
+}
+
 async function createPapelC1(ordemInputValues) {
   const result = await database.query({
     text: `
@@ -440,6 +462,14 @@ async function getC1() {
   return result;
 }
 
+async function getPessoal(letras) {
+  const result = await database.query({
+    text: `SELECT * FROM "Pessoal" WHERE dec = $1;`,
+    values: [letras],
+  });
+  return result.rows;
+}
+
 async function getConfig() {
   const result = await database.query({
     text: `SELECT * FROM "config"`,
@@ -629,11 +659,13 @@ export async function deleteDeve(codigo) {
 
 const ordem = {
   createM1,
+  createPessoal,
   createR1BSA,
   createDevo,
   createDeve,
   createC1,
   createPapelC1,
+  getPessoal,
   getC1,
   getC1Data,
   getPapelC1,

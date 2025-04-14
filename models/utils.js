@@ -42,6 +42,13 @@ function formatarDataHora(dataStr) {
   return `${diaSemana} - ${dia}/${mes} - ${hora}:${minutos}`;
 }
 
+function formatarDataAno(dataStr) {
+  const data = new Date(dataStr);
+  return `${String(data.getDate()).padStart(2, "0")}/${String(
+    data.getMonth() + 1,
+  ).padStart(2, "0")}/${data.getFullYear()}`;
+}
+
 function NowData() {
   const data = new Date();
   const isoString = data.toISOString();
@@ -53,6 +60,7 @@ function NowData() {
 const use = {
   formatarDataHora,
   formatarData,
+  formatarDataAno,
   NowData,
 };
 

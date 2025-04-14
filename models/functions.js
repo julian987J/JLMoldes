@@ -117,6 +117,44 @@ async function sendToDevo(itemData) {
   }
 }
 
+async function sendToPessoal(
+  letras,
+  item,
+  quantidade,
+  unidade,
+  valor,
+  gastos,
+  pago,
+  proximo,
+) {
+  try {
+    const response = await fetch("/api/v1/tables/gastos/pessoal", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        letras,
+        item,
+        quantidade,
+        unidade,
+        valor,
+        gastos,
+        pago,
+        proximo,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || "Erro ao criar registro em Pessoal");
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error("Erro no createPessoal:", error);
+    throw error;
+  }
+}
+
 async function sendToC1(itemData) {
   try {
     const response = await fetch("/api/v1/tables/c1", {
@@ -385,6 +423,24 @@ async function receiveFromR1JustBSA(codigo) {
   }
 }
 
+async function receiveFromPessoal(letras) {
+  try {
+    const response = await fetch(
+      `/api/v1/tables/gastos/pessoal?letras=${letras}`,
+    );
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || "Erro ao carregar os dados");
+    }
+
+    const data = await response.json();
+    return Array.isArray(data.rows) ? data.rows : [];
+  } catch (error) {
+    console.error("Erro ao buscar dados Pessoal:", error);
+  }
+}
+
 async function removeM1andR1(id) {
   const response = await fetch("/api/v1/tables", {
     method: "DELETE",
@@ -456,8 +512,10 @@ const execute = {
   sendToDeveUpdate,
   sendToDevo,
   sendToC1,
+  sendToPessoal,
   sendToPapelC1,
   receiveFromC1,
+  receiveFromPessoal,
   receiveFromC1Data,
   receiveFromConfig,
   receiveFromPapelC1,

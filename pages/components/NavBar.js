@@ -1,10 +1,11 @@
 import Update from "pages/components/Update.js";
 import React from "react";
 
-const NavBar = ({ R1, MContent, Cadastro, Ccontent }) => {
+const NavBar = ({ R1, MContent, Cadastro, Ccontent, Gastos }) => {
   const isMContentAvailable = Boolean(MContent);
   const isCadastroAvailable = Boolean(Cadastro);
   const isR1Available = Boolean(R1);
+  const isGastosAvailable = Boolean(Gastos);
   // Grupos de tabs para organização
   const tabGroups = [
     {
@@ -26,18 +27,54 @@ const NavBar = ({ R1, MContent, Cadastro, Ccontent }) => {
     { label: "T1", content: "Tab content 2" },
     { label: "T2", content: "Tab content 3" },
     { label: "T3", content: "Tab content 2" },
-    { label: "A-Gastos", content: "Tab content 3" },
-    { label: "B-Gastos", content: "Tab content 3" },
-    { label: "C-Gastos", content: "Tab content 3" },
-    { label: "D-Gastos", content: "Tab content 3" },
-    { label: "E-Gastos", content: "Tab content 3" },
-    { label: "F-Gastos", content: "Tab content 3" },
-    { label: "G-Gastos", content: "Tab content 3" },
-    { label: "H-Gastos", content: "Tab content 3" },
-    { label: "I-Gastos", content: "Tab content 3" },
-    { label: "J-Gastos", content: "Tab content 3" },
-    { label: "K-Gastos", content: "Tab content 3" },
-    { label: "L-Gastos", content: "Tab content 3" },
+    {
+      label: "A-Gastos",
+      content: isGastosAvailable ? <Gastos letras="A" /> : "Loading...",
+    },
+    {
+      label: "B-Gastos",
+      content: isGastosAvailable ? <Gastos letras="B" /> : "Loading...",
+    },
+    {
+      label: "C-Gastos",
+      content: isGastosAvailable ? <Gastos letras="C" /> : "Loading...",
+    },
+    {
+      label: "D-Gastos",
+      content: isGastosAvailable ? <Gastos letras="D" /> : "Loading...",
+    },
+    {
+      label: "E-Gastos",
+      content: isGastosAvailable ? <Gastos letras="E" /> : "Loading...",
+    },
+    {
+      label: "F-Gastos",
+      content: isGastosAvailable ? <Gastos letras="F" /> : "Loading...",
+    },
+    {
+      label: "G-Gastos",
+      content: isGastosAvailable ? <Gastos letras="G" /> : "Loading...",
+    },
+    {
+      label: "H-Gastos",
+      content: isGastosAvailable ? <Gastos letras="H" /> : "Loading...",
+    },
+    {
+      label: "I-Gastos",
+      content: isGastosAvailable ? <Gastos letras="I" /> : "Loading...",
+    },
+    {
+      label: "J-Gastos",
+      content: isGastosAvailable ? <Gastos letras="J" /> : "Loading...",
+    },
+    {
+      label: "K-Gastos",
+      content: isGastosAvailable ? <Gastos letras="K" /> : "Loading...",
+    },
+    {
+      label: "L-Gastos",
+      content: isGastosAvailable ? <Gastos letras="L" /> : "Loading...",
+    },
     { label: "Total Anual", content: "Tab content 3" },
     {
       label: "Cadastros",
