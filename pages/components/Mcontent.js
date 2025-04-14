@@ -4,6 +4,8 @@ import TabelaMRight from "./TabelaMRight.js";
 import CodigoVerifier from "./CodigoVerifier.js";
 import ErrorComponent from "./Errors.js";
 import R1content from "./R1Content.js";
+import Config from "./Config.js";
+
 const Mcontent = () => {
   const [observacao, setObservacao] = useState("");
   const [dec, setDec] = useState("");
@@ -173,12 +175,15 @@ const Mcontent = () => {
   return (
     <div className="h-full">
       {/* Formulário */}
-      <div className="bg-base-100 border-base-300 pb-2 px-[14%]">
-        <form onSubmit={handleSubmit}>
+      <div className="flex flex-nowrap items-center bg-base-100 border-base-300 pb-2 gap-2 mx-[6%]">
+        <form
+          onSubmit={handleSubmit}
+          className="flex flex-nowrap items-center gap-2"
+        >
           <input
             type="text"
             placeholder="Observações"
-            className="input input-info input-xs"
+            className="input input-info input-xs w-80"
             value={observacao}
             onChange={(e) => setObservacao(e.target.value)}
           />
@@ -239,6 +244,7 @@ const Mcontent = () => {
           </button>
           <CodigoVerifier codigo={codigo} /> {/* Exibe a contagem ao lado */}
         </form>
+        <Config />
       </div>
 
       {/* Tabelas */}

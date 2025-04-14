@@ -15,7 +15,7 @@ const sendTrueMR1 = async (id) => {
 
 async function sendToR1(itemData) {
   try {
-    const idExists = await reciveFromR1(itemData.id);
+    const idExists = await receiveFromR1(itemData.id);
     const itemDataNumber = Number(itemData.id);
     const idExistsNumber = idExists.some(
       (item) => Number(item.id) === itemDataNumber,
@@ -55,6 +55,7 @@ async function sendToDeve(itemData) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         nome: itemData.nome,
+        data: itemData.data,
         codigo: itemData.codigo,
         valor: itemData.valor,
       }),
@@ -69,6 +70,26 @@ async function sendToDeve(itemData) {
   } catch (error) {
     console.error("Erro no createDeve:", error);
     throw error;
+  }
+}
+
+async function sendToDeveUpdate(codigo, valor) {
+  try {
+    const response = await fetch(
+      `/api/v1/tables/deve?codigo=${codigo}&valor=${valor}`,
+      {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          codigo,
+          valor,
+        }),
+      },
+    );
+
+    if (!response.ok) throw new Error("Erro ao atualizar");
+  } catch (error) {
+    console.error("Erro ao salvar:", error);
   }
 }
 
@@ -95,7 +116,71 @@ async function sendToDevo(itemData) {
     throw error;
   }
 }
-async function reciveFromR1DeveDevo(tableName) {
+
+async function sendToC1(itemData) {
+  try {
+    const response = await fetch("/api/v1/tables/c1", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        codigo: itemData.codigo,
+        data: itemData.data,
+        nome: itemData.nome,
+        sis: itemData.sis,
+        alt: itemData.alt,
+        base: itemData.base,
+        real: itemData.real,
+        pix: itemData.pix,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || "Erro ao criar registro em C1");
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error("Erro no createC1:", error);
+    throw error;
+  }
+}
+
+async function sendToPapelC1(itemData) {
+  try {
+    const response = await fetch("/api/v1/tables/c1/papel", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        codigo: itemData.codigo,
+        data: itemData.data,
+        nome: itemData.nome,
+        multi: itemData.multi,
+        papel: itemData.papel,
+        papelpix: itemData.papelpix,
+        papelreal: itemData.papelreal,
+        encaixepix: itemData.encaixepix,
+        encaixereal: itemData.encaixereal,
+        desperdicio: itemData.desperdicio,
+        util: itemData.util,
+        perdida: itemData.perdida,
+        comentarios: itemData.comentario,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || "Erro ao criar registro em C1");
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error("Erro no createPapelC1:", error);
+    throw error;
+  }
+}
+
+async function receiveFromR1DeveDevo(tableName) {
   try {
     const response = await fetch(`/api/v1/tables/${tableName}`);
     if (!response.ok) return [];
@@ -109,7 +194,7 @@ async function reciveFromR1DeveDevo(tableName) {
   }
 }
 
-async function reciveFromR1() {
+async function receiveFromR1() {
   try {
     const response = await fetch("/api/v1/tables/R1");
     if (!response.ok) throw new Error("Erro ao carregar os dados");
@@ -121,7 +206,19 @@ async function reciveFromR1() {
   }
 }
 
-async function reciveFromDeve() {
+async function receiveFromConfig() {
+  try {
+    const response = await fetch("/api/v1/tables/Config");
+    if (!response.ok) throw new Error("Erro ao carregar os dados");
+    const data = await response.json();
+    return Array.isArray(data.rows) ? data.rows : [];
+  } catch (error) {
+    console.error("Erro ao buscar dados Config:", error);
+    return [];
+  }
+}
+
+async function receiveFromDeve() {
   try {
     const response = await fetch("/api/v1/tables/deve");
     if (!response.ok) throw new Error("Erro ao carregar os dados");
@@ -133,7 +230,7 @@ async function reciveFromDeve() {
   }
 }
 
-async function reciveFromDeveJustValor(codigo) {
+async function receiveFromDeveJustValor(codigo) {
   try {
     const response = await fetch(
       `/api/v1/tables/calculadora/deve?codigo=${codigo}`,
@@ -160,7 +257,7 @@ async function reciveFromDeveJustValor(codigo) {
   }
 }
 
-async function reciveFromDevoJustValor(codigo) {
+async function receiveFromDevoJustValor(codigo) {
   try {
     const response = await fetch(
       `/api/v1/tables/calculadora/devo?codigo=${codigo}`,
@@ -187,7 +284,7 @@ async function reciveFromDevoJustValor(codigo) {
   }
 }
 
-async function reciveFromDevo() {
+async function receiveFromDevo() {
   try {
     const response = await fetch("/api/v1/tables/devo");
     if (!response.ok) throw new Error("Erro ao carregar os dados");
@@ -199,7 +296,67 @@ async function reciveFromDevo() {
   }
 }
 
-async function reciveFromR1JustBSA(codigo) {
+async function receiveFromC1() {
+  try {
+    const response = await fetch("/api/v1/tables/c1");
+    if (!response.ok) throw new Error("Erro ao carregar os dados");
+    const data = await response.json();
+    return Array.isArray(data.rows) ? data.rows : [];
+  } catch (error) {
+    console.error("Erro ao buscar dados deve:", error);
+    return [];
+  }
+}
+
+async function receiveFromC1Data(codigo, data) {
+  try {
+    const encodedData = encodeURIComponent(JSON.stringify(data));
+
+    const response = await fetch(
+      `/api/v1/tables/c1/calculadora?codigo=${codigo}&data=${encodedData}`,
+    );
+
+    if (!response.ok) throw new Error("Erro ao carregar os dados");
+    const result = await response.json();
+
+    return result.exists; // true ou false
+  } catch (error) {
+    console.error("Erro ao buscar dados:", error);
+    return false;
+  }
+}
+
+async function receiveFromPapelC1Data(codigo, data) {
+  try {
+    const encodedData = encodeURIComponent(JSON.stringify(data));
+
+    const response = await fetch(
+      `/api/v1/tables/c1/papel/calculadora?codigo=${codigo}&data=${encodedData}`,
+    );
+
+    if (!response.ok) throw new Error("Erro ao carregar os dados");
+    const result = await response.json();
+
+    return result.exists; // true ou false
+  } catch (error) {
+    console.error("Erro ao buscar dados:", error);
+    return false;
+  }
+}
+
+async function receiveFromPapelC1() {
+  try {
+    const response = await fetch("/api/v1/tables/c1/papel");
+    if (!response.ok) throw new Error("Erro ao carregar os dados");
+    const data = await response.json();
+    return Array.isArray(data.rows) ? data.rows : [];
+  } catch (error) {
+    console.error("Erro ao buscar dados deve:", error);
+    return [];
+  }
+}
+
+async function receiveFromR1JustBSA(codigo) {
   try {
     const response = await fetch(`/api/v1/tables/calculadora?codigo=${codigo}`);
 
@@ -248,11 +405,33 @@ async function removeM1andR1(id) {
   console.log(result2);
 }
 
+async function removeC1(id) {
+  const response = await fetch("/api/v1/tables/c1", {
+    method: "DELETE",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ id }), // Envia o `id` no corpo da requisição
+  });
+
+  const result = await response.json();
+  console.log(result);
+}
+
+async function removePapelC1(id) {
+  const response = await fetch("/api/v1/tables/c1/papel", {
+    method: "DELETE",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ id }), // Envia o `id` no corpo da requisição
+  });
+
+  const result = await response.json();
+  console.log(result);
+}
+
 async function removeDeve(codigo) {
   const response = await fetch("/api/v1/tables/deve", {
     method: "DELETE",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ codigo }), // Envia o `id` no corpo da requisição
+    body: JSON.stringify({ codigo }),
   });
 
   const result = await response.json();
@@ -274,14 +453,24 @@ const execute = {
   sendTrueMR1,
   sendToR1,
   sendToDeve,
+  sendToDeveUpdate,
   sendToDevo,
-  reciveFromR1DeveDevo,
-  reciveFromDeve,
-  reciveFromDeveJustValor,
-  reciveFromDevo,
-  reciveFromDevoJustValor,
-  reciveFromR1,
-  reciveFromR1JustBSA,
+  sendToC1,
+  sendToPapelC1,
+  receiveFromC1,
+  receiveFromC1Data,
+  receiveFromConfig,
+  receiveFromPapelC1,
+  receiveFromPapelC1Data,
+  receiveFromR1DeveDevo,
+  receiveFromDeve,
+  receiveFromDeveJustValor,
+  receiveFromDevo,
+  receiveFromDevoJustValor,
+  receiveFromR1,
+  receiveFromR1JustBSA,
+  removeC1,
+  removePapelC1,
   removeM1andR1,
   removeDeve,
   removeDevo,

@@ -15,7 +15,7 @@ const EditM = ({ isEditing, onEdit, onSave, onCancel }) => {
       ) : (
         <>
           <button onClick={onEdit} className="btn btn-xs btn-soft btn-default">
-            Edit
+            Editar
           </button>
         </>
       )}

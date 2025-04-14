@@ -5,7 +5,7 @@ import Use from "models/utils";
 const Deve = ({ codigo }) => {
   const [dados, setDados] = useState([]);
   const loadData = async () => {
-    const data = await Execute.reciveFromDeve();
+    const data = await Execute.receiveFromDeve();
     setDados(data.sort((a, b) => new Date(a.data) - new Date(b.data)));
   };
 
@@ -44,7 +44,7 @@ const Deve = ({ codigo }) => {
               }
             >
               <td className="hidden">{item.id}</td>
-              <td>{Use.formatarData(item.data)}</td>
+              <td>{Use.formatarDataHora(item.data)}</td>
               <td className="hidden">{item.codigo}</td>
               <td>{item.nome}</td>
               <td>$ {Number(item.valor).toFixed(2)}</td>

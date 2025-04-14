@@ -5,7 +5,7 @@ import Use from "models/utils";
 const BSA = ({ codigo }) => {
   const [dados, setDados] = useState([]);
   const loadData = async () => {
-    const data = await Execute.reciveFromR1();
+    const data = await Execute.receiveFromR1();
     setDados(data.sort((a, b) => new Date(a.data) - new Date(b.data)));
   };
 

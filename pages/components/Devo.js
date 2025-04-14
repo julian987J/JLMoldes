@@ -5,7 +5,7 @@ import Execute from "models/functions";
 const Deve = ({ codigo }) => {
   const [dados, setDados] = useState([]);
   const loadData = async () => {
-    const data = await Execute.reciveFromDevo();
+    const data = await Execute.receiveFromDevo();
     setDados(data.sort((a, b) => new Date(a.data) - new Date(b.data)));
   };
 
