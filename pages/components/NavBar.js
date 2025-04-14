@@ -1,3 +1,6 @@
+import Update from "pages/components/Update.js";
+import React from "react";
+
 const NavBar = ({ R1, MContent, Cadastro, Ccontent }) => {
   const isMContentAvailable = Boolean(MContent);
   const isCadastroAvailable = Boolean(Cadastro);
@@ -45,28 +48,45 @@ const NavBar = ({ R1, MContent, Cadastro, Ccontent }) => {
 
   return (
     <div className="p-4">
-      <div className="tabs tabs-lift ">
+      <div className="tabs tabs-lift">
         {tabGroups.map((tab, index) => (
-          <>
-            <input
-              key={`input-${index}`}
-              type="radio"
-              name="my_tabs_3"
-              className="tab"
-              aria-label={tab.label}
-              defaultChecked={tab.checked}
-            />
-            <div
-              key={`content-${index}`}
-              className="tab-content bg-base-100 border-base-300 p-2"
-            >
+          <React.Fragment key={index}>
+            {tab.label === "Cadastros" ? (
+              // Aba especial para Cadastros com componente Update
+              <>
+                <input
+                  type="radio"
+                  name="my_tabs_3"
+                  id="cadastros-tab"
+                  className="hidden [&:checked~div]:!block"
+                />
+                <label
+                  htmlFor="cadastros-tab"
+                  className="tab flex items-center gap-2 hover:bg-base-200"
+                  aria-label={tab.label}
+                >
+                  {tab.label}
+                  <Update />
+                </label>
+              </>
+            ) : (
+              // Abas normais
+              <input
+                type="radio"
+                name="my_tabs_3"
+                className="tab"
+                aria-label={tab.label}
+                defaultChecked={tab.checked}
+              />
+            )}
+
+            <div className="tab-content bg-base-100 border-base-300 p-2">
               {tab.content}
             </div>
-          </>
+          </React.Fragment>
         ))}
       </div>
     </div>
   );
 };
-
 export default NavBar;
