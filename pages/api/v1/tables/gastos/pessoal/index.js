@@ -7,6 +7,7 @@ const router = createRouter();
 router.post(postHandler);
 router.get(getHandler);
 router.delete(deleteHandler);
+router.put(updateHandler);
 
 export default router.handler(controller.errorHandlers);
 
@@ -27,7 +28,13 @@ async function getHandler(request, response) {
 }
 
 async function deleteHandler(request, response) {
-  const { codigo } = request.body;
-  const result = await ordem.delete(codigo);
+  const { id } = request.body;
+  const result = await ordem.deletePessoal(id);
+  return response.status(200).json(result);
+}
+
+async function updateHandler(request, response) {
+  const updatedData = request.body;
+  const result = await ordem.updatePessoal(updatedData);
   return response.status(200).json(result);
 }

@@ -25,8 +25,8 @@ async function createC1(ordemInputValues) {
 async function createPessoal(ordemInputValues) {
   const result = await database.query({
     text: `
-      INSERT INTO "Pessoal" (dec, item, quantidade, unidade, valor, gastos, pago, proximo) 
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+      INSERT INTO "Pessoal" (dec, item, quantidade, unidade, valor, gastos, pago, proximo, dia, alerta) 
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
       RETURNING *;
     `,
     values: [
@@ -38,6 +38,8 @@ async function createPessoal(ordemInputValues) {
       ordemInputValues.gastos,
       ordemInputValues.pago,
       ordemInputValues.proximo,
+      ordemInputValues.dia,
+      ordemInputValues.alerta,
     ],
   });
 
@@ -275,6 +277,40 @@ async function updatePapelC1(updatedData) {
       updatedData.util,
       updatedData.perdida,
       updatedData.comentarios,
+      updatedData.id,
+    ],
+  });
+
+  return result;
+}
+
+async function updatePessoal(updatedData) {
+  const result = await database.query({
+    text: `
+      UPDATE "Pessoal"
+      SET 
+        item = $1,
+        quantidade = $2,
+        unidade = $3,
+        valor = $4,
+        gastos = $5,
+        pago = $6,
+        proximo = $7,
+        dia = $8,
+        alerta = $9
+      WHERE id = $10
+      RETURNING *;
+    `,
+    values: [
+      updatedData.item,
+      updatedData.quantidade,
+      updatedData.unidade,
+      updatedData.valor,
+      updatedData.gastos,
+      updatedData.pago,
+      updatedData.proximo,
+      updatedData.dia,
+      updatedData.alerta,
       updatedData.id,
     ],
   });
@@ -633,6 +669,14 @@ async function deletePapelC1(ids) {
   return result.rows;
 }
 
+async function deletePessoal(ids) {
+  const result = await database.query({
+    text: `DELETE FROM "Pessoal" WHERE id = $1 RETURNING *`,
+    values: [ids],
+  });
+  return result.rows;
+}
+
 export async function deleteR1(ids) {
   const result = await database.query({
     text: `DELETE FROM "R1BSA" WHERE id = ANY($1) RETURNING *`,
@@ -682,6 +726,7 @@ const ordem = {
   getDevoJustValor,
   deleteC1,
   deletePapelC1,
+  deletePessoal,
   deleteM1,
   deleteR1,
   deleteDeve,
@@ -690,6 +735,7 @@ const ordem = {
   updateConfig,
   updateC1,
   updateC1BSA,
+  updatePessoal,
   updatePapelC1,
   updateAltSis,
   updateAltSisR1,

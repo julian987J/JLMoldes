@@ -42,11 +42,11 @@ function formatarDataHora(dataStr) {
   return `${diaSemana} - ${dia}/${mes} - ${hora}:${minutos}`;
 }
 
-function formatarDataAno(dataStr) {
-  const data = new Date(dataStr);
-  return `${String(data.getDate()).padStart(2, "0")}/${String(
-    data.getMonth() + 1,
-  ).padStart(2, "0")}/${data.getFullYear()}`;
+// models/utils.js
+export function formatarDataAno(dataString) {
+  if (!dataString) return "—";
+  const data = new Date(dataString);
+  return `${String(data.getUTCDate()).padStart(2, "0")}/${String(data.getUTCMonth() + 1).padStart(2, "0")}/${data.getUTCFullYear()}`;
 }
 
 function NowData() {

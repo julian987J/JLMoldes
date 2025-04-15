@@ -126,6 +126,8 @@ async function sendToPessoal(
   gastos,
   pago,
   proximo,
+  dia,
+  alerta,
 ) {
   try {
     const response = await fetch("/api/v1/tables/gastos/pessoal", {
@@ -140,6 +142,8 @@ async function sendToPessoal(
         gastos,
         pago,
         proximo,
+        dia,
+        alerta,
       }),
     });
 
@@ -482,6 +486,16 @@ async function removePapelC1(id) {
   const result = await response.json();
   console.log(result);
 }
+async function removePessoal(id) {
+  const response = await fetch("/api/v1/tables/gastos/pessoal", {
+    method: "DELETE",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ id }), // Envia o `id` no corpo da requisição
+  });
+
+  const result = await response.json();
+  console.log(result);
+}
 
 async function removeDeve(codigo) {
   const response = await fetch("/api/v1/tables/deve", {
@@ -529,6 +543,7 @@ const execute = {
   receiveFromR1JustBSA,
   removeC1,
   removePapelC1,
+  removePessoal,
   removeM1andR1,
   removeDeve,
   removeDevo,
