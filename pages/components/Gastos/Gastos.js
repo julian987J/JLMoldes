@@ -6,7 +6,7 @@ const Ccontent = ({ letras }) => {
     <div>
       <div className="grid grid-cols-2 gap-2">
         <Pessoal letras={letras} />
-        <Oficina />
+        <Oficina letras={letras} />
       </div>
     </div>
   );

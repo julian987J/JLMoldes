@@ -46,6 +46,30 @@ async function createPessoal(ordemInputValues) {
   return result;
 }
 
+async function createOficina(ordemInputValues) {
+  const result = await database.query({
+    text: `
+      INSERT INTO "Oficina" (dec, item, quantidade, unidade, valor, gastos, pago, proximo, dia, alerta) 
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+      RETURNING *;
+    `,
+    values: [
+      ordemInputValues.letras,
+      ordemInputValues.item,
+      ordemInputValues.quantidade,
+      ordemInputValues.unidade,
+      ordemInputValues.valor,
+      ordemInputValues.gastos,
+      ordemInputValues.pago,
+      ordemInputValues.proximo,
+      ordemInputValues.dia,
+      ordemInputValues.alerta,
+    ],
+  });
+
+  return result;
+}
+
 async function createPapelC1(ordemInputValues) {
   const result = await database.query({
     text: `
@@ -318,6 +342,40 @@ async function updatePessoal(updatedData) {
   return result;
 }
 
+async function updateOficina(updatedData) {
+  const result = await database.query({
+    text: `
+      UPDATE "Oficina"
+      SET 
+        item = $1,
+        quantidade = $2,
+        unidade = $3,
+        valor = $4,
+        gastos = $5,
+        pago = $6,
+        proximo = $7,
+        dia = $8,
+        alerta = $9
+      WHERE id = $10
+      RETURNING *;
+    `,
+    values: [
+      updatedData.item,
+      updatedData.quantidade,
+      updatedData.unidade,
+      updatedData.valor,
+      updatedData.gastos,
+      updatedData.pago,
+      updatedData.proximo,
+      updatedData.dia,
+      updatedData.alerta,
+      updatedData.id,
+    ],
+  });
+
+  return result;
+}
+
 async function updateR1Button(updatedData) {
   const result = await database.query({
     text: `
@@ -506,6 +564,14 @@ async function getPessoal(letras) {
   return result.rows;
 }
 
+async function getOficina(letras) {
+  const result = await database.query({
+    text: `SELECT * FROM "Oficina" WHERE dec = $1;`,
+    values: [letras],
+  });
+  return result.rows;
+}
+
 async function getConfig() {
   const result = await database.query({
     text: `SELECT * FROM "config"`,
@@ -677,6 +743,14 @@ async function deletePessoal(ids) {
   return result.rows;
 }
 
+async function deleteOficina(ids) {
+  const result = await database.query({
+    text: `DELETE FROM "Oficina" WHERE id = $1 RETURNING *`,
+    values: [ids],
+  });
+  return result.rows;
+}
+
 export async function deleteR1(ids) {
   const result = await database.query({
     text: `DELETE FROM "R1BSA" WHERE id = ANY($1) RETURNING *`,
@@ -704,12 +778,14 @@ export async function deleteDeve(codigo) {
 const ordem = {
   createM1,
   createPessoal,
+  createOficina,
   createR1BSA,
   createDevo,
   createDeve,
   createC1,
   createPapelC1,
   getPessoal,
+  getOficina,
   getC1,
   getC1Data,
   getPapelC1,
@@ -727,6 +803,7 @@ const ordem = {
   deleteC1,
   deletePapelC1,
   deletePessoal,
+  deleteOficina,
   deleteM1,
   deleteR1,
   deleteDeve,
@@ -736,6 +813,7 @@ const ordem = {
   updateC1,
   updateC1BSA,
   updatePessoal,
+  updateOficina,
   updatePapelC1,
   updateAltSis,
   updateAltSisR1,
