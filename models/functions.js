@@ -117,6 +117,90 @@ async function sendToDevo(itemData) {
   }
 }
 
+async function sendToPessoal(
+  letras,
+  item,
+  quantidade,
+  unidade,
+  valor,
+  gastos,
+  pago,
+  proximo,
+  dia,
+  alerta,
+) {
+  try {
+    const response = await fetch("/api/v1/tables/gastos/pessoal", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        letras,
+        item,
+        quantidade,
+        unidade,
+        valor,
+        gastos,
+        pago,
+        proximo,
+        dia,
+        alerta,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || "Erro ao criar registro em Pessoal");
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error("Erro no createPessoal:", error);
+    throw error;
+  }
+}
+
+async function sendToOficina(
+  letras,
+  item,
+  quantidade,
+  unidade,
+  valor,
+  gastos,
+  pago,
+  proximo,
+  dia,
+  alerta,
+) {
+  try {
+    const response = await fetch("/api/v1/tables/gastos/oficina", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        letras,
+        item,
+        quantidade,
+        unidade,
+        valor,
+        gastos,
+        pago,
+        proximo,
+        dia,
+        alerta,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || "Erro ao criar registro em Oficina");
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error("Erro no createOficina:", error);
+    throw error;
+  }
+}
+
 async function sendToC1(itemData) {
   try {
     const response = await fetch("/api/v1/tables/c1", {
@@ -385,6 +469,42 @@ async function receiveFromR1JustBSA(codigo) {
   }
 }
 
+async function receiveFromPessoal(letras) {
+  try {
+    const response = await fetch(
+      `/api/v1/tables/gastos/pessoal?letras=${letras}`,
+    );
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || "Erro ao carregar os dados");
+    }
+
+    const data = await response.json();
+    return Array.isArray(data.rows) ? data.rows : [];
+  } catch (error) {
+    console.error("Erro ao buscar dados Pessoal:", error);
+  }
+}
+
+async function receiveFromOficina(letras) {
+  try {
+    const response = await fetch(
+      `/api/v1/tables/gastos/oficina?letras=${letras}`,
+    );
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || "Erro ao carregar os dados");
+    }
+
+    const data = await response.json();
+    return Array.isArray(data.rows) ? data.rows : [];
+  } catch (error) {
+    console.error("Erro ao buscar dados Pessoal:", error);
+  }
+}
+
 async function removeM1andR1(id) {
   const response = await fetch("/api/v1/tables", {
     method: "DELETE",
@@ -426,6 +546,27 @@ async function removePapelC1(id) {
   const result = await response.json();
   console.log(result);
 }
+async function removePessoal(id) {
+  const response = await fetch("/api/v1/tables/gastos/pessoal", {
+    method: "DELETE",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ id }), // Envia o `id` no corpo da requisição
+  });
+
+  const result = await response.json();
+  console.log(result);
+}
+
+async function removeOficina(id) {
+  const response = await fetch("/api/v1/tables/gastos/oficina", {
+    method: "DELETE",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ id }), // Envia o `id` no corpo da requisição
+  });
+
+  const result = await response.json();
+  console.log(result);
+}
 
 async function removeDeve(codigo) {
   const response = await fetch("/api/v1/tables/deve", {
@@ -456,8 +597,12 @@ const execute = {
   sendToDeveUpdate,
   sendToDevo,
   sendToC1,
+  sendToPessoal,
+  sendToOficina,
   sendToPapelC1,
   receiveFromC1,
+  receiveFromPessoal,
+  receiveFromOficina,
   receiveFromC1Data,
   receiveFromConfig,
   receiveFromPapelC1,
@@ -471,6 +616,8 @@ const execute = {
   receiveFromR1JustBSA,
   removeC1,
   removePapelC1,
+  removePessoal,
+  removeOficina,
   removeM1andR1,
   removeDeve,
   removeDevo,

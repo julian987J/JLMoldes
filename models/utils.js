@@ -42,6 +42,13 @@ function formatarDataHora(dataStr) {
   return `${diaSemana} - ${dia}/${mes} - ${hora}:${minutos}`;
 }
 
+// models/utils.js
+export function formatarDataAno(dataString) {
+  if (!dataString) return "—";
+  const data = new Date(dataString);
+  return `${String(data.getUTCDate()).padStart(2, "0")}/${String(data.getUTCMonth() + 1).padStart(2, "0")}/${data.getUTCFullYear()}`;
+}
+
 function NowData() {
   const data = new Date();
   const isoString = data.toISOString();
@@ -53,6 +60,7 @@ function NowData() {
 const use = {
   formatarDataHora,
   formatarData,
+  formatarDataAno,
   NowData,
 };
 

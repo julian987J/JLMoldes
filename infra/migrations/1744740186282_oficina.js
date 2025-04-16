@@ -1,5 +1,5 @@
 exports.up = (pgm) => {
-  pgm.createTable("Pessoal", {
+  pgm.createTable("Oficina", {
     id: { type: "serial", primaryKey: true },
     dec: { type: "text", notNull: true },
     item: { type: "text", notNull: true },
