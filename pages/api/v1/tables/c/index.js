@@ -13,23 +13,23 @@ export default router.handler(controller.errorHandlers);
 
 async function postHandler(request, response) {
   const ordemInputValues = request.body;
-  const newMOrdem = await ordem.createC1(ordemInputValues);
+  const newMOrdem = await ordem.createC(ordemInputValues);
   return response.status(201).json(newMOrdem);
 }
 
 async function getHandler(request, response) {
-  const ordemGetValues = await ordem.getC1();
+  const ordemGetValues = await ordem.getC();
   return response.status(200).json(ordemGetValues);
 }
 
 async function deleteHandler(request, response) {
   const { id } = request.body;
-  const result = await ordem.deleteC1(id);
+  const result = await ordem.deleteC(id);
   return response.status(200).json(result);
 }
 
 async function updateHandler(request, response) {
   const updatedData = request.body;
-  const result = await ordem.updateC1(updatedData);
+  const result = await ordem.updateC(updatedData);
   return response.status(200).json(result);
 }

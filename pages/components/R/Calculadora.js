@@ -18,7 +18,7 @@ const Calculadora = ({ codigo, nome, onCodigoChange, onNomeChange, data }) => {
     }
     return () => clearTimeout(timer);
   }, [showError]);
-  const [dadosR1, setDadosR1] = useState(0);
+  const [dadosR1, setDadosR] = useState(0);
   const [idsArray, setIdsArray] = useState(0);
   const [valorDevo, setValorDevo] = useState(0);
   const [valorDeve, setValorDeve] = useState(0);
@@ -81,7 +81,7 @@ const Calculadora = ({ codigo, nome, onCodigoChange, onNomeChange, data }) => {
   useEffect(() => {
     const buscarDados = async () => {
       try {
-        const resultado = await Execute.receiveFromR1JustBSA(codigo);
+        const resultado = await Execute.receiveFromRJustBSA(codigo);
         // Garantir conversão numérica correta
         const newBase = Number(resultado.total_base) || 0;
         const newSis = Number(resultado.total_sis) || 0;
@@ -91,13 +91,13 @@ const Calculadora = ({ codigo, nome, onCodigoChange, onNomeChange, data }) => {
         setBase(newBase);
         setSis(newSis);
         setAlt(newAlt);
-        setDadosR1(newBase + newSis + newAlt);
+        setDadosR(newBase + newSis + newAlt);
       } catch (error) {
         console.error("Erro:", error);
         setBase(0);
         setSis(0);
         setAlt(0);
-        setDadosR1(0);
+        setDadosR(0);
         setIdsArray([]);
       }
     };
@@ -154,7 +154,7 @@ const Calculadora = ({ codigo, nome, onCodigoChange, onNomeChange, data }) => {
 
   const handleSave = async (editedData) => {
     try {
-      const response = await fetch("/api/v1/tables/R1/calculadora", {
+      const response = await fetch("/api/v1/tables/R/calculadora", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(editedData),
@@ -166,12 +166,12 @@ const Calculadora = ({ codigo, nome, onCodigoChange, onNomeChange, data }) => {
     }
   };
 
-  async function handleUpdateC1(codigo, data, New, currentTotal) {
+  async function handleUpdateC(codigo, data, New, currentTotal) {
     try {
       const decodedData = decodeURIComponent(data);
 
       const response = await fetch(
-        `/api/v1/tables/c1/calculadora?codigo=${codigo}&data=${data}`,
+        `/api/v1/tables/c/calculadora?codigo=${codigo}&data=${data}`,
         {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
@@ -222,12 +222,12 @@ const Calculadora = ({ codigo, nome, onCodigoChange, onNomeChange, data }) => {
     }
   }
 
-  async function sendToC1AndUpdateR1(value) {
+  async function sendToCAndUpdateR(value) {
     await Execute.removeDevo(codigo);
 
     const currentTotal = base + sis + alt;
     const excessoTotal = currentTotal - value;
-    const exists = await Execute.receiveFromC1Data(codigo, data);
+    const exists = await Execute.receiveFromCData(codigo, data);
 
     if (exists) {
       const dataEncoded = encodeURIComponent(data);
@@ -264,7 +264,7 @@ const Calculadora = ({ codigo, nome, onCodigoChange, onNomeChange, data }) => {
           base: (exists.base || 0) + (base - novosDados.base),
         };
 
-        await handleUpdateC1(codigo, dataEncoded, updateData, currentTotal);
+        await handleUpdateC(codigo, dataEncoded, updateData, currentTotal);
       }
     } else {
       if (excessoTotal > 0) {
@@ -292,7 +292,7 @@ const Calculadora = ({ codigo, nome, onCodigoChange, onNomeChange, data }) => {
 
         await handleSave(novosDados);
 
-        await Execute.sendToC1({
+        await Execute.sendToC({
           ...ObjC1,
           sis: sis - novosDados.sis,
           alt: alt - novosDados.alt,
@@ -331,7 +331,7 @@ const Calculadora = ({ codigo, nome, onCodigoChange, onNomeChange, data }) => {
           })(),
         });
       } else if (excessoTotal === 0) {
-        await Execute.sendToC1({
+        await Execute.sendToC({
           ...ObjC1,
           sis: 0,
           alt: 0,
@@ -349,14 +349,14 @@ const Calculadora = ({ codigo, nome, onCodigoChange, onNomeChange, data }) => {
 
     try {
       if (dadosR1 && !valorDeve && trocoValue > 0 && !Number(total)) {
-        await sendToC1AndUpdateR1(trocoValue);
-        console.log("caiu em Pago Parte do R1");
+        await sendToCAndUpdateR(trocoValue);
+        console.log("caiu em Pago Parte do R");
 
         //
       } else if (dadosR1 && !trocoValue && !Number(total) && !valorDeve) {
-        await sendToC1AndUpdateR1(trocoValue);
-        await Execute.removeM1andR1(idsArray);
-        console.log("caiu em Pago todo R1");
+        await sendToCAndUpdateR(trocoValue);
+        await Execute.removeMandR(idsArray);
+        console.log("caiu em Pago todo R");
         //
       } else if (trocoValue < 0) {
         await Execute.removeDeve(codigo);
@@ -365,7 +365,7 @@ const Calculadora = ({ codigo, nome, onCodigoChange, onNomeChange, data }) => {
           codigo,
           valor: Math.abs(trocoValue),
         });
-        await Execute.removeM1andR1(idsArray);
+        await Execute.removeMandR(idsArray);
         console.log("Caiu em Troco Menor que Zero.");
       } else if (
         trocoValue === totalGeral &&
@@ -381,8 +381,8 @@ const Calculadora = ({ codigo, nome, onCodigoChange, onNomeChange, data }) => {
             valor: Number(total),
           });
 
-          await Execute.sendToPapelC1({
-            ...ObjPapelC1,
+          await Execute.sendToPapelC({
+            ...ObjPapelC,
             data: Use.NowData(),
             papelreal: papel,
             encaixereal: comitions,
@@ -394,22 +394,22 @@ const Calculadora = ({ codigo, nome, onCodigoChange, onNomeChange, data }) => {
         console.log("Deve Todo o Papel");
         //
       } else if (!trocoValue && valorDeve && dadosR1) {
-        const exists = await Execute.receiveFromC1Data(codigo, data);
+        const exists = await Execute.receiveFromCData(codigo, data);
 
         if (exists) {
           const values = totalGeral - Number(total) - pixMaisReal;
-          await sendToC1AndUpdateR1(values);
+          await sendToCAndUpdateR(values);
           await Execute.removeDeve(codigo);
           await Execute.removeDevo(codigo);
-          await Execute.removeM1andR1(idsArray);
-          console.log("Existe no C1");
+          await Execute.removeMandR(idsArray);
+          console.log("Existe no C");
         } else {
-          await sendToC1AndUpdateR1(trocoValue);
+          await sendToCAndUpdateR(trocoValue);
           await Execute.removeDeve(codigo);
           await Execute.removeDevo(codigo);
-          await Execute.removeM1andR1(idsArray);
+          await Execute.removeMandR(idsArray);
         }
-        console.log("Caiu em foi tudo pago Papel e R1.");
+        console.log("Caiu em foi tudo pago Papel e R.");
         //
       } else if (valorDeve && !trocoValue) {
         await Execute.removeDeve(codigo);
@@ -423,20 +423,20 @@ const Calculadora = ({ codigo, nome, onCodigoChange, onNomeChange, data }) => {
         console.log("Caiu em Foi pago Parte do Valor do Papel.");
         //
       } else if (dadosR1 > 0 && !trocoValue && !Number(total)) {
-        await sendToC1AndUpdateR1(trocoValue);
-        await Execute.removeM1andR1(idsArray);
+        await sendToCAndUpdateR(trocoValue);
+        await Execute.removeMandR(idsArray);
         console.log("Caiu em foi pago todo o R1.");
         //
       } else if (dadosR1 > 0 && !trocoValue && Number(total)) {
-        await sendToC1AndUpdateR1(trocoValue);
-        await Execute.sendToPapelC1(ObjPapelC1);
-        await Execute.removeM1andR1(idsArray);
+        await sendToCAndUpdateR(trocoValue);
+        await Execute.sendToPapelC(ObjPapelC);
+        await Execute.removeMandR(idsArray);
         console.log("Caiu em foi pago todo o R1 e Papel.");
         //
       } else if (dadosR1 > 0 && trocoValue && Number(total)) {
         if (dadosR1 === pixMaisReal) {
-          await Execute.sendToC1(ObjC1);
-          await Execute.removeM1andR1(idsArray);
+          await Execute.sendToC(ObjC1);
+          await Execute.removeMandR(idsArray);
           if (total > 0) {
             await Execute.removeDevo(codigo);
             await Execute.removeDeve(codigo);
@@ -446,8 +446,8 @@ const Calculadora = ({ codigo, nome, onCodigoChange, onNomeChange, data }) => {
               codigo,
               valor: trocoValue,
             });
-            await Execute.sendToPapelC1({
-              ...ObjPapelC1,
+            await Execute.sendToPapelC({
+              ...ObjPapelC,
               data: Use.NowData(),
             });
           } else {
@@ -460,7 +460,7 @@ const Calculadora = ({ codigo, nome, onCodigoChange, onNomeChange, data }) => {
           (pixMaisReal < dadosR1 && pixMaisReal > Number(total))
         ) {
           const values = totalGeral - Number(total) - pixMaisReal;
-          await sendToC1AndUpdateR1(values);
+          await sendToCAndUpdateR(values);
           if (total > 0) {
             await Execute.removeDevo(codigo);
             await Execute.removeDeve(codigo);
@@ -470,8 +470,8 @@ const Calculadora = ({ codigo, nome, onCodigoChange, onNomeChange, data }) => {
               codigo,
               valor: Number(total),
             });
-            await Execute.sendToPapelC1({
-              ...ObjPapelC1,
+            await Execute.sendToPapelC({
+              ...ObjPapelC,
               data: Use.NowData(),
             });
           } else {
@@ -480,8 +480,8 @@ const Calculadora = ({ codigo, nome, onCodigoChange, onNomeChange, data }) => {
           console.log("Caiu em foi pago parte do R1 deve o Papel.");
           //
         } else if (pixMaisReal > dadosR1 && Number(total)) {
-          await sendToC1AndUpdateR1(0);
-          await Execute.removeM1andR1(idsArray);
+          await sendToCAndUpdateR(0);
+          await Execute.removeMandR(idsArray);
           if (total > 0) {
             const value = Math.abs(totalGeral - pixMaisReal);
             await Execute.removeDevo(codigo);
@@ -492,22 +492,22 @@ const Calculadora = ({ codigo, nome, onCodigoChange, onNomeChange, data }) => {
               codigo,
               valor: value,
             });
-            await Execute.sendToPapelC1({
-              ...ObjPapelC1,
+            await Execute.sendToPapelC({
+              ...ObjPapelC,
               data: Use.NowData(),
             });
           } else {
             setShowError(true);
           }
-          console.log("Caiu em foi pago todo o R1 e parte do Papel.");
+          console.log("Caiu em foi pago todo o R e parte do Papel.");
           //
         } else if (Number(total) === pixMaisReal) {
-          await Execute.sendToPapelC1(ObjPapelC1);
-          await sendToC1AndUpdateR1(trocoValue);
-          console.log("Caiu em foi pago todo o Papel e deve todo o R1.");
+          await Execute.sendToPapelC(ObjPapelC);
+          await sendToCAndUpdateR(trocoValue);
+          console.log("Caiu em foi pago todo o Papel e deve todo o R.");
           //
         }
-        console.log("Caiu em foi pago Parte do R1 e Papel.");
+        console.log("Caiu em foi pago Parte do R e Papel.");
         //
       } else if (
         dadosR1 > 0 &&
@@ -516,22 +516,22 @@ const Calculadora = ({ codigo, nome, onCodigoChange, onNomeChange, data }) => {
         !Number(total)
       ) {
         if (dadosR1 === pixMaisReal) {
-          await sendToC1AndUpdateR1(0);
+          await sendToCAndUpdateR(0);
           await Execute.removeDevo(codigo);
-          await Execute.removeM1andR1(idsArray);
+          await Execute.removeMandR(idsArray);
 
-          console.log("Caiu em foi pago todo R1 deve o Papel.");
+          console.log("Caiu em foi pago todo R deve o Papel.");
           //
         } else if (pixMaisReal < dadosR1) {
-          await sendToC1AndUpdateR1(pixMaisReal);
-          console.log("Caiu em foi pago Parte R1 deve o Papel.");
+          await sendToCAndUpdateR(pixMaisReal);
+          console.log("Caiu em foi pago Parte R deve o Papel.");
         } else if (pixMaisReal > dadosR1) {
           await Execute.sendToDeveUpdate(codigo, trocoValue);
-          await Execute.sendToC1AndUpdateR1(0);
-          await Execute.removeM1andR1(idsArray);
-          console.log("Caiu em foi Todo R1 e Parte Papel.");
+          await Execute.sendToCAndUpdateR(0);
+          await Execute.removeMandR(idsArray);
+          console.log("Caiu em foi Todo R e Parte Papel.");
         }
-        console.log("Caiu em Tem R1 e Tem DEVE");
+        console.log("Caiu em Tem R e Tem DEVE");
       } else {
         console.log("Caiu em sem condições");
       }
@@ -560,7 +560,7 @@ const Calculadora = ({ codigo, nome, onCodigoChange, onNomeChange, data }) => {
     real: Number(real),
     pix: Number(pix),
   };
-  const ObjPapelC1 = {
+  const ObjPapelC = {
     codigo,
     data,
     nome,

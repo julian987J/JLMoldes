@@ -12,12 +12,12 @@ export default router.handler(controller.errorHandlers);
 async function getHandler(request, response) {
   const { codigo, data } = request.query;
   const dataObj = JSON.parse(decodeURIComponent(data));
-  const exists = await ordem.getC1Data(codigo, dataObj);
+  const exists = await ordem.getCData(codigo, dataObj);
   return response.status(200).json({ exists });
 }
 
 async function updateHandler(request, response) {
   const updatedData = request.body;
-  const result = await ordem.updateC1BSA(updatedData);
+  const result = await ordem.updateCBSA(updatedData);
   return response.status(200).json(result);
 }
