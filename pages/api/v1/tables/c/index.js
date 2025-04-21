@@ -18,8 +18,9 @@ async function postHandler(request, response) {
 }
 
 async function getHandler(request, response) {
-  const ordemGetValues = await ordem.getC();
-  return response.status(200).json(ordemGetValues);
+  const { r } = request.query;
+  const result = await ordem.getC(r);
+  return response.status(200).json(result);
 }
 
 async function deleteHandler(request, response) {

@@ -2,10 +2,10 @@ import React, { useEffect, useState } from "react";
 import Execute from "models/functions";
 import Use from "models/utils";
 
-const Deve = ({ codigo }) => {
+const Deve = ({ codigo, r }) => {
   const [dados, setDados] = useState([]);
   const loadData = async () => {
-    const data = await Execute.receiveFromDeve();
+    const data = await Execute.receiveFromDeve(r);
     setDados(data.sort((a, b) => new Date(a.data) - new Date(b.data)));
   };
 
@@ -14,11 +14,13 @@ const Deve = ({ codigo }) => {
 
     const intervalId = setInterval(loadData, 5000); // Atualiza a cada 5s
     return () => clearInterval(intervalId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Busca imediatamente quando o código muda
   useEffect(() => {
     loadData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [codigo]);
 
   return (

@@ -1,11 +1,12 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 import React, { useEffect, useState } from "react";
 import Execute from "models/functions";
 // import Use from "models/utils";
 
-const Deve = ({ codigo }) => {
+const Deve = ({ codigo, r }) => {
   const [dados, setDados] = useState([]);
   const loadData = async () => {
-    const data = await Execute.receiveFromDevo();
+    const data = await Execute.receiveFromDevo(r);
     setDados(data.sort((a, b) => new Date(a.data) - new Date(b.data)));
   };
 

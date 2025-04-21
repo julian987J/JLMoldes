@@ -17,7 +17,8 @@ async function postHandlerDevo(request, response) {
 }
 
 async function getHandlerDevo(request, response) {
-  const ordemGetValues = await ordem.getDevo();
+  const { r } = request.query;
+  const ordemGetValues = await ordem.getDevo(r);
   return response.status(200).json(ordemGetValues);
 }
 

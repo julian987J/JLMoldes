@@ -58,6 +58,7 @@ async function sendToDeve(itemData) {
         nome: itemData.nome,
         data: itemData.data,
         codigo: itemData.codigo,
+        r: itemData.r,
         valor: itemData.valor,
       }),
     });
@@ -74,16 +75,17 @@ async function sendToDeve(itemData) {
   }
 }
 
-async function sendToDeveUpdate(codigo, valor) {
+async function sendToDeveUpdate(codigo, valor, r) {
   try {
     const response = await fetch(
-      `/api/v1/tables/deve?codigo=${codigo}&valor=${valor}`,
+      `/api/v1/tables/deve?codigo=${codigo}&valor=${valor}&r=${r}`,
       {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           codigo,
           valor,
+          r,
         }),
       },
     );
@@ -102,6 +104,7 @@ async function sendToDevo(itemData) {
       body: JSON.stringify({
         nome: itemData.nome,
         codigo: itemData.codigo,
+        r: itemData.r,
         valor: itemData.valor,
       }),
     });
@@ -209,6 +212,7 @@ async function sendToC(itemData) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         codigo: itemData.codigo,
+        r: itemData.r,
         data: itemData.data,
         nome: itemData.nome,
         sis: itemData.sis,
@@ -238,6 +242,7 @@ async function sendToPapelC(itemData) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         codigo: itemData.codigo,
+        r: itemData.r,
         data: itemData.data,
         nome: itemData.nome,
         multi: itemData.multi,
@@ -303,9 +308,9 @@ async function receiveFromConfig() {
   }
 }
 
-async function receiveFromDeve() {
+async function receiveFromDeve(r) {
   try {
-    const response = await fetch("/api/v1/tables/deve");
+    const response = await fetch(`/api/v1/tables/deve?r=${r}`);
     if (!response.ok) throw new Error("Erro ao carregar os dados");
     const data = await response.json();
     return Array.isArray(data.rows) ? data.rows : [];
@@ -369,9 +374,9 @@ async function receiveFromDevoJustValor(codigo) {
   }
 }
 
-async function receiveFromDevo() {
+async function receiveFromDevo(r) {
   try {
-    const response = await fetch("/api/v1/tables/devo");
+    const response = await fetch(`/api/v1/tables/devo?r=${r}`);
     if (!response.ok) throw new Error("Erro ao carregar os dados");
     const data = await response.json();
     return Array.isArray(data.rows) ? data.rows : [];
@@ -381,9 +386,9 @@ async function receiveFromDevo() {
   }
 }
 
-async function receiveFromC() {
+async function receiveFromC(r) {
   try {
-    const response = await fetch("/api/v1/tables/c");
+    const response = await fetch(`/api/v1/tables/c?r=${r}`);
     if (!response.ok) throw new Error("Erro ao carregar os dados");
     const data = await response.json();
     return Array.isArray(data.rows) ? data.rows : [];
@@ -393,12 +398,12 @@ async function receiveFromC() {
   }
 }
 
-async function receiveFromCData(codigo, data) {
+async function receiveFromCData(codigo, data, r) {
   try {
     const encodedData = encodeURIComponent(JSON.stringify(data));
 
     const response = await fetch(
-      `/api/v1/tables/c/calculadora?codigo=${codigo}&data=${encodedData}`,
+      `/api/v1/tables/c/calculadora?codigo=${codigo}&data=${encodedData}&r=${r}`,
     );
 
     if (!response.ok) throw new Error("Erro ao carregar os dados");
@@ -429,9 +434,9 @@ async function receiveFromPapelCData(codigo, data) {
   }
 }
 
-async function receiveFromPapelC() {
+async function receiveFromPapelC(r) {
   try {
-    const response = await fetch("/api/v1/tables/c/papel");
+    const response = await fetch(`/api/v1/tables/c/papel?r=${r}`);
     if (!response.ok) throw new Error("Erro ao carregar os dados");
     const data = await response.json();
     return Array.isArray(data.rows) ? data.rows : [];
@@ -441,9 +446,11 @@ async function receiveFromPapelC() {
   }
 }
 
-async function receiveFromRJustBSA(codigo) {
+async function receiveFromRJustBSA(codigo, r) {
   try {
-    const response = await fetch(`/api/v1/tables/calculadora?codigo=${codigo}`);
+    const response = await fetch(
+      `/api/v1/tables/calculadora?codigo=${codigo}&r=${r}`,
+    );
 
     if (!response.ok) {
       const errorData = await response.json();

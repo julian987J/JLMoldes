@@ -3,8 +3,8 @@ import database from "infra/database.js";
 async function createC(ordemInputValues) {
   const result = await database.query({
     text: `
-      INSERT INTO "C" (codigo, data, nome, sis, alt, base, real, pix) 
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+      INSERT INTO "C" (codigo, data, nome, sis, alt, base, real, pix, r) 
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
       RETURNING *;
     `,
     values: [
@@ -16,6 +16,7 @@ async function createC(ordemInputValues) {
       ordemInputValues.base,
       ordemInputValues.real,
       ordemInputValues.pix,
+      ordemInputValues.r,
     ],
   });
 
@@ -73,8 +74,8 @@ async function createOficina(ordemInputValues) {
 async function createPapelC(ordemInputValues) {
   const result = await database.query({
     text: `
-      INSERT INTO "PapelC" (codigo, data, nome, multi, papel, papelpix, papelreal, encaixepix, encaixereal, desperdicio, util, perdida, comentarios ) 
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+      INSERT INTO "PapelC" (codigo, data, nome, multi, papel, papelpix, papelreal, encaixepix, encaixereal, desperdicio, util, perdida, comentarios, r ) 
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
       RETURNING *;
     `,
     values: [
@@ -91,6 +92,7 @@ async function createPapelC(ordemInputValues) {
       ordemInputValues.util,
       ordemInputValues.perdida,
       ordemInputValues.comentarios,
+      ordemInputValues.r,
     ],
   });
 
@@ -142,14 +144,15 @@ async function createRBSA(ordemInputValues) {
 async function createDevo(ordemInputValues) {
   const result = await database.query({
     text: `
-      INSERT INTO "Devo" (codigo, nome, valor) 
-      VALUES ($1, $2, $3)
+      INSERT INTO "Devo" (codigo, nome, valor, r) 
+      VALUES ($1, $2, $3, $4)
       RETURNING *;
     `,
     values: [
       ordemInputValues.codigo,
       ordemInputValues.nome,
       ordemInputValues.valor,
+      ordemInputValues.r,
     ],
   });
 
@@ -159,8 +162,8 @@ async function createDevo(ordemInputValues) {
 async function createDeve(ordemInputValues) {
   const result = await database.query({
     text: `
-      INSERT INTO "Deve" (codigo, nome, valor, data) 
-      VALUES ($1, $2, $3, $4)
+      INSERT INTO "Deve" (codigo, nome, valor, data, r) 
+      VALUES ($1, $2, $3, $4, $5)
       RETURNING *;
     `,
     values: [
@@ -168,6 +171,7 @@ async function createDeve(ordemInputValues) {
       ordemInputValues.nome,
       ordemInputValues.valor,
       ordemInputValues.data,
+      ordemInputValues.r,
     ],
   });
 
@@ -255,7 +259,7 @@ async function updateCBSA(updatedData) {
         alt = alt + $3,
         real = real + $4,
         pix = pix + $5
-      WHERE codigo = $6 AND data = $7
+      WHERE codigo = $6 AND data = $7 AND r = $8
       RETURNING *;
     `,
     values: [
@@ -266,6 +270,7 @@ async function updateCBSA(updatedData) {
       updatedData.pix,
       updatedData.codigo,
       updatedData.data,
+      updatedData.r,
     ],
   });
 
@@ -437,12 +442,13 @@ async function updateRCalculadora(updatedData) {
           SUM(alt) AS total_alt
         FROM "RBSA"
         WHERE codigo = $4
+          AND r = $5  
           AND (base > 0 OR sis > 0 OR alt > 0)
         GROUP BY codigo
       ),
       desired_totals AS (
         SELECT 
-          $1::numeric AS desired_base,  -- Sem precisão fixa
+          $1::numeric AS desired_base,
           $2::numeric AS desired_sis,
           $3::numeric AS desired_alt
       )
@@ -462,6 +468,7 @@ async function updateRCalculadora(updatedData) {
         END
       FROM current_totals ct, desired_totals dt
       WHERE r1.codigo = ct.codigo
+        AND r1.r = $5 
         AND (r1.base > 0 OR r1.sis > 0 OR r1.alt > 0)
       RETURNING *;
     `,
@@ -470,6 +477,7 @@ async function updateRCalculadora(updatedData) {
       Number(updatedData.sis) || 0,
       Number(updatedData.alt) || 0,
       updatedData.codigo,
+      updatedData.r, // Now correctly used as $5
     ],
   });
 
@@ -505,7 +513,7 @@ async function updateDeve(updatedData) {
     text: `
       -- Passo 1: Calcula a soma total dos valores
       WITH total_sum AS (
-        SELECT SUM(valor) AS total FROM "Deve" WHERE codigo = $2
+        SELECT SUM(valor) AS total FROM "Deve" WHERE codigo = $2 AND r = $3
       ),
       -- Passo 2: Ordena as linhas por data (para identificar a última linha)
       ordered_rows AS (
@@ -514,7 +522,7 @@ async function updateDeve(updatedData) {
           valor,
           ROW_NUMBER() OVER (ORDER BY data DESC) AS row_num
         FROM "Deve"
-        WHERE codigo = $2
+        WHERE codigo = $2 AND r = $3
       ),
       -- Passo 3: Atualiza as linhas
       -- Se soma_total >= valor_a_subtrair: subtrai normalmente
@@ -539,7 +547,7 @@ async function updateDeve(updatedData) {
                     ELSE 0
                   END AS subtract_amount
                 FROM "Deve"
-                WHERE codigo = $2
+                WHERE codigo = $2 AND r = $3
               ) s WHERE s.data = d.data)
             -- Caso 2: Soma total insuficiente (zerar tudo e inserir diferença na última linha)
             ELSE
@@ -551,20 +559,21 @@ async function updateDeve(updatedData) {
                 ELSE 0
               END
           END
-        WHERE codigo = $2
+        WHERE codigo = $2 AND r = $3
         RETURNING *
       )
       SELECT * FROM updated_rows;
     `,
-    values: [updatedData.valor, updatedData.codigo],
+    values: [updatedData.valor, updatedData.codigo, updatedData.r],
   });
 
   return result;
 }
 
-async function getC() {
+async function getC(r) {
   const result = await database.query({
-    text: `SELECT * FROM "C"`,
+    text: `SELECT * FROM "C" WHERE r = $1;`,
+    values: [r],
   });
   return result;
 }
@@ -593,10 +602,10 @@ async function getConfig() {
 }
 
 // Modificação no getC1Data
-async function getCData(codigo, data) {
+async function getCData(codigo, data, r) {
   const result = await database.query({
-    text: `SELECT EXISTS(SELECT 1 FROM "C" WHERE codigo = $1 AND data = $2) AS exists;`,
-    values: [codigo, data], // Supondo que 'data' seja um objeto compatível com o tipo da coluna
+    text: `SELECT EXISTS(SELECT 1 FROM "C" WHERE codigo = $1 AND data = $2 AND r = $3) AS exists;`,
+    values: [codigo, data, r], // Supondo que 'data' seja um objeto compatível com o tipo da coluna
   });
 
   return result.rows[0].exists; // Retorna true ou false
@@ -621,9 +630,10 @@ async function getPapelData(codigo, data) {
   return result.rows[0].exists;
 }
 
-async function getPapelC() {
+async function getPapelC(r) {
   const result = await database.query({
-    text: `SELECT * FROM "PapelC"`,
+    text: `SELECT * FROM "PapelC" WHERE r = $1;`,
+    values: [r],
   });
   return result;
 }
@@ -651,9 +661,10 @@ async function getMTableBase(oficina) {
   return result;
 }
 
-async function getVerificador() {
+async function getVerificador(r) {
   const result = await database.query({
-    text: `SELECT * FROM "Deve"`,
+    text: `SELECT * FROM "Deve" WHERE r = $1`,
+    values: [r],
   });
   return result;
 }
@@ -665,29 +676,31 @@ async function getRBSA(r) {
   return result;
 }
 
-async function getDeve() {
+async function getDeve(r) {
   const result = await database.query({
-    text: `SELECT * FROM "Deve"`,
+    text: `SELECT * FROM "Deve" WHERE r = $1`,
+    values: [r],
   });
   return result;
 }
-async function getDevo() {
+async function getDevo(r) {
   const result = await database.query({
-    text: `SELECT * FROM "Devo"`,
+    text: `SELECT * FROM "Devo" WHERE r = $1`,
+    values: [r],
   });
   return result;
 }
 
-async function getRJustBSA(codigo) {
+async function getRJustBSA(codigo, r) {
   const result = await database.query({
     text: `SELECT 
-            (SELECT array_agg(id) FROM "RBSA" WHERE codigo = $1) AS ids,  -- Todos os IDs em um array
+            (SELECT array_agg(id) FROM "RBSA" WHERE codigo = $1) AS ids,
             SUM(base) AS total_base,
             SUM(sis) AS total_sis,
             SUM(alt) AS total_alt
-          FROM "R1BSA" 
-          WHERE codigo = $1;`,
-    values: [codigo],
+          FROM "RBSA" 
+          WHERE r = $2 AND codigo = $1;`,
+    values: [codigo, r],
   });
 
   // Retorna apenas a primeira linha com os totais

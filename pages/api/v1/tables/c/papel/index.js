@@ -18,7 +18,8 @@ async function postHandler(request, response) {
 }
 
 async function getHandler(request, response) {
-  const ordemGetValues = await ordem.getPapelC();
+  const { r } = request.query;
+  const ordemGetValues = await ordem.getPapelC(r);
   return response.status(200).json(ordemGetValues);
 }
 

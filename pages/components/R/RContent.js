@@ -113,17 +113,18 @@ const Rcontent = ({ codigoExterno, r }) => {
           <BSTA codigo={codigo} r={r} />
         </div>
         <div>
-          <Deve codigo={codigo} />
+          <Deve codigo={codigo} r={r} />
         </div>
         <div>
           <Calculadora
+            r={r}
             codigo={codigo}
             nome={nome}
             onCodigoChange={handleCodigoChange} // Passando a função de alteração para a Calculadora
             onNomeChange={handleNomeChange} // Passando a função de alteração para a Calculadora
             data={data}
           />
-          <Devo codigo={codigo} />
+          <Devo codigo={codigo} r={r} />
         </div>
       </div>
     </div>

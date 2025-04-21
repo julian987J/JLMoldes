@@ -46,9 +46,18 @@ const NavBar = ({ Rcontent, MContent, Cadastro, Ccontent, Gastos }) => {
         "Loading..."
       ),
     },
-    { label: "C1", content: isMContentAvailable ? <Ccontent /> : "Loading..." },
-    { label: "C2", content: "Tab content 3" },
-    { label: "C3", content: "Tab content 3" },
+    {
+      label: "C1",
+      content: isMContentAvailable ? <Ccontent r={1} /> : "Loading...",
+    },
+    {
+      label: "C2",
+      content: isMContentAvailable ? <Ccontent r={2} /> : "Loading...",
+    },
+    {
+      label: "C3",
+      content: isMContentAvailable ? <Ccontent r={3} /> : "Loading...",
+    },
     { label: "T1", content: "Tab content 2" },
     { label: "T2", content: "Tab content 3" },
     { label: "T3", content: "Tab content 2" },

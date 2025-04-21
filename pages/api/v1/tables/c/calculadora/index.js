@@ -10,9 +10,9 @@ router.put(updateHandler);
 export default router.handler(controller.errorHandlers);
 
 async function getHandler(request, response) {
-  const { codigo, data } = request.query;
+  const { codigo, data, r } = request.query;
   const dataObj = JSON.parse(decodeURIComponent(data));
-  const exists = await ordem.getCData(codigo, dataObj);
+  const exists = await ordem.getCData(codigo, dataObj, r);
   return response.status(200).json({ exists });
 }
 

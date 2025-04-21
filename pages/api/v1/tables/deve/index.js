@@ -18,7 +18,8 @@ async function postHandlerDeve(request, response) {
 }
 
 async function getHandlerDeve(request, response) {
-  const ordemGetValues = await ordem.getDeve();
+  const { r } = request.query;
+  const ordemGetValues = await ordem.getDeve(r);
   return response.status(200).json(ordemGetValues);
 }
 

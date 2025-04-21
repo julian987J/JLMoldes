@@ -9,6 +9,7 @@ router.get(getVerificadorHandler);
 export default router.handler(controller.errorHandlers);
 
 async function getVerificadorHandler(request, response) {
-  const ordemGetValues = await ordem.getVerificador();
+  const { r } = request.query;
+  const ordemGetValues = await ordem.getVerificador(r);
   return response.status(200).json(ordemGetValues);
 }

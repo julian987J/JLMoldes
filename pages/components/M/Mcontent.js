@@ -252,7 +252,7 @@ const Mcontent = ({ oficina, r }) => {
           <button type="submit" className="btn btn-xs btn-info">
             Enviar
           </button>
-          <CodigoVerifier codigo={codigo} oficina={oficina} />
+          <CodigoVerifier codigo={codigo} r={r} />
         </form>
         <Config />
       </div>
