@@ -397,9 +397,12 @@ async function updateRButton(updatedData) {
   const result = await database.query({
     text: `
       UPDATE "Mtable"
-      SET ${rColumn} = $1
-      WHERE id = $2
-      RETURNING *;
+        SET ${rColumn} = $1
+        WHERE id = $2
+          AND r1 = false
+          AND r2 = false
+          AND r3 = false
+        RETURNING *;
     `,
     values: [true, updatedData.id],
   });

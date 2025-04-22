@@ -548,6 +548,11 @@ const Calculadora = ({
           console.log("Caiu em foi Todo R e Parte Papel.");
         }
         console.log("Caiu em Tem R e Tem DEVE");
+      } else if (valorDevo && totalGeral === pixMaisReal) {
+        await Execute.removeDevo(codigo);
+        await Execute.sendToPapelC(ObjPapelC);
+
+        console.log("Caiu em DEVO e Pagou tudo o Papel");
       } else {
         console.log("Caiu em sem condições");
       }

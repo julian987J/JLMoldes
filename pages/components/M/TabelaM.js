@@ -216,15 +216,20 @@ const TabelaM = ({
                         onClick={async () => {
                           try {
                             setErrorCode(null);
-                            await Execute.sendToR({
-                              ...item,
-                              sis: item.sis || 0,
-                              alt: item.alt || 0,
-                              base: item.base || 0,
-                              r: 1,
-                            });
+                            const result = await Execute.sendTrueMR(item.id, 1);
 
-                            await Execute.sendTrueMR(item.id, 1);
+                            if (result) {
+                              await Execute.sendToR({
+                                ...item,
+                                sis: item.sis || 0,
+                                alt: item.alt || 0,
+                                base: item.base || 0,
+                                r: 1,
+                              });
+                            } else {
+                              setErrorCode(item.id);
+                            }
+
                             fetchData();
                           } catch (error) {
                             setErrorCode(item.id);
@@ -245,15 +250,20 @@ const TabelaM = ({
                         onClick={async () => {
                           try {
                             setErrorCode(null);
-                            await Execute.sendToR({
-                              ...item,
-                              sis: item.sis || 0,
-                              alt: item.alt || 0,
-                              base: item.base || 0,
-                              r: 2,
-                            });
+                            const result = await Execute.sendTrueMR(item.id, 2);
 
-                            await Execute.sendTrueMR(item.id, 2);
+                            if (result) {
+                              await Execute.sendToR({
+                                ...item,
+                                sis: item.sis || 0,
+                                alt: item.alt || 0,
+                                base: item.base || 0,
+                                r: 2,
+                              });
+                            } else {
+                              setErrorCode(item.id);
+                            }
+
                             fetchData();
                           } catch (error) {
                             setErrorCode(item.id);
@@ -270,14 +280,20 @@ const TabelaM = ({
                         onClick={async () => {
                           try {
                             setErrorCode(null);
-                            await Execute.sendToR({
-                              ...item,
-                              sis: item.sis || 0,
-                              alt: item.alt || 0,
-                              base: item.base || 0,
-                              r: 3,
-                            });
-                            await Execute.sendTrueMR(item.id, 3);
+                            const result = await Execute.sendTrueMR(item.id, 3);
+
+                            if (result) {
+                              await Execute.sendToR({
+                                ...item,
+                                sis: item.sis || 0,
+                                alt: item.alt || 0,
+                                base: item.base || 0,
+                                r: 3,
+                              });
+                            } else {
+                              setErrorCode(item.id);
+                            }
+
                             fetchData();
                           } catch (error) {
                             setErrorCode(item.id);

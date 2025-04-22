@@ -1,3 +1,4 @@
+// Em /home/judhagsan/JLMoldes/models/functions.js
 const sendTrueMR = async (id, r) => {
   try {
     const response = await fetch("/api/v1/tables/RButton", {
@@ -6,10 +7,31 @@ const sendTrueMR = async (id, r) => {
       body: JSON.stringify({ id, [`r${r}`]: true }),
     });
 
-    if (!response.ok) throw new Error("Erro ao atualizar");
+    if (!response.ok) {
+      let errorMsg = `Erro ao atualizar R${r} para ID ${id} (Status: ${response.status})`;
+      try {
+        // Tenta obter uma mensagem de erro mais detalhada do corpo da resposta
+        const errorData = await response.json();
+        errorMsg = errorData.message || errorData.error || errorMsg;
+      } catch (parseError) {
+        // Ignora se o corpo não for JSON válido
+      }
+      throw new Error(errorMsg);
+    }
+
+    const contentType = response.headers.get("content-type");
+    if (
+      response.status === 204 ||
+      !contentType ||
+      !contentType.includes("application/json")
+    ) {
+      return undefined;
+    }
+
+    return await response.json();
   } catch (error) {
-    console.error("Erro ao salvar:", error);
-    throw error; // Importante re-lançar o erro para ser capturado no catch do botão
+    console.error(`Erro em sendTrueMR (R${r}, ID ${id}):`, error);
+    throw error;
   }
 };
 
