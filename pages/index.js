@@ -4,6 +4,7 @@ import cadastro from "./components/Cadastro.js";
 import Rcontent from "./components/R/RContent.js";
 import Ccontent from "./components/C/Ccontent.js";
 import Gastos from "./components/Gastos/Gastos.js";
+import Tcontent from "./components/T/Tcontent.js";
 
 const Home = () => {
   return (
@@ -14,6 +15,7 @@ const Home = () => {
         Ccontent={Ccontent}
         Cadastro={cadastro}
         Gastos={Gastos}
+        Tcontent={Tcontent}
       />
       {/* <Footer /> */}
     </div>

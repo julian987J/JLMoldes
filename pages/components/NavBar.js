@@ -1,7 +1,14 @@
 import Update from "pages/components/Update.js";
 import React from "react";
 
-const NavBar = ({ Rcontent, MContent, Cadastro, Ccontent, Gastos }) => {
+const NavBar = ({
+  Rcontent,
+  MContent,
+  Cadastro,
+  Ccontent,
+  Gastos,
+  Tcontent,
+}) => {
   const isMContentAvailable = Boolean(MContent);
   const isCadastroAvailable = Boolean(Cadastro);
   const isR1Available = Boolean(Rcontent);
@@ -58,9 +65,18 @@ const NavBar = ({ Rcontent, MContent, Cadastro, Ccontent, Gastos }) => {
       label: "C3",
       content: isMContentAvailable ? <Ccontent r={3} /> : "Loading...",
     },
-    { label: "T1", content: "Tab content 2" },
-    { label: "T2", content: "Tab content 3" },
-    { label: "T3", content: "Tab content 2" },
+    {
+      label: "T1",
+      content: isR1Available ? <Tcontent r={1} /> : "Loading...",
+    },
+    {
+      label: "T2",
+      content: isR1Available ? <Tcontent r={2} /> : "Loading...",
+    },
+    {
+      label: "T3",
+      content: isR1Available ? <Tcontent r={3} /> : "Loading...",
+    },
     {
       label: "A-Gastos",
       content: isGastosAvailable ? <Gastos letras="A" /> : "Loading...",
