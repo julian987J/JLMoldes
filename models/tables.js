@@ -682,6 +682,14 @@ async function getOficina(letras) {
   return result.rows;
 }
 
+async function getValorOficinas(oficina) {
+  const result = await database.query({
+    text: `SELECT * FROM "SaidaO" WHERE oficina = $1;`,
+    values: [oficina],
+  });
+  return result.rows;
+}
+
 async function getConfig() {
   const result = await database.query({
     text: `SELECT * FROM "config"`,
@@ -930,6 +938,7 @@ const ordem = {
   getSaidaP,
   getSaidaO,
   getOficina,
+  getValorOficinas,
   getC,
   getCData,
   getPapelC,

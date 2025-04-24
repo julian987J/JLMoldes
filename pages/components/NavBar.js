@@ -67,15 +67,15 @@ const NavBar = ({
     },
     {
       label: "T1",
-      content: isR1Available ? <Tcontent r={1} /> : "Loading...",
+      content: isR1Available ? <Tcontent r={1} oficina="R1" /> : "Loading...",
     },
     {
       label: "T2",
-      content: isR1Available ? <Tcontent r={2} /> : "Loading...",
+      content: isR1Available ? <Tcontent r={2} oficina="R2" /> : "Loading...",
     },
     {
       label: "T3",
-      content: isR1Available ? <Tcontent r={3} /> : "Loading...",
+      content: isR1Available ? <Tcontent r={3} oficina="R3" /> : "Loading...",
     },
     {
       label: "A-Gastos",

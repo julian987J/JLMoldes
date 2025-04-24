@@ -604,7 +604,23 @@ async function receiveFromSaidaO(letras) {
     const data = await response.json();
     return Array.isArray(data.rows) ? data.rows : [];
   } catch (error) {
-    console.error("Erro ao buscar dados Saida Pessoal:", error);
+    console.error("Erro ao buscar dados Saida Oficina:", error);
+  }
+}
+
+async function receiveFromSaidaOficina(oficina) {
+  try {
+    const response = await fetch(`/api/v1/tables/T?oficina=${oficina}`);
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || "Erro ao carregar os dados");
+    }
+
+    const data = await response.json();
+    return Array.isArray(data.rows) ? data.rows : [];
+  } catch (error) {
+    console.error("Erro ao buscar dados Saida Oficina:", error);
   }
 }
 
@@ -749,6 +765,7 @@ const execute = {
   receiveFromPessoal,
   receiveFromSaidaP,
   receiveFromSaidaO,
+  receiveFromSaidaOficina,
   receiveFromOficina,
   receiveFromCData,
   receiveFromConfig,
