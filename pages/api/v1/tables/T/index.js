@@ -9,10 +9,10 @@ router.get(getHandler);
 export default router.handler(controller.errorHandlers);
 
 async function getHandler(request, response) {
-  const { codigo, r } = request.query;
+  const { oficina } = request.query;
   try {
-    const valores = await ordem.getRJustBSA(codigo, r);
-    response.status(200).json(valores);
+    const valores = await ordem.getValorOficinas(oficina);
+    response.status(200).json({ rows: valores });
   } catch (error) {
     response.status(500).json({ error: error.message });
   }

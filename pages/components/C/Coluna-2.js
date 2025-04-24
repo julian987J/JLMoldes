@@ -8,7 +8,7 @@ const formatCurrency = (value) => {
   return isNaN(number) ? "0.00" : number.toFixed(2);
 };
 
-const Coluna = () => {
+const Coluna = ({ r }) => {
   const [dados, setDados] = useState([]);
   const [groupedResults, setGroupedResults] = useState({});
   const [loading, setLoading] = useState(true);
@@ -18,7 +18,7 @@ const Coluna = () => {
 
   const handleSave = async (editedData) => {
     try {
-      const response = await fetch("/api/v1/tables/c1/papel", {
+      const response = await fetch("/api/v1/tables/c/papel", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(editedData),
@@ -38,9 +38,9 @@ const Coluna = () => {
 
   const fetchData = async () => {
     try {
-      const results = await Execute.receiveFromPapelC1();
+      const results = await Execute.receiveFromPapelC(r);
 
-      const existsData = await Execute.receiveFromDeve();
+      const existsData = await Execute.receiveFromDeve(r);
       setExists(existsData);
 
       const grouped = results.reduce((acc, item) => {
@@ -81,6 +81,7 @@ const Coluna = () => {
     fetchData();
     const intervalId = setInterval(fetchData, 5000);
     return () => clearInterval(intervalId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   if (loading) {
@@ -419,7 +420,7 @@ const Coluna = () => {
                         className={`btn btn-xs btn-soft btn-error ${
                           editingId === item.id ? "hidden" : ""
                         }`}
-                        onClick={() => Execute.removePapelC1(item.id)}
+                        onClick={() => Execute.removePapelC(item.id)}
                       >
                         Excluir
                       </button>

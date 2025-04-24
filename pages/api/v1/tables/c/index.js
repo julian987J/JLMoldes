@@ -4,33 +4,33 @@ import ordem from "models/tables.js";
 
 const router = createRouter();
 
-router.post(postHandlerDeve);
-router.get(getHandlerDeve);
+router.post(postHandler);
+router.get(getHandler);
 router.delete(deleteHandler);
 router.put(updateHandler);
 
 export default router.handler(controller.errorHandlers);
 
-async function postHandlerDeve(request, response) {
+async function postHandler(request, response) {
   const ordemInputValues = request.body;
-  const newMOrdem = await ordem.createDeve(ordemInputValues);
+  const newMOrdem = await ordem.createC(ordemInputValues);
   return response.status(201).json(newMOrdem);
 }
 
-async function getHandlerDeve(request, response) {
+async function getHandler(request, response) {
   const { r } = request.query;
-  const ordemGetValues = await ordem.getDeve(r);
-  return response.status(200).json(ordemGetValues);
+  const result = await ordem.getC(r);
+  return response.status(200).json(result);
 }
 
 async function deleteHandler(request, response) {
-  const { codigo } = request.body;
-  const result = await ordem.deleteDeve(codigo);
+  const { id } = request.body;
+  const result = await ordem.deleteC(id);
   return response.status(200).json(result);
 }
 
 async function updateHandler(request, response) {
   const updatedData = request.body;
-  const result = await ordem.updateDeve(updatedData);
+  const result = await ordem.updateC(updatedData);
   return response.status(200).json(result);
 }

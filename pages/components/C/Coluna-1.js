@@ -8,7 +8,7 @@ const formatCurrency = (value) => {
   return isNaN(number) ? "0.00" : number.toFixed(2);
 };
 
-const Coluna = () => {
+const Coluna = ({ r }) => {
   const [dados, setDados] = useState([]);
   const [groupedResults, setGroupedResults] = useState({});
   const [loading, setLoading] = useState(true);
@@ -18,7 +18,7 @@ const Coluna = () => {
 
   const handleSave = async (editedData) => {
     try {
-      const response = await fetch("/api/v1/tables/c1", {
+      const response = await fetch("/api/v1/tables/c", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(editedData),
@@ -38,8 +38,8 @@ const Coluna = () => {
 
   const fetchData = async () => {
     try {
-      const results = await Execute.receiveFromC1();
-      const existsData = await Execute.receiveFromR1();
+      const results = await Execute.receiveFromC(r);
+      const existsData = await Execute.receiveFromR(r);
       setExists(existsData);
 
       const grouped = results.reduce((acc, item) => {
@@ -74,6 +74,7 @@ const Coluna = () => {
     fetchData(); // Carrega os dados ao montar o componente
     const intervalId = setInterval(fetchData, 5000); // Atualiza a cada 5 segundos
     return () => clearInterval(intervalId); // Limpa o intervalo ao desmontar o componente
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   if (loading) {
@@ -267,7 +268,7 @@ const Coluna = () => {
                         className={`btn btn-xs btn-soft btn-error ${
                           editingId === item.id ? "hidden" : ""
                         }`}
-                        onClick={() => Execute.removeC1(item.id)}
+                        onClick={() => Execute.removeC(item.id)}
                       >
                         Excluir
                       </button>

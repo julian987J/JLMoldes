@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 
-const CodigoVerifier = ({ codigo }) => {
+const CodigoVerifier = ({ codigo, r }) => {
   const [count, setCount] = useState(0);
 
   useEffect(() => {
@@ -11,7 +11,7 @@ const CodigoVerifier = ({ codigo }) => {
       }
 
       try {
-        const response1 = await fetch("/api/v1/tables/verificador", {});
+        const response1 = await fetch(`/api/v1/tables/verificador?r=${r}`, {});
         if (!response1.ok)
           throw new Error("Erro ao buscar dados da primeira tabela");
 
@@ -24,7 +24,7 @@ const CodigoVerifier = ({ codigo }) => {
           count1 = matchingCodes1.length;
         }
 
-        const response2 = await fetch("/api/v1/tables/R1", {});
+        const response2 = await fetch(`/api/v1/tables/R?r=${r}`, {});
         if (!response2.ok)
           throw new Error("Erro ao buscar dados da segunda tabela");
 
@@ -45,6 +45,7 @@ const CodigoVerifier = ({ codigo }) => {
     };
 
     fetchData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [codigo]); // Dispara sempre que `codigo` mudar
 
   return <div className="badge badge-outline badge-success mx-2">{count}</div>;

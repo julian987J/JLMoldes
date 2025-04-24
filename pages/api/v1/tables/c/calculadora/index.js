@@ -10,17 +10,14 @@ router.put(updateHandler);
 export default router.handler(controller.errorHandlers);
 
 async function getHandler(request, response) {
-  const { oficina } = request.query;
-  try {
-    const valores = await await ordem.getMTableBase(oficina);
-    response.status(200).json(valores);
-  } catch (error) {
-    response.status(500).json({ error: error.message });
-  }
+  const { codigo, data, r } = request.query;
+  const dataObj = JSON.parse(decodeURIComponent(data));
+  const exists = await ordem.getCData(codigo, dataObj, r);
+  return response.status(200).json({ exists });
 }
 
 async function updateHandler(request, response) {
   const updatedData = request.body;
-  const result = await ordem.updateBase(updatedData);
+  const result = await ordem.updateCBSA(updatedData);
   return response.status(200).json(result);
 }

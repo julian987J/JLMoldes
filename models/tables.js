@@ -1,10 +1,10 @@
 import database from "infra/database.js";
 
-async function createC1(ordemInputValues) {
+async function createC(ordemInputValues) {
   const result = await database.query({
     text: `
-      INSERT INTO "C1" (codigo, data, nome, sis, alt, base, real, pix) 
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+      INSERT INTO "C" (codigo, data, nome, sis, alt, base, real, pix, r) 
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
       RETURNING *;
     `,
     values: [
@@ -16,6 +16,7 @@ async function createC1(ordemInputValues) {
       ordemInputValues.base,
       ordemInputValues.real,
       ordemInputValues.pix,
+      ordemInputValues.r,
     ],
   });
 
@@ -46,6 +47,43 @@ async function createPessoal(ordemInputValues) {
   return result;
 }
 
+async function createSaidaP(ordemInputValues) {
+  const result = await database.query({
+    text: `
+      INSERT INTO "SaidaP" (dec, gastos, valor, pago) 
+      VALUES ($1, $2, $3, $4)
+      RETURNING *;
+    `,
+    values: [
+      ordemInputValues.letras,
+      ordemInputValues.gastos,
+      ordemInputValues.valor,
+      ordemInputValues.pago,
+    ],
+  });
+
+  return result;
+}
+
+async function createSaidaO(ordemInputValues) {
+  const result = await database.query({
+    text: `
+      INSERT INTO "SaidaO" (dec, oficina, gastos, valor, pago) 
+      VALUES ($1, $2, $3, $4, $5)
+      RETURNING *;
+    `,
+    values: [
+      ordemInputValues.letras,
+      ordemInputValues.oficina,
+      ordemInputValues.gastos,
+      ordemInputValues.valor,
+      ordemInputValues.pago,
+    ],
+  });
+
+  return result;
+}
+
 async function createOficina(ordemInputValues) {
   const result = await database.query({
     text: `
@@ -70,11 +108,11 @@ async function createOficina(ordemInputValues) {
   return result;
 }
 
-async function createPapelC1(ordemInputValues) {
+async function createPapelC(ordemInputValues) {
   const result = await database.query({
     text: `
-      INSERT INTO "PapelC1" (codigo, data, nome, multi, papel, papelpix, papelreal, encaixepix, encaixereal, desperdicio, util, perdida, comentarios ) 
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+      INSERT INTO "PapelC" (codigo, data, nome, multi, papel, papelpix, papelreal, encaixepix, encaixereal, desperdicio, util, perdida, comentarios, r ) 
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
       RETURNING *;
     `,
     values: [
@@ -91,20 +129,22 @@ async function createPapelC1(ordemInputValues) {
       ordemInputValues.util,
       ordemInputValues.perdida,
       ordemInputValues.comentarios,
+      ordemInputValues.r,
     ],
   });
 
   return result;
 }
 
-async function createM1(ordemInputValues) {
+async function createM(ordemInputValues) {
   const result = await database.query({
     text: `
-      INSERT INTO "m1table" (observacao, codigo, dec, nome, sis, base, alt) 
-      VALUES ($1, $2, $3, $4, $5, $6, $7)
+      INSERT INTO "Mtable" (oficina, observacao, codigo, dec, nome, sis, base, alt) 
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
       RETURNING *;
     `,
     values: [
+      ordemInputValues.oficina,
       ordemInputValues.observacao,
       ordemInputValues.codigo,
       ordemInputValues.dec,
@@ -118,15 +158,16 @@ async function createM1(ordemInputValues) {
   return result;
 }
 
-async function createR1BSA(ordemInputValues) {
+async function createRBSA(ordemInputValues) {
   const result = await database.query({
     text: `
-      INSERT INTO "R1BSA" (id, codigo, nome, sis, alt, base) 
-      VALUES ($1, $2, $3, $4, $5, $6)
+      INSERT INTO "RBSA" (id, r, codigo, nome, sis, alt, base) 
+      VALUES ($1, $2, $3, $4, $5, $6, $7)
       RETURNING *;
     `,
     values: [
       ordemInputValues.id,
+      ordemInputValues.r,
       ordemInputValues.codigo,
       ordemInputValues.nome,
       ordemInputValues.sis,
@@ -140,14 +181,15 @@ async function createR1BSA(ordemInputValues) {
 async function createDevo(ordemInputValues) {
   const result = await database.query({
     text: `
-      INSERT INTO "Devo" (codigo, nome, valor) 
-      VALUES ($1, $2, $3)
+      INSERT INTO "Devo" (codigo, nome, valor, r) 
+      VALUES ($1, $2, $3, $4)
       RETURNING *;
     `,
     values: [
       ordemInputValues.codigo,
       ordemInputValues.nome,
       ordemInputValues.valor,
+      ordemInputValues.r,
     ],
   });
 
@@ -157,8 +199,8 @@ async function createDevo(ordemInputValues) {
 async function createDeve(ordemInputValues) {
   const result = await database.query({
     text: `
-      INSERT INTO "Deve" (codigo, nome, valor, data) 
-      VALUES ($1, $2, $3, $4)
+      INSERT INTO "Deve" (codigo, nome, valor, data, r) 
+      VALUES ($1, $2, $3, $4, $5)
       RETURNING *;
     `,
     values: [
@@ -166,6 +208,7 @@ async function createDeve(ordemInputValues) {
       ordemInputValues.nome,
       ordemInputValues.valor,
       ordemInputValues.data,
+      ordemInputValues.r,
     ],
   });
 
@@ -175,7 +218,7 @@ async function createDeve(ordemInputValues) {
 async function updateAltSis(updatedData) {
   const result = await database.query({
     text: `
-      UPDATE "m1table"
+      UPDATE "Mtable"
       SET 
         observacao = $1,
         dec = $2,
@@ -198,10 +241,10 @@ async function updateAltSis(updatedData) {
   return result;
 }
 
-async function updateC1(updatedData) {
+async function updateC(updatedData) {
   const result = await database.query({
     text: `
-      UPDATE "C1"
+      UPDATE "C"
       SET 
         nome = $1,
         base = $2,
@@ -243,17 +286,17 @@ async function updateConfig(updatedData) {
   return result;
 }
 
-async function updateC1BSA(updatedData) {
+async function updateCBSA(updatedData) {
   const result = await database.query({
     text: `
-      UPDATE "C1"
+      UPDATE "C"
       SET 
         base = base + $1,
         sis = sis + $2,
         alt = alt + $3,
         real = real + $4,
         pix = pix + $5
-      WHERE codigo = $6 AND data = $7
+      WHERE codigo = $6 AND data = $7 AND r = $8
       RETURNING *;
     `,
     values: [
@@ -264,16 +307,17 @@ async function updateC1BSA(updatedData) {
       updatedData.pix,
       updatedData.codigo,
       updatedData.data,
+      updatedData.r,
     ],
   });
 
   return result;
 }
 
-async function updatePapelC1(updatedData) {
+async function updatePapelC(updatedData) {
   const result = await database.query({
     text: `
-      UPDATE "PapelC1"
+      UPDATE "PapelC"
       SET 
         nome = $1,
         multi = $2,
@@ -342,6 +386,38 @@ async function updatePessoal(updatedData) {
   return result;
 }
 
+async function updateSaidaP(updatedData) {
+  const result = await database.query({
+    text: `
+      UPDATE "SaidaP"
+      SET 
+        gastos = $1,
+        valor = $2
+      WHERE id = $3
+      RETURNING *;
+    `,
+    values: [updatedData.gastos, updatedData.valor, updatedData.id],
+  });
+
+  return result;
+}
+
+async function updateSaidaO(updatedData) {
+  const result = await database.query({
+    text: `
+      UPDATE "SaidaO"
+      SET 
+        gastos = $1,
+        valor = $2
+      WHERE id = $3
+      RETURNING *;
+    `,
+    values: [updatedData.gastos, updatedData.valor, updatedData.id],
+  });
+
+  return result;
+}
+
 async function updateOficina(updatedData) {
   const result = await database.query({
     text: `
@@ -376,23 +452,37 @@ async function updateOficina(updatedData) {
   return result;
 }
 
-async function updateR1Button(updatedData) {
+async function updateRButton(updatedData) {
+  // Extrai a chave dinâmica (ex: 'r1', 'r2') dos dados recebidos
+  const rColumn = Object.keys(updatedData).find(
+    (key) => key.startsWith("r") && key !== "id" && /^r\d+$/.test(key), // Valida o formato 'r' seguido de números
+  );
+
+  if (!rColumn) {
+    throw new Error("Coluna R inválida");
+  }
+
+  // Usa a coluna identificada na query SQL
   const result = await database.query({
     text: `
-      UPDATE "m1table"
-      SET r1 = $1
-      WHERE id = $2
-      RETURNING *;
+      UPDATE "Mtable"
+        SET ${rColumn} = $1
+        WHERE id = $2
+          AND r1 = false
+          AND r2 = false
+          AND r3 = false
+        RETURNING *;
     `,
     values: [true, updatedData.id],
   });
+
   return result.rows[0];
 }
 
-async function updateAltSisR1(updatedData) {
+async function updateAltSisR(updatedData) {
   const result = await database.query({
     text: `
-      UPDATE "R1BSA"
+      UPDATE "RBSA"
       SET 
         nome = $1,
         base = $2,
@@ -413,7 +503,7 @@ async function updateAltSisR1(updatedData) {
   return result;
 }
 
-async function updateR1Calculadora(updatedData) {
+async function updateRCalculadora(updatedData) {
   const result = await database.query({
     text: `
       WITH current_totals AS (
@@ -422,18 +512,19 @@ async function updateR1Calculadora(updatedData) {
           SUM(base) AS total_base,
           SUM(sis) AS total_sis,
           SUM(alt) AS total_alt
-        FROM "R1BSA"
+        FROM "RBSA"
         WHERE codigo = $4
+          AND r = $5  
           AND (base > 0 OR sis > 0 OR alt > 0)
         GROUP BY codigo
       ),
       desired_totals AS (
         SELECT 
-          $1::numeric AS desired_base,  -- Sem precisão fixa
+          $1::numeric AS desired_base,
           $2::numeric AS desired_sis,
           $3::numeric AS desired_alt
       )
-      UPDATE "R1BSA" r1
+      UPDATE "RBSA" r1
       SET
         base = CASE 
           WHEN ct.total_base = 0 THEN r1.base
@@ -449,6 +540,7 @@ async function updateR1Calculadora(updatedData) {
         END
       FROM current_totals ct, desired_totals dt
       WHERE r1.codigo = ct.codigo
+        AND r1.r = $5 
         AND (r1.base > 0 OR r1.sis > 0 OR r1.alt > 0)
       RETURNING *;
     `,
@@ -457,6 +549,7 @@ async function updateR1Calculadora(updatedData) {
       Number(updatedData.sis) || 0,
       Number(updatedData.alt) || 0,
       updatedData.codigo,
+      updatedData.r, // Now correctly used as $5
     ],
   });
 
@@ -466,7 +559,7 @@ async function updateR1Calculadora(updatedData) {
 async function updateBase(updatedData) {
   const result = await database.query({
     text: `
-      UPDATE "m1table"
+      UPDATE "Mtable"
       SET 
         observacao = $1,
         dec = $2,
@@ -492,7 +585,7 @@ async function updateDeve(updatedData) {
     text: `
       -- Passo 1: Calcula a soma total dos valores
       WITH total_sum AS (
-        SELECT SUM(valor) AS total FROM "Deve" WHERE codigo = $2
+        SELECT SUM(valor) AS total FROM "Deve" WHERE codigo = $2 AND r = $3
       ),
       -- Passo 2: Ordena as linhas por data (para identificar a última linha)
       ordered_rows AS (
@@ -501,7 +594,7 @@ async function updateDeve(updatedData) {
           valor,
           ROW_NUMBER() OVER (ORDER BY data DESC) AS row_num
         FROM "Deve"
-        WHERE codigo = $2
+        WHERE codigo = $2 AND r = $3
       ),
       -- Passo 3: Atualiza as linhas
       -- Se soma_total >= valor_a_subtrair: subtrai normalmente
@@ -526,7 +619,7 @@ async function updateDeve(updatedData) {
                     ELSE 0
                   END AS subtract_amount
                 FROM "Deve"
-                WHERE codigo = $2
+                WHERE codigo = $2 AND r = $3
               ) s WHERE s.data = d.data)
             -- Caso 2: Soma total insuficiente (zerar tudo e inserir diferença na última linha)
             ELSE
@@ -538,20 +631,21 @@ async function updateDeve(updatedData) {
                 ELSE 0
               END
           END
-        WHERE codigo = $2
+        WHERE codigo = $2 AND r = $3
         RETURNING *
       )
       SELECT * FROM updated_rows;
     `,
-    values: [updatedData.valor, updatedData.codigo],
+    values: [updatedData.valor, updatedData.codigo, updatedData.r],
   });
 
   return result;
 }
 
-async function getC1() {
+async function getC(r) {
   const result = await database.query({
-    text: `SELECT * FROM "C1"`,
+    text: `SELECT * FROM "C" WHERE r = $1;`,
+    values: [r],
   });
   return result;
 }
@@ -559,6 +653,22 @@ async function getC1() {
 async function getPessoal(letras) {
   const result = await database.query({
     text: `SELECT * FROM "Pessoal" WHERE dec = $1;`,
+    values: [letras],
+  });
+  return result.rows;
+}
+
+async function getSaidaP(letras) {
+  const result = await database.query({
+    text: `SELECT * FROM "SaidaP" WHERE dec = $1;`,
+    values: [letras],
+  });
+  return result.rows;
+}
+
+async function getSaidaO(letras) {
+  const result = await database.query({
+    text: `SELECT * FROM "SaidaO" WHERE dec = $1;`,
     values: [letras],
   });
   return result.rows;
@@ -572,6 +682,14 @@ async function getOficina(letras) {
   return result.rows;
 }
 
+async function getValorOficinas(oficina) {
+  const result = await database.query({
+    text: `SELECT * FROM "SaidaO" WHERE oficina = $1;`,
+    values: [oficina],
+  });
+  return result.rows;
+}
+
 async function getConfig() {
   const result = await database.query({
     text: `SELECT * FROM "config"`,
@@ -580,10 +698,10 @@ async function getConfig() {
 }
 
 // Modificação no getC1Data
-async function getC1Data(codigo, data) {
+async function getCData(codigo, data, r) {
   const result = await database.query({
-    text: `SELECT EXISTS(SELECT 1 FROM "C1" WHERE codigo = $1 AND data = $2) AS exists;`,
-    values: [codigo, data], // Supondo que 'data' seja um objeto compatível com o tipo da coluna
+    text: `SELECT EXISTS(SELECT 1 FROM "C" WHERE codigo = $1 AND data = $2 AND r = $3) AS exists;`,
+    values: [codigo, data, r], // Supondo que 'data' seja um objeto compatível com o tipo da coluna
   });
 
   return result.rows[0].exists; // Retorna true ou false
@@ -608,63 +726,77 @@ async function getPapelData(codigo, data) {
   return result.rows[0].exists;
 }
 
-async function getPapelC1() {
+async function getPapelC(r) {
   const result = await database.query({
-    text: `SELECT * FROM "PapelC1"`,
+    text: `SELECT * FROM "PapelC" WHERE r = $1;`,
+    values: [r],
   });
   return result;
 }
 
-async function getM1TableAltSis() {
+async function getMTableAltSis(oficina) {
   const result = await database.query({
-    text: `SELECT id, data, observacao, codigo, dec, nome, sis, alt, r1, r2, r3 FROM "m1table" WHERE sis > 0 OR alt > 0 ORDER BY data DESC;`,
+    text: `SELECT id, data, observacao, codigo, dec, nome, sis, alt, r1, r2, r3 
+           FROM "Mtable" 
+           WHERE oficina = $1 
+           AND (sis > 0 OR alt > 0) 
+           ORDER BY data DESC;`,
+    values: [oficina],
   });
   return result;
 }
 
-async function getM1TableBase() {
+async function getMTableBase(oficina) {
   const result = await database.query({
-    text: `SELECT id, data, observacao, codigo, dec, nome, base, r1, r2, r3 FROM "m1table" WHERE base > 0 ORDER BY data DESC;`,
+    text: `SELECT id, data, observacao, codigo, dec, nome, base, r1, r2, r3 
+           FROM "Mtable" 
+           WHERE oficina = $1 
+           AND base > 0 ORDER BY data DESC;`,
+    values: [oficina],
   });
   return result;
 }
 
-async function getVerificador() {
+async function getVerificador(r) {
   const result = await database.query({
-    text: `SELECT * FROM "Deve"`,
+    text: `SELECT * FROM "Deve" WHERE r = $1`,
+    values: [r],
   });
   return result;
 }
-async function getR1BSA() {
+async function getRBSA(r) {
   const result = await database.query({
-    text: `SELECT * FROM "R1BSA"`,
-  });
-  return result;
-}
-
-async function getDeve() {
-  const result = await database.query({
-    text: `SELECT * FROM "Deve"`,
-  });
-  return result;
-}
-async function getDevo() {
-  const result = await database.query({
-    text: `SELECT * FROM "Devo"`,
+    text: `SELECT * FROM "RBSA" WHERE r=$1`,
+    values: [r],
   });
   return result;
 }
 
-async function getR1JustBSA(codigo) {
+async function getDeve(r) {
+  const result = await database.query({
+    text: `SELECT * FROM "Deve" WHERE r = $1`,
+    values: [r],
+  });
+  return result;
+}
+async function getDevo(r) {
+  const result = await database.query({
+    text: `SELECT * FROM "Devo" WHERE r = $1`,
+    values: [r],
+  });
+  return result;
+}
+
+async function getRJustBSA(codigo, r) {
   const result = await database.query({
     text: `SELECT 
-            (SELECT array_agg(id) FROM "R1BSA" WHERE codigo = $1) AS ids,  -- Todos os IDs em um array
+            (SELECT array_agg(id) FROM "RBSA" WHERE codigo = $1) AS ids,
             SUM(base) AS total_base,
             SUM(sis) AS total_sis,
             SUM(alt) AS total_alt
-          FROM "R1BSA" 
-          WHERE codigo = $1;`,
-    values: [codigo],
+          FROM "RBSA" 
+          WHERE r = $2 AND codigo = $1;`,
+    values: [codigo, r],
   });
 
   // Retorna apenas a primeira linha com os totais
@@ -711,25 +843,25 @@ async function getDevoJustValor(codigo) {
   );
 }
 
-async function deleteM1(ids) {
+async function deleteM(ids) {
   const result = await database.query({
-    text: `DELETE FROM "m1table" WHERE id = ANY($1) RETURNING *`,
+    text: `DELETE FROM "Mtable" WHERE id = ANY($1) RETURNING *`,
     values: [ids],
   });
   return result.rows;
 }
 
-async function deleteC1(ids) {
+async function deleteC(ids) {
   const result = await database.query({
-    text: `DELETE FROM "C1" WHERE id = $1 RETURNING *`,
+    text: `DELETE FROM "C" WHERE id = $1 RETURNING *`,
     values: [ids],
   });
   return result.rows;
 }
 
-async function deletePapelC1(ids) {
+async function deletePapelC(ids) {
   const result = await database.query({
-    text: `DELETE FROM "PapelC1" WHERE id = $1 RETURNING *`,
+    text: `DELETE FROM "PapelC" WHERE id = $1 RETURNING *`,
     values: [ids],
   });
   return result.rows;
@@ -743,6 +875,22 @@ async function deletePessoal(ids) {
   return result.rows;
 }
 
+async function deleteSaidaP(ids) {
+  const result = await database.query({
+    text: `DELETE FROM "SaidaP" WHERE id = $1 RETURNING *`,
+    values: [ids],
+  });
+  return result.rows;
+}
+
+async function deleteSaidaO(ids) {
+  const result = await database.query({
+    text: `DELETE FROM "SaidaO" WHERE id = $1 RETURNING *`,
+    values: [ids],
+  });
+  return result.rows;
+}
+
 async function deleteOficina(ids) {
   const result = await database.query({
     text: `DELETE FROM "Oficina" WHERE id = $1 RETURNING *`,
@@ -751,9 +899,9 @@ async function deleteOficina(ids) {
   return result.rows;
 }
 
-export async function deleteR1(ids) {
+export async function deleteR(ids) {
   const result = await database.query({
-    text: `DELETE FROM "R1BSA" WHERE id = ANY($1) RETURNING *`,
+    text: `DELETE FROM "RBSA" WHERE id = ANY($1) RETURNING *`,
     values: [ids],
   });
   return result.rows;
@@ -776,50 +924,59 @@ export async function deleteDeve(codigo) {
 }
 
 const ordem = {
-  createM1,
+  createM,
   createPessoal,
+  createSaidaP,
+  createSaidaO,
   createOficina,
-  createR1BSA,
+  createRBSA,
   createDevo,
   createDeve,
-  createC1,
-  createPapelC1,
+  createC,
+  createPapelC,
   getPessoal,
+  getSaidaP,
+  getSaidaO,
   getOficina,
-  getC1,
-  getC1Data,
-  getPapelC1,
+  getValorOficinas,
+  getC,
+  getCData,
+  getPapelC,
   getPapelData,
   getConfig,
-  getR1BSA,
-  getR1JustBSA,
-  getM1TableAltSis,
-  getM1TableBase,
+  getRBSA,
+  getRJustBSA,
+  getMTableAltSis,
+  getMTableBase,
   getVerificador,
   getDeve,
   getDeveJustValor,
   getDevo,
   getDevoJustValor,
-  deleteC1,
-  deletePapelC1,
+  deleteC,
+  deletePapelC,
   deletePessoal,
+  deleteSaidaP,
+  deleteSaidaO,
   deleteOficina,
-  deleteM1,
-  deleteR1,
+  deleteM,
+  deleteR,
   deleteDeve,
   deleteDevo,
   updateDeve,
   updateConfig,
-  updateC1,
-  updateC1BSA,
+  updateC,
+  updateCBSA,
   updatePessoal,
+  updateSaidaP,
+  updateSaidaO,
   updateOficina,
-  updatePapelC1,
+  updatePapelC,
   updateAltSis,
-  updateAltSisR1,
-  updateR1Calculadora,
+  updateAltSisR,
+  updateRCalculadora,
   updateBase,
-  updateR1Button,
+  updateRButton,
 };
 
 export default ordem;
