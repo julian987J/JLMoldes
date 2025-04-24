@@ -47,6 +47,43 @@ async function createPessoal(ordemInputValues) {
   return result;
 }
 
+async function createSaidaP(ordemInputValues) {
+  const result = await database.query({
+    text: `
+      INSERT INTO "SaidaP" (dec, gastos, valor, pago) 
+      VALUES ($1, $2, $3, $4)
+      RETURNING *;
+    `,
+    values: [
+      ordemInputValues.letras,
+      ordemInputValues.gastos,
+      ordemInputValues.valor,
+      ordemInputValues.pago,
+    ],
+  });
+
+  return result;
+}
+
+async function createSaidaO(ordemInputValues) {
+  const result = await database.query({
+    text: `
+      INSERT INTO "SaidaO" (dec, oficina, gastos, valor, pago) 
+      VALUES ($1, $2, $3, $4, $5)
+      RETURNING *;
+    `,
+    values: [
+      ordemInputValues.letras,
+      ordemInputValues.oficina,
+      ordemInputValues.gastos,
+      ordemInputValues.valor,
+      ordemInputValues.pago,
+    ],
+  });
+
+  return result;
+}
+
 async function createOficina(ordemInputValues) {
   const result = await database.query({
     text: `
@@ -349,6 +386,38 @@ async function updatePessoal(updatedData) {
   return result;
 }
 
+async function updateSaidaP(updatedData) {
+  const result = await database.query({
+    text: `
+      UPDATE "SaidaP"
+      SET 
+        gastos = $1,
+        valor = $2
+      WHERE id = $3
+      RETURNING *;
+    `,
+    values: [updatedData.gastos, updatedData.valor, updatedData.id],
+  });
+
+  return result;
+}
+
+async function updateSaidaO(updatedData) {
+  const result = await database.query({
+    text: `
+      UPDATE "SaidaO"
+      SET 
+        gastos = $1,
+        valor = $2
+      WHERE id = $3
+      RETURNING *;
+    `,
+    values: [updatedData.gastos, updatedData.valor, updatedData.id],
+  });
+
+  return result;
+}
+
 async function updateOficina(updatedData) {
   const result = await database.query({
     text: `
@@ -589,6 +658,22 @@ async function getPessoal(letras) {
   return result.rows;
 }
 
+async function getSaidaP(letras) {
+  const result = await database.query({
+    text: `SELECT * FROM "SaidaP" WHERE dec = $1;`,
+    values: [letras],
+  });
+  return result.rows;
+}
+
+async function getSaidaO(letras) {
+  const result = await database.query({
+    text: `SELECT * FROM "SaidaO" WHERE dec = $1;`,
+    values: [letras],
+  });
+  return result.rows;
+}
+
 async function getOficina(letras) {
   const result = await database.query({
     text: `SELECT * FROM "Oficina" WHERE dec = $1;`,
@@ -782,6 +867,22 @@ async function deletePessoal(ids) {
   return result.rows;
 }
 
+async function deleteSaidaP(ids) {
+  const result = await database.query({
+    text: `DELETE FROM "SaidaP" WHERE id = $1 RETURNING *`,
+    values: [ids],
+  });
+  return result.rows;
+}
+
+async function deleteSaidaO(ids) {
+  const result = await database.query({
+    text: `DELETE FROM "SaidaO" WHERE id = $1 RETURNING *`,
+    values: [ids],
+  });
+  return result.rows;
+}
+
 async function deleteOficina(ids) {
   const result = await database.query({
     text: `DELETE FROM "Oficina" WHERE id = $1 RETURNING *`,
@@ -817,6 +918,8 @@ export async function deleteDeve(codigo) {
 const ordem = {
   createM,
   createPessoal,
+  createSaidaP,
+  createSaidaO,
   createOficina,
   createRBSA,
   createDevo,
@@ -824,6 +927,8 @@ const ordem = {
   createC,
   createPapelC,
   getPessoal,
+  getSaidaP,
+  getSaidaO,
   getOficina,
   getC,
   getCData,
@@ -842,6 +947,8 @@ const ordem = {
   deleteC,
   deletePapelC,
   deletePessoal,
+  deleteSaidaP,
+  deleteSaidaO,
   deleteOficina,
   deleteM,
   deleteR,
@@ -852,6 +959,8 @@ const ordem = {
   updateC,
   updateCBSA,
   updatePessoal,
+  updateSaidaP,
+  updateSaidaO,
   updateOficina,
   updatePapelC,
   updateAltSis,

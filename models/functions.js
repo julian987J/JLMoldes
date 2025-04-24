@@ -185,6 +185,61 @@ async function sendToPessoal(
   }
 }
 
+async function sendToSaidaP(letras, gastos, valor, pago) {
+  try {
+    const response = await fetch("/api/v1/tables/gastos/pessoal/saida", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        letras,
+        gastos,
+        valor,
+        pago,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(
+        errorData.error || "Erro ao criar registro em Saida Pessoal",
+      );
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error("Erro no createSaidaP:", error);
+    throw error;
+  }
+}
+
+async function sendToSaidaO(letras, oficina, gastos, valor, pago) {
+  try {
+    const response = await fetch("/api/v1/tables/gastos/oficina/saida", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        letras,
+        oficina,
+        gastos,
+        valor,
+        pago,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(
+        errorData.error || "Erro ao criar registro em Saida Pessoal",
+      );
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error("Erro no createSaidaP:", error);
+    throw error;
+  }
+}
+
 async function sendToOficina(
   letras,
   item,
@@ -517,6 +572,42 @@ async function receiveFromPessoal(letras) {
   }
 }
 
+async function receiveFromSaidaP(letras) {
+  try {
+    const response = await fetch(
+      `/api/v1/tables/gastos/pessoal/saida?letras=${letras}`,
+    );
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || "Erro ao carregar os dados");
+    }
+
+    const data = await response.json();
+    return Array.isArray(data.rows) ? data.rows : [];
+  } catch (error) {
+    console.error("Erro ao buscar dados Saida Pessoal:", error);
+  }
+}
+
+async function receiveFromSaidaO(letras) {
+  try {
+    const response = await fetch(
+      `/api/v1/tables/gastos/oficina/saida?letras=${letras}`,
+    );
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || "Erro ao carregar os dados");
+    }
+
+    const data = await response.json();
+    return Array.isArray(data.rows) ? data.rows : [];
+  } catch (error) {
+    console.error("Erro ao buscar dados Saida Pessoal:", error);
+  }
+}
+
 async function receiveFromOficina(letras) {
   try {
     const response = await fetch(
@@ -587,6 +678,28 @@ async function removePessoal(id) {
   console.log(result);
 }
 
+async function removeSaidaP(id) {
+  const response = await fetch("/api/v1/tables/gastos/pessoal/saida", {
+    method: "DELETE",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ id }), // Envia o `id` no corpo da requisição
+  });
+
+  const result = await response.json();
+  console.log(result);
+}
+
+async function removeSaidaO(id) {
+  const response = await fetch("/api/v1/tables/gastos/oficina/saida", {
+    method: "DELETE",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ id }), // Envia o `id` no corpo da requisição
+  });
+
+  const result = await response.json();
+  console.log(result);
+}
+
 async function removeOficina(id) {
   const response = await fetch("/api/v1/tables/gastos/oficina", {
     method: "DELETE",
@@ -628,10 +741,14 @@ const execute = {
   sendToDevo,
   sendToC,
   sendToPessoal,
+  sendToSaidaP,
+  sendToSaidaO,
   sendToOficina,
   sendToPapelC,
   receiveFromC,
   receiveFromPessoal,
+  receiveFromSaidaP,
+  receiveFromSaidaO,
   receiveFromOficina,
   receiveFromCData,
   receiveFromConfig,
@@ -647,6 +764,8 @@ const execute = {
   removeC,
   removePapelC,
   removePessoal,
+  removeSaidaP,
+  removeSaidaO,
   removeOficina,
   removeMandR,
   removeDeve,

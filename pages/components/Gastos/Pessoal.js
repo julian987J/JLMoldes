@@ -89,6 +89,39 @@ const Pessoal = ({ letras }) => {
     }
   };
 
+  const handlePagar = async (entry) => {
+    try {
+      // Atualiza o registro no backend
+      const updatedEntry = {
+        ...entry,
+        proximo: null, // Define próximo como vazio
+        dia: 30, // Define dia como 30
+        pago: new Date().toISOString().split("T")[0], // Atualiza a data do último pagamento
+      };
+
+      const response = await fetch("/api/v1/tables/gastos/pessoal", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(updatedEntry),
+      });
+
+      if (!response.ok) throw new Error("Erro ao atualizar pagamento");
+
+      // Atualiza o estado local
+      setData(data.map((item) => (item.id === entry.id ? updatedEntry : item)));
+
+      // Registra na saída
+      await Execute.sendToSaidaP(
+        letras,
+        entry.gastos,
+        entry.valor,
+        new Date().toISOString().split("T")[0],
+      );
+    } catch (error) {
+      console.error("Erro ao processar pagamento:", error);
+    }
+  };
+
   // Função para cancelar a edição
   const handleCancel = () => {
     setEditingId(null);
@@ -109,6 +142,8 @@ const Pessoal = ({ letras }) => {
       dia,
       alerta,
     );
+
+    await Execute.sendToSaidaP(letras, gastos, valor, pago);
 
     setItem("");
     setQuantidade("");
@@ -385,6 +420,12 @@ const Pessoal = ({ letras }) => {
                     )}
                   </td>
                   <td className="px-0">
+                    <button
+                      className={`btn btn-xs btn-soft btn-success ${editingId === entry.id ? "hidden" : ""}`}
+                      onClick={() => handlePagar(entry)}
+                    >
+                      Pagar
+                    </button>
                     <Edit
                       isEditing={editingId === entry.id}
                       onEdit={() => startEditing(entry)}
@@ -553,6 +594,12 @@ const Pessoal = ({ letras }) => {
                     )}
                   </td>
                   <td className="px-0.5">
+                    <button
+                      className={`btn btn-xs btn-soft btn-success ${editingId === entry.id ? "hidden" : ""}`}
+                      onClick={() => handlePagar(entry)}
+                    >
+                      Pagar
+                    </button>
                     <Edit
                       isEditing={editingId === entry.id}
                       onEdit={() => startEditing(entry)}
