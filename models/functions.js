@@ -55,6 +55,7 @@ async function sendToR(itemData) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         id: itemData.id,
+        dec: itemData.dec,
         r: itemData.r,
         codigo: itemData.codigo,
         nome: itemData.nome,
@@ -66,7 +67,7 @@ async function sendToR(itemData) {
 
     return await response.json();
   } catch (error) {
-    console.error("Erro no sendToR1:", error);
+    console.error("Erro no sendToR:", error);
     throw error; // Propaga o erro para o chamador
   }
 }
@@ -289,6 +290,7 @@ async function sendToC(itemData) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         codigo: itemData.codigo,
+        dec: itemData.dec,
         r: itemData.r,
         data: itemData.data,
         nome: itemData.nome,
@@ -466,6 +468,20 @@ async function receiveFromDevo(r) {
 async function receiveFromC(r) {
   try {
     const response = await fetch(`/api/v1/tables/c?r=${r}`);
+    if (!response.ok) throw new Error("Erro ao carregar os dados");
+    const data = await response.json();
+    return Array.isArray(data.rows) ? data.rows : [];
+  } catch (error) {
+    console.error("Erro ao buscar dados deve:", error);
+    return [];
+  }
+}
+
+async function receiveFromCGastos(letras) {
+  try {
+    const response = await fetch(
+      `/api/v1/tables/gastos/pessoal/C?letras=${letras}`,
+    );
     if (!response.ok) throw new Error("Erro ao carregar os dados");
     const data = await response.json();
     return Array.isArray(data.rows) ? data.rows : [];
@@ -762,6 +778,7 @@ const execute = {
   sendToOficina,
   sendToPapelC,
   receiveFromC,
+  receiveFromCGastos,
   receiveFromPessoal,
   receiveFromSaidaP,
   receiveFromSaidaO,

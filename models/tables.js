@@ -3,12 +3,13 @@ import database from "infra/database.js";
 async function createC(ordemInputValues) {
   const result = await database.query({
     text: `
-      INSERT INTO "C" (codigo, data, nome, sis, alt, base, real, pix, r) 
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+      INSERT INTO "C" (codigo,dec, data, nome, sis, alt, base, real, pix, r) 
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
       RETURNING *;
     `,
     values: [
       ordemInputValues.codigo,
+      ordemInputValues.dec,
       ordemInputValues.data,
       ordemInputValues.nome,
       ordemInputValues.sis,
@@ -161,12 +162,13 @@ async function createM(ordemInputValues) {
 async function createRBSA(ordemInputValues) {
   const result = await database.query({
     text: `
-      INSERT INTO "RBSA" (id, r, codigo, nome, sis, alt, base) 
-      VALUES ($1, $2, $3, $4, $5, $6, $7)
+      INSERT INTO "RBSA" (id, dec, r, codigo, nome, sis, alt, base) 
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
       RETURNING *;
     `,
     values: [
       ordemInputValues.id,
+      ordemInputValues.dec,
       ordemInputValues.r,
       ordemInputValues.codigo,
       ordemInputValues.nome,
@@ -286,32 +288,30 @@ async function updateConfig(updatedData) {
   return result;
 }
 
-async function updateCBSA(updatedData) {
-  const result = await database.query({
-    text: `
-      UPDATE "C"
-      SET 
-        base = base + $1,
-        sis = sis + $2,
-        alt = alt + $3,
-        real = real + $4,
-        pix = pix + $5
-      WHERE codigo = $6 AND data = $7 AND r = $8
-      RETURNING *;
-    `,
+async function updateCBSA(codigo, data, r, dec, newValues) {
+  return await database.query({
+    text: `INSERT INTO c 
+           (codigo, data, r, dec, sis, alt, base, real, pix) 
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+           ON CONFLICT (codigo, data, r, dec) 
+           DO UPDATE SET
+             sis = EXCLUDED.sis,
+             alt = EXCLUDED.alt,
+             base = EXCLUDED.base,
+             real = EXCLUDED.real,
+             pix = EXCLUDED.pix`,
     values: [
-      updatedData.base,
-      updatedData.sis,
-      updatedData.alt,
-      updatedData.real,
-      updatedData.pix,
-      updatedData.codigo,
-      updatedData.data,
-      updatedData.r,
+      codigo,
+      data,
+      r,
+      dec,
+      newValues.sis,
+      newValues.alt,
+      newValues.base,
+      newValues.real,
+      newValues.pix,
     ],
   });
-
-  return result;
 }
 
 async function updatePapelC(updatedData) {
@@ -650,6 +650,14 @@ async function getC(r) {
   return result;
 }
 
+async function getCByDec(letras) {
+  const result = await database.query({
+    text: `SELECT * FROM "C" WHERE dec = $1;`,
+    values: [letras],
+  });
+  return result;
+}
+
 async function getPessoal(letras) {
   const result = await database.query({
     text: `SELECT * FROM "Pessoal" WHERE dec = $1;`,
@@ -790,23 +798,17 @@ async function getDevo(r) {
 async function getRJustBSA(codigo, r) {
   const result = await database.query({
     text: `SELECT 
-            (SELECT array_agg(id) FROM "RBSA" WHERE codigo = $1) AS ids,
+            dec,
             SUM(base) AS total_base,
             SUM(sis) AS total_sis,
-            SUM(alt) AS total_alt
+            SUM(alt) AS total_alt,
+            array_agg(id) AS ids
           FROM "RBSA" 
-          WHERE r = $2 AND codigo = $1;`,
+          WHERE r = $2 AND codigo = $1
+          GROUP BY dec;`,
     values: [codigo, r],
   });
-
-  // Retorna apenas a primeira linha com os totais
-  return (
-    result.rows[0] || {
-      total_base: 0,
-      total_sis: 0,
-      total_alt: 0,
-    }
-  );
+  return result.rows;
 }
 
 async function getDeveJustValor(codigo) {
@@ -940,6 +942,7 @@ const ordem = {
   getOficina,
   getValorOficinas,
   getC,
+  getCByDec,
   getCData,
   getPapelC,
   getPapelData,

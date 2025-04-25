@@ -86,7 +86,7 @@ const Tabela = ({ titulo, cor, dados }) => {
           {days.map((day) => (
             <tr
               key={day}
-              className={`divide-x divide-base-300 hover:bg-${cor}/10`}
+              className={`divide-x divide-base-300 hover:bg-gray-50`}
             >
               <th>{day}</th>
 

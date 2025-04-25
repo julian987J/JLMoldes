@@ -1,6 +1,7 @@
 exports.up = (pgm) => {
   pgm.createTable("RBSA", {
     id: { type: "numeric", notNull: true },
+    dec: { type: "text", notNull: true },
     r: { type: "numeric", notNull: true },
     data: { type: "timestamptz", default: pgm.func("now()"), notNull: true },
     codigo: { type: "text", notNull: true },

@@ -142,6 +142,7 @@ const Coluna = ({ r }) => {
                   <th className="hidden">ID</th>
                   <th className="hidden">Codigo</th>
                   <th>Hora</th>
+                  <th>Dec</th>
                   <th>Nome</th>
                   <th>Base</th>
                   <th>Sis</th>
@@ -168,6 +169,7 @@ const Coluna = ({ r }) => {
                     <td className="hidden">{item.id}</td>
                     <td className="hidden">{item.codigo}</td>
                     <td>{item.horaSeparada}</td>
+                    <td>{item.dec}</td>
                     <td>
                       {editingId === item.id ? (
                         <input

@@ -225,6 +225,7 @@ const TabelaM = ({
                                 alt: item.alt || 0,
                                 base: item.base || 0,
                                 r: 1,
+                                dec: item.dec,
                               });
                             } else {
                               setErrorCode(item.id);
@@ -259,6 +260,7 @@ const TabelaM = ({
                                 alt: item.alt || 0,
                                 base: item.base || 0,
                                 r: 2,
+                                dec: item.dec,
                               });
                             } else {
                               setErrorCode(item.id);
@@ -289,6 +291,7 @@ const TabelaM = ({
                                 alt: item.alt || 0,
                                 base: item.base || 0,
                                 r: 3,
+                                dec: item.dec,
                               });
                             } else {
                               setErrorCode(item.id);

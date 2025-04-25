@@ -2,6 +2,7 @@ exports.up = (pgm) => {
   pgm.createTable("C", {
     id: { type: "serial", primaryKey: true },
     codigo: { type: "text", notNull: true },
+    dec: { type: "text", notNull: true },
     r: { type: "numeric", notNull: true },
     data: { type: "timestamptz", notNull: true },
     nome: { type: "text", notNull: true },

@@ -49,6 +49,20 @@ export function formatarDataAno(dataString) {
   return `${String(data.getUTCDate()).padStart(2, "0")}/${String(data.getUTCMonth() + 1).padStart(2, "0")}/${data.getUTCFullYear()}`;
 }
 
+export function formatarProximo(dataString, mesesAdicionais, diasAdicionais) {
+  const meses = Number(mesesAdicionais);
+  const dias = Number(diasAdicionais);
+  if (meses === 0 && dias === 0) {
+    return "—";
+  } else {
+    const data = new Date(dataString);
+    const novaData = new Date(data);
+    novaData.setUTCMonth(novaData.getUTCMonth() + meses);
+    novaData.setUTCDate(novaData.getUTCDate() + dias);
+    return `${String(novaData.getUTCDate()).padStart(2, "0")}/${String(novaData.getUTCMonth() + 1).padStart(2, "0")}/${novaData.getUTCFullYear()}`;
+  }
+}
+
 function NowData() {
   const data = new Date();
   const isoString = data.toISOString();
@@ -61,6 +75,7 @@ const use = {
   formatarDataHora,
   formatarData,
   formatarDataAno,
+  formatarProximo,
   NowData,
 };
 
