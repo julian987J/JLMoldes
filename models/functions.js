@@ -491,18 +491,15 @@ async function receiveFromCGastos(letras) {
   }
 }
 
-async function receiveFromCData(codigo, data, r) {
+async function receiveFromCData(codigo, data, r, dec) {
   try {
     const encodedData = encodeURIComponent(JSON.stringify(data));
-
     const response = await fetch(
-      `/api/v1/tables/c/calculadora?codigo=${codigo}&data=${encodedData}&r=${r}`,
+      `/api/v1/tables/c/calculadora?codigo=${codigo}&data=${encodedData}&r=${r}&dec=${dec}`,
     );
-
     if (!response.ok) throw new Error("Erro ao carregar os dados");
     const result = await response.json();
-
-    return result.exists; // true ou false
+    return result.exists; // Agora result é { exists: boolean }
   } catch (error) {
     console.error("Erro ao buscar dados:", error);
     return false;

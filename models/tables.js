@@ -290,16 +290,18 @@ async function updateConfig(updatedData) {
 
 async function updateCBSA(codigo, data, r, dec, newValues) {
   return await database.query({
-    text: `INSERT INTO c 
-           (codigo, data, r, dec, sis, alt, base, real, pix) 
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-           ON CONFLICT (codigo, data, r, dec) 
-           DO UPDATE SET
-             sis = EXCLUDED.sis,
-             alt = EXCLUDED.alt,
-             base = EXCLUDED.base,
-             real = EXCLUDED.real,
-             pix = EXCLUDED.pix`,
+    text: `UPDATE "C"
+           SET
+             sis  = sis  + $5,
+             alt  = alt  + $6,
+             base = base + $7,
+             real = real + $8,
+             pix  = pix  + $9
+           WHERE codigo = $1
+             AND data   = $2
+             AND r      = $3
+             AND dec    = $4
+           RETURNING *;`,
     values: [
       codigo,
       data,
@@ -503,57 +505,98 @@ async function updateAltSisR(updatedData) {
   return result;
 }
 
-async function updateRCalculadora(updatedData) {
+// models/tables.js
+
+async function updateRCalculadora(updatedDataArray) {
+  if (!Array.isArray(updatedDataArray) || updatedDataArray.length === 0) {
+    throw new Error("updateRCalculadora: precisa receber um array não-vazio");
+  }
+
+  // todas as linhas têm mesmo codigo e r
+  const { codigo, r } = updatedDataArray[0];
+
+  // preparamos só o dec + valores que serão desejados
+  const simpleUpdates = updatedDataArray.map(({ dec, base, sis, alt }) => ({
+    dec,
+    base: Number(base) || 0,
+    sis: Number(sis) || 0,
+    alt: Number(alt) || 0,
+  }));
+
   const result = await database.query({
     text: `
-      WITH current_totals AS (
-        SELECT 
-          codigo,
-          SUM(base) AS total_base,
-          SUM(sis) AS total_sis,
-          SUM(alt) AS total_alt
-        FROM "RBSA"
-        WHERE codigo = $4
-          AND r = $5  
-          AND (base > 0 OR sis > 0 OR alt > 0)
-        GROUP BY codigo
+      WITH updates AS (
+        -- converte o JSONB em tabela (uma linha por dec)
+        SELECT
+          u.dec,
+          u.base  AS desired_base,
+          u.sis   AS desired_sis,
+          u.alt   AS desired_alt
+        FROM jsonb_to_recordset($1::jsonb) AS u(
+          dec     text,
+          base    numeric,
+          sis     numeric,
+          alt     numeric
+        )
       ),
-      desired_totals AS (
-        SELECT 
-          $1::numeric AS desired_base,
-          $2::numeric AS desired_sis,
-          $3::numeric AS desired_alt
+      current_totals AS (
+        -- soma os valores atuais por dec
+        SELECT
+          dec,
+          COALESCE(SUM(base),0) AS total_base,
+          COALESCE(SUM(sis),0)  AS total_sis,
+          COALESCE(SUM(alt),0)  AS total_alt
+        FROM "RBSA"
+        WHERE codigo = $2
+          AND r      = $3
+        GROUP BY dec
+      ),
+      diffs AS (
+        -- para cada dec, quanto precisa subtrair do total
+        SELECT
+          ct.dec,
+          (ct.total_base - u.desired_base) AS diff_base,
+          (ct.total_sis  - u.desired_sis)  AS diff_sis,
+          (ct.total_alt  - u.desired_alt)  AS diff_alt,
+          ct.total_base,
+          ct.total_sis,
+          ct.total_alt
+        FROM updates u
+        JOIN current_totals ct
+          ON ct.dec = u.dec
       )
-      UPDATE "RBSA" r1
+      UPDATE "RBSA" AS r1
       SET
-        base = CASE 
-          WHEN ct.total_base = 0 THEN r1.base
-          ELSE TRIM_SCALE( (r1.base * dt.desired_base) / ct.total_base )
+        base = CASE
+          WHEN d.total_base = 0 THEN 0
+          ELSE r1.base
+               - d.diff_base * (r1.base / d.total_base)
         END,
-        sis = CASE 
-          WHEN ct.total_sis = 0 THEN r1.sis
-          ELSE TRIM_SCALE( (r1.sis * dt.desired_sis) / ct.total_sis )
+        sis = CASE
+          WHEN d.total_sis = 0 THEN 0
+          ELSE r1.sis
+               - d.diff_sis  * (r1.sis  / d.total_sis)
         END,
-        alt = CASE 
-          WHEN ct.total_alt = 0 THEN r1.alt
-          ELSE TRIM_SCALE( (r1.alt * dt.desired_alt) / ct.total_alt )
+        alt = CASE
+          WHEN d.total_alt = 0 THEN 0
+          ELSE r1.alt
+               - d.diff_alt  * (r1.alt  / d.total_alt)
         END
-      FROM current_totals ct, desired_totals dt
-      WHERE r1.codigo = ct.codigo
-        AND r1.r = $5 
-        AND (r1.base > 0 OR r1.sis > 0 OR r1.alt > 0)
-      RETURNING *;
+      FROM diffs d
+      WHERE
+        r1.codigo = $2
+        AND r1.r      = $3
+        AND r1.dec    = d.dec
+      RETURNING r1.*;
     `,
     values: [
-      Number(updatedData.base) || 0,
-      Number(updatedData.sis) || 0,
-      Number(updatedData.alt) || 0,
-      updatedData.codigo,
-      updatedData.r, // Now correctly used as $5
+      JSON.stringify(simpleUpdates), // $1: JSONB com [ {dec, base, sis, alt}, ... ]
+      codigo, // $2
+      r, // $3
     ],
   });
 
-  return result;
+  return result.rows;
 }
 
 async function updateBase(updatedData) {
@@ -706,10 +749,10 @@ async function getConfig() {
 }
 
 // Modificação no getC1Data
-async function getCData(codigo, data, r) {
+async function getCData(codigo, data, r, dec) {
   const result = await database.query({
-    text: `SELECT EXISTS(SELECT 1 FROM "C" WHERE codigo = $1 AND data = $2 AND r = $3) AS exists;`,
-    values: [codigo, data, r], // Supondo que 'data' seja um objeto compatível com o tipo da coluna
+    text: `SELECT EXISTS(SELECT 1 FROM "C" WHERE codigo = $1 AND data = $2 AND r = $3 AND dec = $4) AS exists;`,
+    values: [codigo, data, r, dec],
   });
 
   return result.rows[0].exists; // Retorna true ou false

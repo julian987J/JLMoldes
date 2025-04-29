@@ -83,11 +83,7 @@ const Calculadora = ({
     comitions;
 
   const totalTroco = totalGeral - (Number(pix) || 0) - (Number(real) || 0);
-
   const pixMaisReal = Number(pix) + Number(real);
-  // fim dos calculos
-
-  // No seu useEffect de busca de dados, atualize para garantir conversão numérica
   // Buscar dados R agrupados por dec
   useEffect(() => {
     const buscarDados = async () => {
@@ -228,7 +224,7 @@ const Calculadora = ({
 
       // Fazer a requisição PUT atualizada com dec
       const response = await fetch(
-        `/api/v1/tables/c/calculadora?codigo=${codigo}&data=${data}&r=${r}&dec=${dec}`,
+        `/api/v1/tables/c/calculadora?codigo=${codigo}&data=${decodedData}&r=${r}&dec=${dec}`,
         {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
@@ -313,19 +309,14 @@ const Calculadora = ({
           base: group.base - adjustments[group.dec].base,
           sis: group.sis - adjustments[group.dec].sis,
           alt: group.alt - adjustments[group.dec].alt,
+          real: Math.min(Number(real)), // Adicione
+          pix: Math.min(Number(pix)), // Adicione
         };
 
         const exists = existsMap.get(group.dec);
-        const dataEncoded = encodeURIComponent(data);
 
         if (exists) {
-          await handleUpdateC(
-            codigo,
-            dataEncoded,
-            diff,
-            currentTotal,
-            group.dec,
-          );
+          await handleUpdateC(codigo, data, diff, currentTotal, group.dec);
         } else {
           await Execute.sendToC({
             ...ObjC1,

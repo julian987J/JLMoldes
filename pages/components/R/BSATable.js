@@ -53,9 +53,9 @@ const BSA = ({ codigo, r }) => {
               <td className="hidden">{item.codigo}</td>
               <td className="text-center">{item.dec}</td>
               <td>{item.nome}</td>
-              <td className="text-center">{item.base}</td>
-              <td className="text-center">{item.sis}</td>
-              <td className="text-center">{item.alt}</td>
+              <td className="text-center">{Number(item.base).toFixed(2)}</td>
+              <td className="text-center">{Number(item.sis).toFixed(2)}</td>
+              <td className="text-center">{Number(item.alt).toFixed(2)}</td>
             </tr>
           ))}
         </tbody>
