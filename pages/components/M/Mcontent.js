@@ -4,6 +4,7 @@ import CodigoVerifier from "../CodigoVerifier.js";
 import ErrorComponent from "../Errors.js";
 import Rcontent from "../R/RContent.js";
 import Config from "../Config.js";
+import Notes from "./Notes.js";
 
 const Mcontent = ({ oficina, r }) => {
   const [observacao, setObservacao] = useState("");
@@ -186,6 +187,7 @@ const Mcontent = ({ oficina, r }) => {
     <div className="h-full">
       {/* Formulário */}
       <div className="flex flex-nowrap items-center bg-base-100 border-base-300 pb-2 gap-2 mx-[6%]">
+        <Notes r={r} />
         <form
           onSubmit={handleSubmit}
           className="flex flex-nowrap items-center gap-2"

@@ -314,6 +314,29 @@ async function sendToC(itemData) {
   }
 }
 
+async function sendToNota(itemData) {
+  try {
+    const response = await fetch("/api/v1/tables/nota", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        texto: itemData.texto,
+        r: itemData.r,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || "Erro ao criar registro em Nota");
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error("Erro no create Nota:", error);
+    throw error;
+  }
+}
+
 async function sendToPapelC(itemData) {
   try {
     const response = await fetch("/api/v1/tables/c/papel", {
@@ -460,7 +483,7 @@ async function receiveFromDevo(r) {
     const data = await response.json();
     return Array.isArray(data.rows) ? data.rows : [];
   } catch (error) {
-    console.error("Erro ao buscar dados deve:", error);
+    console.error("Erro ao buscar dados Devo:", error);
     return [];
   }
 }
@@ -472,7 +495,19 @@ async function receiveFromC(r) {
     const data = await response.json();
     return Array.isArray(data.rows) ? data.rows : [];
   } catch (error) {
-    console.error("Erro ao buscar dados deve:", error);
+    console.error("Erro ao buscar dados C:", error);
+    return [];
+  }
+}
+
+async function receiveFromNota(r) {
+  try {
+    const response = await fetch(`/api/v1/tables/nota?r=${r}`);
+    if (!response.ok) throw new Error("Erro ao carregar os dados");
+    const data = await response.json();
+    return Array.isArray(data.rows) ? data.rows : [];
+  } catch (error) {
+    console.error("Erro ao buscar dados de notas:", error);
     return [];
   }
 }
@@ -686,6 +721,17 @@ async function removeC(id) {
   console.log(result);
 }
 
+async function removeNota(id) {
+  const response = await fetch("/api/v1/tables/nota", {
+    method: "DELETE",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ id }), // Envia o `id` no corpo da requisição
+  });
+
+  const result = await response.json();
+  console.log(result);
+}
+
 async function removePapelC(id) {
   const response = await fetch("/api/v1/tables/c/papel", {
     method: "DELETE",
@@ -769,6 +815,7 @@ const execute = {
   sendToDeveUpdate,
   sendToDevo,
   sendToC,
+  sendToNota,
   sendToPessoal,
   sendToSaidaP,
   sendToSaidaO,
@@ -790,9 +837,11 @@ const execute = {
   receiveFromDeveJustValor,
   receiveFromDevo,
   receiveFromDevoJustValor,
+  receiveFromNota,
   receiveFromR,
   receiveFromRJustBSA,
   removeC,
+  removeNota,
   removePapelC,
   removePessoal,
   removeSaidaP,

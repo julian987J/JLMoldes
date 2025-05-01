@@ -24,6 +24,19 @@ async function createC(ordemInputValues) {
   return result;
 }
 
+async function createNota(ordemInputValues) {
+  const result = await database.query({
+    text: `
+      INSERT INTO "Nota" (texto, r) 
+      VALUES ($1, $2)
+      RETURNING *;
+    `,
+    values: [ordemInputValues.texto, ordemInputValues.r],
+  });
+
+  return result;
+}
+
 async function createPessoal(ordemInputValues) {
   const result = await database.query({
     text: `
@@ -266,6 +279,21 @@ async function updateC(updatedData) {
       updatedData.pix,
       updatedData.id,
     ],
+  });
+
+  return result;
+}
+
+async function updateNota(updatedData) {
+  const result = await database.query({
+    text: `
+      UPDATE "Nota"
+      SET 
+        texto = $1
+      WHERE id = $2
+      RETURNING *;
+    `,
+    values: [updatedData.texto, updatedData.id],
   });
 
   return result;
@@ -785,6 +813,14 @@ async function getPapelC(r) {
   return result;
 }
 
+async function getNotas(r) {
+  const result = await database.query({
+    text: `SELECT * FROM "Nota" WHERE r = $1;`,
+    values: [r],
+  });
+  return result;
+}
+
 async function getMTableAltSis(oficina) {
   const result = await database.query({
     text: `SELECT id, data, observacao, codigo, dec, nome, sis, alt, r1, r2, r3 
@@ -904,6 +940,14 @@ async function deleteC(ids) {
   return result.rows;
 }
 
+async function deleteNota(ids) {
+  const result = await database.query({
+    text: `DELETE FROM "Nota" WHERE id = $1 RETURNING *`,
+    values: [ids],
+  });
+  return result.rows;
+}
+
 async function deletePapelC(ids) {
   const result = await database.query({
     text: `DELETE FROM "PapelC" WHERE id = $1 RETURNING *`,
@@ -978,6 +1022,7 @@ const ordem = {
   createDevo,
   createDeve,
   createC,
+  createNota,
   createPapelC,
   getPessoal,
   getSaidaP,
@@ -985,6 +1030,7 @@ const ordem = {
   getOficina,
   getValorOficinas,
   getC,
+  getNotas,
   getCByDec,
   getCData,
   getPapelC,
@@ -1000,6 +1046,7 @@ const ordem = {
   getDevo,
   getDevoJustValor,
   deleteC,
+  deleteNota,
   deletePapelC,
   deletePessoal,
   deleteSaidaP,
@@ -1012,6 +1059,7 @@ const ordem = {
   updateDeve,
   updateConfig,
   updateC,
+  updateNota,
   updateCBSA,
   updatePessoal,
   updateSaidaP,
