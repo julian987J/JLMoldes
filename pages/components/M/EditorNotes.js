@@ -8,7 +8,7 @@ import {
 
 import Execute from "models/functions.js";
 
-const EditorNotes = ({ r }) => {
+const EditorNotes = ({ r, colum }) => {
   const [notes, setNotes] = useState([]);
   const [currentNote, setCurrentNote] = useState("");
   const [editingNoteId, setEditingNoteId] = useState(null);
@@ -64,14 +64,15 @@ const EditorNotes = ({ r }) => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const res = await Execute.receiveFromNota(r);
+        const res = await Execute.receiveFromNota(r, colum);
         setNotes(res.map((row) => ({ id: row.id, html: row.texto })));
       } catch (err) {
         console.error("Erro ao carregar notas:", err);
       }
     };
-    if (r != null) fetchData();
-  }, [r]);
+    const intervalId = setInterval(fetchData, 5000); // Atualiza a cada 5 segundos
+    return () => clearInterval(intervalId);
+  }, [r, colum]);
 
   // Handlers
   const handleInput = () => setCurrentNote(editorRef.current.innerHTML);
@@ -126,10 +127,14 @@ const EditorNotes = ({ r }) => {
         );
         setEditingNoteId(null); // Sai do modo de edição
       } else {
-        // Lógica para criar uma nova nota (POST) usando Execute
-        const newNote = await Execute.sendToNota({ texto: currentNote, r });
+        const noteOBJ = { texto: currentNote, r, colum };
+
+        const newNote = await Execute.sendToNota(noteOBJ);
         const noteObj = Array.isArray(newNote.rows)
-          ? { id: newNote.rows[0].id, html: newNote.rows[0].texto }
+          ? {
+              id: newNote.rows[0].id,
+              html: newNote.rows[0].texto,
+            }
           : { id: newNote.id, html: newNote.texto };
         setNotes((prev) => [...prev, noteObj]);
       }
@@ -262,33 +267,35 @@ const EditorNotes = ({ r }) => {
             Nenhuma nota salva.
           </li>
         )}
-        {notes.map((note) => (
-          <li
-            key={note.id}
-            className="p-4 bg-base-200 rounded-lg shadow break-all"
-          >
-            <div className="flex justify-between items-start">
-              <div
-                className="prose max-w-full break-words whitespace-pre-wrap text-pretty"
-                dangerouslySetInnerHTML={{ __html: note.html }}
-              />
-              <div className="flex gap-2 flex-shrink-0 ml-4">
-                <button
-                  className="btn btn-xs btn-soft btn-primary"
-                  onClick={() => handleEdit(note)}
-                >
-                  Editar
-                </button>
-                <button
-                  className="btn btn-xs btn-soft btn-error"
-                  onClick={() => handleDelete(note.id)}
-                >
-                  Excluir
-                </button>
+        {[...notes] // Cria uma cópia para não modificar o array original
+          .sort((a, b) => b.id - a.id) // Ordena do maior ID (mais recente) para o menor
+          .map((note) => (
+            <li
+              key={note.id}
+              className="p-4 bg-base-200 rounded-lg shadow break-all"
+            >
+              <div className="flex justify-between items-start">
+                <div
+                  className="prose max-w-full break-words whitespace-pre-wrap text-pretty"
+                  dangerouslySetInnerHTML={{ __html: note.html }}
+                />
+                <div className="flex gap-2 flex-shrink-0 ml-4">
+                  <button
+                    className="btn btn-xs btn-soft btn-primary"
+                    onClick={() => handleEdit(note)}
+                  >
+                    Editar
+                  </button>
+                  <button
+                    className="btn btn-xs btn-soft btn-error"
+                    onClick={() => handleDelete(note.id)}
+                  >
+                    Excluir
+                  </button>
+                </div>
               </div>
-            </div>
-          </li>
-        ))}
+            </li>
+          ))}
       </ul>
     </>
   );

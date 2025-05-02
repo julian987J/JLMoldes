@@ -18,8 +18,8 @@ async function postHandler(request, response) {
 }
 
 async function getHandler(request, response) {
-  const { r } = request.query;
-  const result = await ordem.getNotas(r);
+  const { r, colum } = request.query;
+  const result = await ordem.getNotas(r, colum);
   return response.status(200).json(result);
 }
 

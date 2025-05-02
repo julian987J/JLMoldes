@@ -27,11 +27,15 @@ async function createC(ordemInputValues) {
 async function createNota(ordemInputValues) {
   const result = await database.query({
     text: `
-      INSERT INTO "Nota" (texto, r) 
-      VALUES ($1, $2)
+      INSERT INTO "Nota" (texto, r, colum) 
+      VALUES ($1, $2, $3)
       RETURNING *;
     `,
-    values: [ordemInputValues.texto, ordemInputValues.r],
+    values: [
+      ordemInputValues.texto,
+      ordemInputValues.r,
+      ordemInputValues.colum,
+    ],
   });
 
   return result;
@@ -813,10 +817,10 @@ async function getPapelC(r) {
   return result;
 }
 
-async function getNotas(r) {
+async function getNotas(r, colum) {
   const result = await database.query({
-    text: `SELECT * FROM "Nota" WHERE r = $1;`,
-    values: [r],
+    text: `SELECT * FROM "Nota" WHERE r = $1 AND colum = $2 ORDER BY id DESC;;`,
+    values: [r, colum],
   });
   return result;
 }

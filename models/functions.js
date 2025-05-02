@@ -322,6 +322,7 @@ async function sendToNota(itemData) {
       body: JSON.stringify({
         texto: itemData.texto,
         r: itemData.r,
+        colum: itemData.colum,
       }),
     });
 
@@ -500,9 +501,9 @@ async function receiveFromC(r) {
   }
 }
 
-async function receiveFromNota(r) {
+async function receiveFromNota(r, colum) {
   try {
-    const response = await fetch(`/api/v1/tables/nota?r=${r}`);
+    const response = await fetch(`/api/v1/tables/nota?r=${r}&colum=${colum}`);
     if (!response.ok) throw new Error("Erro ao carregar os dados");
     const data = await response.json();
     return Array.isArray(data.rows) ? data.rows : [];
