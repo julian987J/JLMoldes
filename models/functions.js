@@ -501,6 +501,18 @@ async function receiveFromC(r) {
   }
 }
 
+async function receiveAnualFromC() {
+  try {
+    const response = await fetch(`/api/v1/tables/anual/c`);
+    if (!response.ok) throw new Error("Erro ao carregar os dados");
+    const data = await response.json();
+    return Array.isArray(data.rows) ? data.rows : [];
+  } catch (error) {
+    console.error("Erro ao buscar dados Anual C:", error);
+    return [];
+  }
+}
+
 async function receiveFromNota(r, colum) {
   try {
     const response = await fetch(`/api/v1/tables/nota?r=${r}&colum=${colum}`);
@@ -567,7 +579,19 @@ async function receiveFromPapelC(r) {
     const data = await response.json();
     return Array.isArray(data.rows) ? data.rows : [];
   } catch (error) {
-    console.error("Erro ao buscar dados deve:", error);
+    console.error("Erro ao buscar dados Papel:", error);
+    return [];
+  }
+}
+
+async function receiveAnualFromPapelC() {
+  try {
+    const response = await fetch(`/api/v1/tables/anual`);
+    if (!response.ok) throw new Error("Erro ao carregar os dados");
+    const data = await response.json();
+    return Array.isArray(data.rows) ? data.rows : [];
+  } catch (error) {
+    console.error("Erro ao buscar dados Anula Papel:", error);
     return [];
   }
 }
@@ -636,6 +660,38 @@ async function receiveFromSaidaP(letras) {
     return Array.isArray(data.rows) ? data.rows : [];
   } catch (error) {
     console.error("Erro ao buscar dados Saida Pessoal:", error);
+  }
+}
+
+async function receiveAnualFromSaidaP() {
+  try {
+    const response = await fetch(`/api/v1/tables/anual/pessoal`);
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || "Erro ao carregar os dados");
+    }
+
+    const data = await response.json();
+    return Array.isArray(data.rows) ? data.rows : [];
+  } catch (error) {
+    console.error("Erro ao buscar dados Anual Saida Pessoal:", error);
+  }
+}
+
+async function receiveAnualFromSaidaO() {
+  try {
+    const response = await fetch(`/api/v1/tables/anual/oficina`);
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || "Erro ao carregar os dados");
+    }
+
+    const data = await response.json();
+    return Array.isArray(data.rows) ? data.rows : [];
+  } catch (error) {
+    console.error("Erro ao buscar dados Anual Saida Oficina:", error);
   }
 }
 
@@ -823,13 +879,17 @@ const execute = {
   sendToOficina,
   sendToPapelC,
   receiveFromC,
+  receiveAnualFromC,
   receiveFromCGastos,
   receiveFromPessoal,
   receiveFromSaidaP,
+  receiveAnualFromSaidaP,
+  receiveAnualFromSaidaO,
   receiveFromSaidaO,
   receiveFromSaidaOficina,
   receiveFromOficina,
   receiveFromCData,
+  receiveAnualFromPapelC,
   receiveFromConfig,
   receiveFromPapelC,
   receiveFromPapelCData,

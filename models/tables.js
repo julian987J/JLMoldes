@@ -725,6 +725,13 @@ async function getC(r) {
   return result;
 }
 
+async function getAnualC() {
+  const result = await database.query({
+    text: `SELECT * FROM "C"`,
+  });
+  return result;
+}
+
 async function getCByDec(letras) {
   const result = await database.query({
     text: `SELECT * FROM "C" WHERE dec = $1;`,
@@ -747,6 +754,20 @@ async function getSaidaP(letras) {
     values: [letras],
   });
   return result.rows;
+}
+
+async function getAnualSaidaP() {
+  const result = await database.query({
+    text: `SELECT * FROM "SaidaP"`,
+  });
+  return result;
+}
+
+async function getAnualSaidaO() {
+  const result = await database.query({
+    text: `SELECT * FROM "SaidaO"`,
+  });
+  return result;
 }
 
 async function getSaidaO(letras) {
@@ -813,6 +834,13 @@ async function getPapelC(r) {
   const result = await database.query({
     text: `SELECT * FROM "PapelC" WHERE r = $1;`,
     values: [r],
+  });
+  return result;
+}
+
+async function getAnualPapelC() {
+  const result = await database.query({
+    text: `SELECT * FROM "PapelC"`,
   });
   return result;
 }
@@ -1030,14 +1058,18 @@ const ordem = {
   createPapelC,
   getPessoal,
   getSaidaP,
+  getAnualSaidaP,
+  getAnualSaidaO,
   getSaidaO,
   getOficina,
   getValorOficinas,
   getC,
+  getAnualC,
   getNotas,
   getCByDec,
   getCData,
   getPapelC,
+  getAnualPapelC,
   getPapelData,
   getConfig,
   getRBSA,
