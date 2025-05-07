@@ -9,7 +9,7 @@ import TabelaAnual from "../T/TabelaAnual.js";
 import SaldoMensal from "../T/SaldoMensal.js";
 import Execute from "models/functions.js";
 
-const Ccontent = ({ letras }) => {
+const Gastos = ({ letras }) => {
   const [variosData, setVariosData] = useState([]);
   const [gastosData, setGastosData] = useState([]);
 
@@ -98,4 +98,4 @@ const Ccontent = ({ letras }) => {
   );
 };
 
-export default Ccontent;
+export default Gastos;

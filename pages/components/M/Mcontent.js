@@ -5,6 +5,7 @@ import ErrorComponent from "../Errors.js";
 import Rcontent from "../R/RContent.js";
 import Config from "../Config.js";
 import Notes from "./Notes.js";
+import Alerta from "./Alertas.js";
 
 const Mcontent = ({ oficina, r }) => {
   const [observacao, setObservacao] = useState("");
@@ -185,7 +186,9 @@ const Mcontent = ({ oficina, r }) => {
 
   return (
     <div className="h-full">
-      {/* Formulário */}
+      <div className="flex flex-nowrap items-center bg-base-100 border-base-300 pb-2 gap-2 mx-[6%]">
+        <Alerta />
+      </div>
       <div className="flex flex-nowrap items-center bg-base-100 border-base-300 pb-2 gap-2 mx-[6%]">
         <Notes r={r} />
         <form
@@ -259,9 +262,10 @@ const Mcontent = ({ oficina, r }) => {
         <Config />
       </div>
       <div className="columns-2">
-        <TabelaM oficina={oficina} />
+        <TabelaM oficina={oficina} r={r} />
         <TabelaM
           oficina={oficina}
+          r={r}
           mainEndpoint="Base"
           secondaryEndpoint="tables/R"
           columnsConfig={[{ field: "base", label: "Base", min: 0 }]}

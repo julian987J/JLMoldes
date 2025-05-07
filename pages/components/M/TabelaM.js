@@ -6,6 +6,7 @@ import ErrorComponent from "../Errors.js";
 
 const TabelaM = ({
   oficina,
+  r,
   mainEndpoint = "tables",
   secondaryEndpoint = "tables/R",
   columnsConfig = [
@@ -312,6 +313,32 @@ const TabelaM = ({
                         onSave={() => handleSave(editedData)}
                         onCancel={() => setEditingId(null)}
                       />
+                      <button
+                        className={`btn btn-xs btn-soft btn-success ${
+                          editingId === item.id ? "hidden" : ""
+                        }`}
+                        onClick={() => {
+                          const sis = Number(item.sis || 0);
+                          const alt = Number(item.alt || 0);
+                          const base = Number(item.base || 0);
+
+                          Execute.sendToC({
+                            codigo: item.codigo,
+                            dec: item.dec,
+                            r: r,
+                            data: item.data,
+                            nome: item.nome,
+                            sis: sis,
+                            alt: alt,
+                            base: base,
+                            real: 0,
+                            pix: sis + alt + base,
+                          });
+                          Execute.removeMandR(item.id);
+                        }}
+                      >
+                        Pagar
+                      </button>
                       <button
                         className={`btn btn-xs btn-soft btn-error ${
                           editingId === item.id ? "hidden" : ""
