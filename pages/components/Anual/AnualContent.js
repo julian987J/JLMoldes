@@ -1,17 +1,16 @@
-/* eslint-disable react-hooks/exhaustive-deps */
 /* eslint-disable no-undef */
+/* eslint-disable react-hooks/exhaustive-deps */
+
 import React, { useState, useEffect } from "react";
-import Pessoal from "./Pessoal.js";
-import Oficina from "./Oficina.js";
-import SaidasPessoal from "./SaidasPessoal.js";
-import SaidasOficina from "./SaidasOficina.js";
 import TabelaAnual from "../T/TabelaAnual.js";
 import SaldoMensal from "../T/SaldoMensal.js";
 import Execute from "models/functions.js";
 
-const Gastos = ({ letras }) => {
+const AnualContent = () => {
+  const [papelData, setPapelData] = useState([]);
+  const [despesasDataP, setDespesasDataP] = useState([]);
+  const [despesasDataO, setDespesasDataO] = useState([]);
   const [variosData, setVariosData] = useState([]);
-  const [gastosData, setGastosData] = useState([]);
 
   const formatCurrency = (value) => {
     const numberValue = Number(value) || 0;
@@ -52,50 +51,70 @@ const Gastos = ({ letras }) => {
   useEffect(() => {
     const buscarDados = async () => {
       try {
-        const [varios, gastos] = await Promise.all([
-          Execute.receiveFromCGastos(letras),
-          Execute.receiveFromSaidaP(letras),
+        const [papel, despesasP, despesasO, varios] = await Promise.all([
+          Execute.receiveAnualFromPapelC(),
+          Execute.receiveAnualFromSaidaP(),
+          Execute.receiveAnualFromSaidaO(),
+          Execute.receiveAnualFromC(),
         ]);
-
-        setVariosData(
-          varios ? processarDados(varios, "data", ["real", "pix"]) : [],
+        setPapelData(papel ? processarDados(papel, "data", "papel") : []);
+        setDespesasDataP(
+          despesasP ? processarDados(despesasP, "pago", "valor") : [],
         );
-        setGastosData(gastos ? processarDados(gastos, "pago", "valor") : []);
+        setDespesasDataO(
+          despesasO ? processarDados(despesasO, "pago", "valor") : [],
+        );
+        setVariosData(
+          varios ? processarDados(varios, "date", ["sis", "alt", "base"]) : [],
+        );
       } catch (error) {
         console.error("Erro ao buscar dados:", error);
+        setPapelData([]);
+        setDespesasDataP([]);
+        setDespesasDataO([]);
         setVariosData([]);
-        setGastosData([]);
       }
     };
 
     buscarDados();
     const intervalo = setInterval(buscarDados, 5000);
     return () => clearInterval(intervalo);
-  }, [letras]);
+  }, []);
 
   return (
-    <div>
-      <div className="grid grid-cols-2 gap-2">
-        <Pessoal letras={letras} />
-        <Oficina letras={letras} />
+    <>
+      <div className="flex flex-col md:flex-row gap-3">
+        <TabelaAnual titulo="PAPEL" cor="warning" dados={papelData} />
+        <SaldoMensal
+          titulo=" PAPEL - DESPESAS OFICINA"
+          data1={papelData}
+          titulo1="Papel"
+          data2={despesasDataO}
+          titulo2="Despesas OFICINA"
+        />
+        <TabelaAnual
+          titulo="DESPESAS OFICINA"
+          cor="warning"
+          dados={despesasDataO}
+        />
       </div>
-      <div className="grid grid-cols-3 gap-2 mt-2">
+      <div className="flex flex-col md:flex-row gap-3 mt-2">
         <TabelaAnual titulo="VARIOS" cor="warning" dados={variosData} />
         <SaldoMensal
-          titulo=" VARIOS - GASTOS"
+          titulo="VARIOS - DESPESAS ABC"
           data1={variosData}
-          titulo1="Varios"
-          data2={gastosData}
-          titulo2="Gastos"
+          titulo1="VARIOS"
+          data2={despesasDataP}
+          titulo2="Despesas ABC"
         />
-        <TabelaAnual titulo="GASTOS" cor="warning" dados={gastosData} />
+        <TabelaAnual
+          titulo="DESPESAS ABC"
+          cor="warning"
+          dados={despesasDataP}
+        />
       </div>
-      <div className="grid grid-cols-2 gap-2 mt-2">
-        <SaidasPessoal letras={letras} />
-        <SaidasOficina letras={letras} />
-      </div>
-    </div>
+    </>
   );
 };
 
-export default Gastos;
+export default AnualContent;

@@ -31,10 +31,11 @@ const BSA = ({ codigo, r }) => {
             <th className="hidden">ID</th>
             <th className="w-36">Data</th>
             <th className="hidden">CODIGO</th>
+            <th className="text-center">Dec</th>
             <th>Nome</th>
-            <th className="w-10">Base</th>
-            <th className="w-10">Sis</th>
-            <th className="w-10">Alt</th>
+            <th className="w-10 text-center">Base</th>
+            <th className="w-10 text-center">Sis</th>
+            <th className="w-10 text-center">Alt</th>
           </tr>
         </thead>
         <tbody>
@@ -50,10 +51,11 @@ const BSA = ({ codigo, r }) => {
               <td className="hidden">{item.id}</td>
               <td>{Use.formatarData(item.data)}</td>
               <td className="hidden">{item.codigo}</td>
+              <td className="text-center">{item.dec}</td>
               <td>{item.nome}</td>
-              <td>{item.base}</td>
-              <td>{item.sis}</td>
-              <td>{item.alt}</td>
+              <td className="text-center">{Number(item.base).toFixed(2)}</td>
+              <td className="text-center">{Number(item.sis).toFixed(2)}</td>
+              <td className="text-center">{Number(item.alt).toFixed(2)}</td>
             </tr>
           ))}
         </tbody>

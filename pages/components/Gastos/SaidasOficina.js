@@ -17,7 +17,12 @@ const SaidasOficina = ({ letras }) => {
     const fetchData = async () => {
       try {
         const results = await Execute.receiveFromSaidaO(letras);
-        setDados(results || []);
+
+        // Ordenar resultados pela data mais recente primeiro
+        const sortedResults =
+          results?.sort((a, b) => new Date(b.pago) - new Date(a.pago)) || [];
+
+        setDados(sortedResults);
       } catch (error) {
         console.error("Erro ao buscar dados:", error);
         setDados([]);

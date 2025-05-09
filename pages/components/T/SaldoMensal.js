@@ -1,7 +1,6 @@
 import React from "react";
 
 const SaldoMensal = ({
-  cor,
   data1,
   data2,
   titulo,
@@ -58,7 +57,7 @@ const SaldoMensal = ({
   const totalSaldo = totalValor1 - totalValor2;
 
   return (
-    <div className={`overflow-x-auto rounded-box border border-${cor} w-full`}>
+    <div className={`overflow-x-auto rounded-box border border-info w-full`}>
       <h1 className="text-center text-lg">{titulo}</h1>
       <div className="overflow-x-auto">
         <table className="table table-zebra table-sm md:table-md">

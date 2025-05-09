@@ -8,11 +8,13 @@ const NavBar = ({
   Ccontent,
   Gastos,
   Tcontent,
+  AnualContent,
 }) => {
   const isMContentAvailable = Boolean(MContent);
   const isCadastroAvailable = Boolean(Cadastro);
   const isR1Available = Boolean(Rcontent);
   const isGastosAvailable = Boolean(Gastos);
+  const isAnualContentAvailable = Boolean(AnualContent);
   // Grupos de tabs para organização
   const tabGroups = [
     {
@@ -125,7 +127,10 @@ const NavBar = ({
       label: "L-Gastos",
       content: isGastosAvailable ? <Gastos letras="L" /> : "Loading...",
     },
-    { label: "Total Anual", content: "Tab content 3" },
+    {
+      label: "Total Anual",
+      content: isAnualContentAvailable ? <AnualContent /> : "Loading...",
+    },
     {
       label: "Cadastros",
       content: isCadastroAvailable ? <Cadastro /> : "Loading...",

@@ -1,3 +1,4 @@
+/* global Map */
 import Execute from "models/functions";
 import { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
@@ -13,6 +14,7 @@ const Calculadora = ({
 }) => {
   const ErrorComponent = dynamic(() => import("../Errors.js"), { ssr: false });
   const [showError, setShowError] = useState(false);
+
   useEffect(() => {
     setShowError(false); // Resetar no cliente após a montagem
   }, []);
@@ -25,8 +27,11 @@ const Calculadora = ({
     }
     return () => clearTimeout(timer);
   }, [showError]);
+
   const [dadosR, setDadosR] = useState(0);
   const [idsArray, setIdsArray] = useState(0);
+  const [decGroups, setDecGroups] = useState([]);
+
   const [valorDevo, setValorDevo] = useState(0);
   const [valorDeve, setValorDeve] = useState(0);
   const [multiplier, setMultiplier] = useState(0);
@@ -38,9 +43,7 @@ const Calculadora = ({
   const [real, setReal] = useState("");
   const [comentario, setComentario] = useState("");
   const [perdida, setPerdida] = useState("");
-  const [base, setBase] = useState("");
-  const [sis, setSis] = useState("");
-  const [alt, setAlt] = useState("");
+
   // Calcula a soma bruta dos valores (novo cálculo)
   const sumValues = values.reduce((sum, current) => {
     const num = current === "" ? 0 : Number(current);
@@ -80,37 +83,33 @@ const Calculadora = ({
     comitions;
 
   const totalTroco = totalGeral - (Number(pix) || 0) - (Number(real) || 0);
-
   const pixMaisReal = Number(pix) + Number(real);
-  // fim dos calculos
-
-  // No seu useEffect de busca de dados, atualize para garantir conversão numérica
+  // Buscar dados R agrupados por dec
   useEffect(() => {
     const buscarDados = async () => {
       try {
         const resultado = await Execute.receiveFromRJustBSA(codigo, r);
-        // Garantir conversão numérica correta
-        const newBase = Number(resultado.total_base) || 0;
-        const newSis = Number(resultado.total_sis) || 0;
-        const newAlt = Number(resultado.total_alt) || 0;
 
-        setIdsArray(resultado.ids || []);
-        setBase(newBase);
-        setSis(newSis);
-        setAlt(newAlt);
-        setDadosR(newBase + newSis + newAlt);
+        const groups = resultado.map((group) => ({
+          dec: group.dec,
+          base: Number(group.total_base) || 0,
+          sis: Number(group.total_sis) || 0,
+          alt: Number(group.total_alt) || 0,
+          ids: group.ids || [],
+        }));
+
+        setDecGroups(groups);
+        setDadosR(groups.reduce((sum, g) => sum + g.base + g.sis + g.alt, 0));
+        setIdsArray(groups.flatMap((g) => g.ids));
       } catch (error) {
         console.error("Erro:", error);
-        setBase(0);
-        setSis(0);
-        setAlt(0);
+        setDecGroups([]);
         setDadosR(0);
         setIdsArray([]);
       }
     };
     buscarDados();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [codigo]);
+  }, [codigo, r]);
 
   useEffect(() => {
     const buscarDados = async () => {
@@ -174,185 +173,162 @@ const Calculadora = ({
     }
   };
 
-  async function handleUpdateC(codigo, data, New, currentTotal) {
+  const handleUpdateC = async (codigo, data, New, currentTotal, dec) => {
     try {
+      // Decodificar a data
       const decodedData = decodeURIComponent(data);
 
+      // Obter valores atuais do C para este dec
+      const existingData = await Execute.receiveFromCData(
+        codigo,
+        decodedData,
+        r,
+        dec,
+      );
+
+      // Calcular novos valores
+      const newSis = (existingData.sis || 0) + (New.sis || 0);
+      const newAlt = (existingData.alt || 0) + (New.alt || 0);
+      const newBase = (existingData.base || 0) + (New.base || 0);
+
+      // Ajustar valores de real e pix para não ultrapassar o total permitido
+      let adjustedReal = Number(real);
+      let adjustedPix = Number(pix);
+
+      // Calcular o máximo permitido para este grupo dec
+      const maxForDec = newSis + newAlt + newBase;
+
+      // Garantir que nenhum valor exceda o máximo do grupo
+      adjustedReal = Math.min(adjustedReal, maxForDec);
+      adjustedPix = Math.min(adjustedPix, maxForDec);
+
+      // Ajustar soma se necessário
+      const soma = adjustedReal + adjustedPix;
+      if (soma > maxForDec) {
+        const excesso = soma - maxForDec;
+        const ratioReal = adjustedReal / soma;
+        const ratioPix = adjustedPix / soma;
+
+        adjustedReal -= Math.round(excesso * ratioReal);
+        adjustedPix -= Math.round(excesso * ratioPix);
+
+        // Garantir valores não negativos
+        adjustedReal = Math.max(adjustedReal, 0);
+        adjustedPix = Math.max(adjustedPix, 0);
+
+        // Correção final de arredondamento
+        if (adjustedReal + adjustedPix > maxForDec) {
+          adjustedReal = maxForDec - adjustedPix;
+        }
+      }
+
+      // Fazer a requisição PUT atualizada com dec
       const response = await fetch(
-        `/api/v1/tables/c/calculadora?codigo=${codigo}&data=${data}&r=${r}`,
+        `/api/v1/tables/c/calculadora?codigo=${codigo}&data=${decodedData}&r=${r}&dec=${dec}`,
         {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            codigo,
-            r,
-            data: decodedData,
-            sis: New.sis || 0,
-            alt: New.alt || 0,
-            base: New.base || 0,
-            ...(function () {
-              // Valores originais do ObjC1
-              let adjustedReal = ObjC1.real || 0;
-              let adjustedPix = ObjC1.pix || 0;
-
-              // Garante que nenhum valor individual exceda o currentTotal
-              adjustedReal = Math.min(adjustedReal, currentTotal);
-              adjustedPix = Math.min(adjustedPix, currentTotal);
-
-              // Ajusta a soma se necessário
-              const soma = adjustedReal + adjustedPix;
-              if (soma > currentTotal) {
-                const excesso = soma - currentTotal;
-                const ratioReal = adjustedReal / soma;
-                const ratioPix = adjustedPix / soma;
-
-                adjustedReal -= Math.round(excesso * ratioReal);
-                adjustedPix -= Math.round(excesso * ratioPix);
-
-                // Garantir valores não negativos
-                adjustedReal = Math.max(adjustedReal, 0);
-                adjustedPix = Math.max(adjustedPix, 0);
-
-                // Correção de arredondamento
-                if (adjustedReal + adjustedPix > currentTotal) {
-                  adjustedReal -= adjustedReal + adjustedPix - currentTotal;
-                }
-              }
-
-              return { real: adjustedReal, pix: adjustedPix };
-            })(),
+            sis: newSis,
+            alt: newAlt,
+            base: newBase,
+            real: adjustedReal,
+            pix: adjustedPix,
           }),
         },
       );
 
-      if (!response.ok) throw new Error("Erro ao atualizar");
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Erro ao atualizar registro no C");
+      }
+
+      return await response.json();
     } catch (error) {
-      console.error("Erro ao salvar:", error);
+      console.error("Erro ao atualizar C para dec", dec, ":", error);
+      throw error;
     }
-  }
+  };
 
-  async function sendToCAndUpdateR(value) {
+  const sendToCAndUpdateR = async (value) => {
     await Execute.removeDevo(codigo);
-
-    const currentTotal = base + sis + alt;
+    const currentTotal = decGroups.reduce(
+      (sum, g) => sum + g.base + g.sis + g.alt,
+      0,
+    );
     const excessoTotal = currentTotal - value;
-    const exists = await Execute.receiveFromCData(codigo, data, r);
 
-    if (exists) {
-      const dataEncoded = encodeURIComponent(data);
+    // Verificar existência no C para cada dec
+    const existsMap = new Map();
+    for (const group of decGroups) {
+      const exists = await Execute.receiveFromCData(codigo, data, r, group.dec);
+      existsMap.set(group.dec, exists);
+    }
 
-      if (excessoTotal > 0) {
-        const valores = [
-          { nome: "base", valor: base },
-          { nome: "sis", valor: sis },
-          { nome: "alt", valor: alt },
-        ];
-        valores.sort((a, b) => b.valor - a.valor);
+    if (excessoTotal > 0) {
+      // Criar lista única para ajuste
+      const allEntries = [];
+      decGroups.forEach((g) => {
+        allEntries.push(
+          { dec: g.dec, type: "base", value: g.base },
+          { dec: g.dec, type: "sis", value: g.sis },
+          { dec: g.dec, type: "alt", value: g.alt },
+        );
+      });
 
-        let resto = excessoTotal;
-        for (const item of valores) {
-          if (resto <= 0) break;
-          const subtrair = Math.min(item.valor, resto);
-          item.valor -= subtrair;
-          resto -= subtrair;
-        }
+      // Ordenar e ajustar valores
+      allEntries.sort((a, b) => b.value - a.value);
+      let remaining = excessoTotal;
+      const adjustments = {};
 
-        const novosDados = {
-          base: valores.find((v) => v.nome === "base").valor,
-          sis: valores.find((v) => v.nome === "sis").valor,
-          alt: valores.find((v) => v.nome === "alt").valor,
-          codigo,
-          r,
-        };
+      decGroups.forEach((g) => {
+        adjustments[g.dec] = { base: g.base, sis: g.sis, alt: g.alt };
+      });
 
-        await handleSave(novosDados);
-
-        // Calcular os novos valores para C (excesso)
-        const updateData = {
-          sis: (exists.sis || 0) + (sis - novosDados.sis),
-          alt: (exists.alt || 0) + (alt - novosDados.alt),
-          base: (exists.base || 0) + (base - novosDados.base),
-        };
-
-        await handleUpdateC(codigo, dataEncoded, updateData, currentTotal);
+      for (const entry of allEntries) {
+        if (remaining <= 0) break;
+        const subtract = Math.min(entry.value, remaining);
+        adjustments[entry.dec][entry.type] -= subtract;
+        remaining -= subtract;
       }
-    } else {
-      if (excessoTotal > 0) {
-        const valores = [
-          { nome: "base", valor: base },
-          { nome: "sis", valor: sis },
-          { nome: "alt", valor: alt },
-        ];
-        valores.sort((a, b) => b.valor - a.valor);
 
-        let resto = excessoTotal;
-        for (const item of valores) {
-          if (resto <= 0) break;
-          const subtrair = Math.min(item.valor, resto);
-          item.valor -= subtrair;
-          resto -= subtrair;
-        }
+      // Atualizar R
+      const novosDados = decGroups.map((g) => ({
+        dec: g.dec,
+        base: adjustments[g.dec].base,
+        sis: adjustments[g.dec].sis,
+        alt: adjustments[g.dec].alt,
+        codigo,
+        r,
+      }));
+      await handleSave(novosDados);
 
-        const novosDados = {
-          base: valores.find((v) => v.nome === "base").valor,
-          sis: valores.find((v) => v.nome === "sis").valor,
-          alt: valores.find((v) => v.nome === "alt").valor,
-          codigo,
-          r,
+      // Atualizar/enviar para C
+      for (const group of decGroups) {
+        const diff = {
+          base: group.base - adjustments[group.dec].base,
+          sis: group.sis - adjustments[group.dec].sis,
+          alt: group.alt - adjustments[group.dec].alt,
+          real: Math.min(Number(real)), // Adicione
+          pix: Math.min(Number(pix)), // Adicione
         };
 
-        await handleSave(novosDados);
+        const exists = existsMap.get(group.dec);
 
-        await Execute.sendToC({
-          ...ObjC1,
-          sis: sis - novosDados.sis,
-          alt: alt - novosDados.alt,
-          base: base - novosDados.base,
-          // Ajustar real e pix para não ultrapassar currentTotal
-          ...(function () {
-            // Valores originais do ObjC1
-            let adjustedReal = ObjC1.real || 0;
-            let adjustedPix = ObjC1.pix || 0;
-
-            // Garante que nenhum valor individual exceda o currentTotal
-            adjustedReal = Math.min(adjustedReal, currentTotal);
-            adjustedPix = Math.min(adjustedPix, currentTotal);
-
-            // Ajusta a soma se necessário
-            const soma = adjustedReal + adjustedPix;
-            if (soma > currentTotal) {
-              const excesso = soma - currentTotal;
-              const ratioReal = adjustedReal / soma;
-              const ratioPix = adjustedPix / soma;
-
-              adjustedReal -= Math.round(excesso * ratioReal);
-              adjustedPix -= Math.round(excesso * ratioPix);
-
-              // Garantir valores não negativos
-              adjustedReal = Math.max(adjustedReal, 0);
-              adjustedPix = Math.max(adjustedPix, 0);
-
-              // Correção de arredondamento
-              if (adjustedReal + adjustedPix > currentTotal) {
-                adjustedReal -= adjustedReal + adjustedPix - currentTotal;
-              }
-            }
-
-            return { real: adjustedReal, pix: adjustedPix };
-          })(),
-        });
-      } else if (excessoTotal === 0) {
-        await Execute.sendToC({
-          ...ObjC1,
-          sis: 0,
-          alt: 0,
-          base: 0,
-          pix: 0,
-          real: 0,
-        });
+        if (exists) {
+          await handleUpdateC(codigo, data, diff, currentTotal, group.dec);
+        } else {
+          await Execute.sendToC({
+            ...ObjC1,
+            dec: group.dec,
+            ...diff,
+            real: Math.min(Number(real), diff.base + diff.sis + diff.alt),
+            pix: Math.min(Number(pix), diff.base + diff.sis + diff.alt),
+          });
+        }
       }
     }
-  }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -553,6 +529,22 @@ const Calculadora = ({
         await Execute.sendToPapelC(ObjPapelC);
 
         console.log("Caiu em DEVO e Pagou tudo o Papel");
+      } else if (Number(total) && !dadosR && !valorDeve && !trocoValue) {
+        await Execute.sendToPapelC(ObjPapelC);
+        console.log("Caiu em Serviço só de papel e foi Pago todo o papel");
+      } else if (Number(total) && !dadosR && !valorDeve && trocoValue) {
+        await Execute.sendToPapelC({
+          ...ObjPapelC,
+          data: Use.NowData(),
+        });
+        await Execute.sendToDeve({
+          nome,
+          r,
+          data: Use.NowData(),
+          codigo,
+          valor: trocoValue,
+        });
+        console.log("Caiu em Serviço só de papel e foi Pago parte o papel");
       } else {
         console.log("Caiu em sem condições");
       }
@@ -573,15 +565,17 @@ const Calculadora = ({
 
   const ObjC1 = {
     codigo,
+    dec: "", // Será sobrescrito por grupo
     r,
     data,
     nome,
-    sis,
-    alt,
-    base,
+    sis: 0, // Valores serão ajustados
+    alt: 0,
+    base: 0,
     real: Number(real),
     pix: Number(pix),
   };
+
   const ObjPapelC = {
     codigo,
     r,

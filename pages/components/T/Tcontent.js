@@ -65,7 +65,6 @@ const Tcontent = ({ r, oficina }) => {
     <div className="flex flex-col md:flex-row gap-3">
       <TabelaAnual titulo="PAPEL" cor="warning" dados={papelData} />
       <SaldoMensal
-        cor="info"
         titulo=" PAPEL - DESPESAS"
         data1={papelData}
         titulo1="Papel"

@@ -55,6 +55,7 @@ async function sendToR(itemData) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         id: itemData.id,
+        dec: itemData.dec,
         r: itemData.r,
         codigo: itemData.codigo,
         nome: itemData.nome,
@@ -66,7 +67,7 @@ async function sendToR(itemData) {
 
     return await response.json();
   } catch (error) {
-    console.error("Erro no sendToR1:", error);
+    console.error("Erro no sendToR:", error);
     throw error; // Propaga o erro para o chamador
   }
 }
@@ -289,6 +290,7 @@ async function sendToC(itemData) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         codigo: itemData.codigo,
+        dec: itemData.dec,
         r: itemData.r,
         data: itemData.data,
         nome: itemData.nome,
@@ -308,6 +310,30 @@ async function sendToC(itemData) {
     return await response.json();
   } catch (error) {
     console.error("Erro no createC:", error);
+    throw error;
+  }
+}
+
+async function sendToNota(itemData) {
+  try {
+    const response = await fetch("/api/v1/tables/nota", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        texto: itemData.texto,
+        r: itemData.r,
+        colum: itemData.colum,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || "Erro ao criar registro em Nota");
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error("Erro no create Nota:", error);
     throw error;
   }
 }
@@ -458,7 +484,7 @@ async function receiveFromDevo(r) {
     const data = await response.json();
     return Array.isArray(data.rows) ? data.rows : [];
   } catch (error) {
-    console.error("Erro ao buscar dados deve:", error);
+    console.error("Erro ao buscar dados Devo:", error);
     return [];
   }
 }
@@ -470,23 +496,58 @@ async function receiveFromC(r) {
     const data = await response.json();
     return Array.isArray(data.rows) ? data.rows : [];
   } catch (error) {
+    console.error("Erro ao buscar dados C:", error);
+    return [];
+  }
+}
+
+async function receiveAnualFromC() {
+  try {
+    const response = await fetch(`/api/v1/tables/anual/c`);
+    if (!response.ok) throw new Error("Erro ao carregar os dados");
+    const data = await response.json();
+    return Array.isArray(data.rows) ? data.rows : [];
+  } catch (error) {
+    console.error("Erro ao buscar dados Anual C:", error);
+    return [];
+  }
+}
+
+async function receiveFromNota(r, colum) {
+  try {
+    const response = await fetch(`/api/v1/tables/nota?r=${r}&colum=${colum}`);
+    if (!response.ok) throw new Error("Erro ao carregar os dados");
+    const data = await response.json();
+    return Array.isArray(data.rows) ? data.rows : [];
+  } catch (error) {
+    console.error("Erro ao buscar dados de notas:", error);
+    return [];
+  }
+}
+
+async function receiveFromCGastos(letras) {
+  try {
+    const response = await fetch(
+      `/api/v1/tables/gastos/pessoal/C?letras=${letras}`,
+    );
+    if (!response.ok) throw new Error("Erro ao carregar os dados");
+    const data = await response.json();
+    return Array.isArray(data.rows) ? data.rows : [];
+  } catch (error) {
     console.error("Erro ao buscar dados deve:", error);
     return [];
   }
 }
 
-async function receiveFromCData(codigo, data, r) {
+async function receiveFromCData(codigo, data, r, dec) {
   try {
     const encodedData = encodeURIComponent(JSON.stringify(data));
-
     const response = await fetch(
-      `/api/v1/tables/c/calculadora?codigo=${codigo}&data=${encodedData}&r=${r}`,
+      `/api/v1/tables/c/calculadora?codigo=${codigo}&data=${encodedData}&r=${r}&dec=${dec}`,
     );
-
     if (!response.ok) throw new Error("Erro ao carregar os dados");
     const result = await response.json();
-
-    return result.exists; // true ou false
+    return result.exists; // Agora result é { exists: boolean }
   } catch (error) {
     console.error("Erro ao buscar dados:", error);
     return false;
@@ -518,7 +579,19 @@ async function receiveFromPapelC(r) {
     const data = await response.json();
     return Array.isArray(data.rows) ? data.rows : [];
   } catch (error) {
-    console.error("Erro ao buscar dados deve:", error);
+    console.error("Erro ao buscar dados Papel:", error);
+    return [];
+  }
+}
+
+async function receiveAnualFromPapelC() {
+  try {
+    const response = await fetch(`/api/v1/tables/anual`);
+    if (!response.ok) throw new Error("Erro ao carregar os dados");
+    const data = await response.json();
+    return Array.isArray(data.rows) ? data.rows : [];
+  } catch (error) {
+    console.error("Erro ao buscar dados Anula Papel:", error);
     return [];
   }
 }
@@ -587,6 +660,38 @@ async function receiveFromSaidaP(letras) {
     return Array.isArray(data.rows) ? data.rows : [];
   } catch (error) {
     console.error("Erro ao buscar dados Saida Pessoal:", error);
+  }
+}
+
+async function receiveAnualFromSaidaP() {
+  try {
+    const response = await fetch(`/api/v1/tables/anual/pessoal`);
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || "Erro ao carregar os dados");
+    }
+
+    const data = await response.json();
+    return Array.isArray(data.rows) ? data.rows : [];
+  } catch (error) {
+    console.error("Erro ao buscar dados Anual Saida Pessoal:", error);
+  }
+}
+
+async function receiveAnualFromSaidaO() {
+  try {
+    const response = await fetch(`/api/v1/tables/anual/oficina`);
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || "Erro ao carregar os dados");
+    }
+
+    const data = await response.json();
+    return Array.isArray(data.rows) ? data.rows : [];
+  } catch (error) {
+    console.error("Erro ao buscar dados Anual Saida Oficina:", error);
   }
 }
 
@@ -664,6 +769,17 @@ async function removeMandR(id) {
 
 async function removeC(id) {
   const response = await fetch("/api/v1/tables/c", {
+    method: "DELETE",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ id }), // Envia o `id` no corpo da requisição
+  });
+
+  const result = await response.json();
+  console.log(result);
+}
+
+async function removeNota(id) {
+  const response = await fetch("/api/v1/tables/nota", {
     method: "DELETE",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ id }), // Envia o `id` no corpo da requisição
@@ -756,18 +872,24 @@ const execute = {
   sendToDeveUpdate,
   sendToDevo,
   sendToC,
+  sendToNota,
   sendToPessoal,
   sendToSaidaP,
   sendToSaidaO,
   sendToOficina,
   sendToPapelC,
   receiveFromC,
+  receiveAnualFromC,
+  receiveFromCGastos,
   receiveFromPessoal,
   receiveFromSaidaP,
+  receiveAnualFromSaidaP,
+  receiveAnualFromSaidaO,
   receiveFromSaidaO,
   receiveFromSaidaOficina,
   receiveFromOficina,
   receiveFromCData,
+  receiveAnualFromPapelC,
   receiveFromConfig,
   receiveFromPapelC,
   receiveFromPapelCData,
@@ -776,9 +898,11 @@ const execute = {
   receiveFromDeveJustValor,
   receiveFromDevo,
   receiveFromDevoJustValor,
+  receiveFromNota,
   receiveFromR,
   receiveFromRJustBSA,
   removeC,
+  removeNota,
   removePapelC,
   removePessoal,
   removeSaidaP,

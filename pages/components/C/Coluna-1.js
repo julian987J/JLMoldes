@@ -44,10 +44,10 @@ const Coluna = ({ r }) => {
 
       const grouped = results.reduce((acc, item) => {
         // Remove a parte do horário da data
-        const rawDate = Use.formatarData(item.data);
+        const rawDate = Use.formatarData(item.date);
 
         // Formata a hora para 00:00
-        const dateObj = new Date(item.data);
+        const dateObj = new Date(item.date);
         const horas = String(dateObj.getHours()).padStart(2, "0");
         const minutos = String(dateObj.getMinutes()).padStart(2, "0");
         const horaFormatada = `${horas}:${minutos}`;
@@ -116,7 +116,7 @@ const Coluna = ({ r }) => {
               <thead>
                 {/* Linha para o total geral do dia */}
                 <tr>
-                  <th colSpan={5}></th>
+                  <th colSpan={6}></th>
                   <th colSpan={2} className="text-center text-xs bg-success/30">
                     {formatCurrency(totalDia)}
                   </th>
@@ -127,7 +127,7 @@ const Coluna = ({ r }) => {
                 <tr>
                   <th className="hidden"></th>
                   <th className="hidden"></th>
-                  <th colSpan={5}></th>
+                  <th colSpan={6}></th>
                   <th className="text-center text-xs bg-success/30 ">
                     {formatCurrency(totalReal)}
                   </th>
@@ -142,6 +142,7 @@ const Coluna = ({ r }) => {
                   <th className="hidden">ID</th>
                   <th className="hidden">Codigo</th>
                   <th>Hora</th>
+                  <th>Dec</th>
                   <th>Nome</th>
                   <th>Base</th>
                   <th>Sis</th>
@@ -168,6 +169,7 @@ const Coluna = ({ r }) => {
                     <td className="hidden">{item.id}</td>
                     <td className="hidden">{item.codigo}</td>
                     <td>{item.horaSeparada}</td>
+                    <td>{item.dec}</td>
                     <td>
                       {editingId === item.id ? (
                         <input

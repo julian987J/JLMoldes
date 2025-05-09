@@ -16,8 +16,8 @@ const Update = () => {
   return (
     <>
       <div
-        className="radial-progress text-success ml-2"
-        style={{ "--value": progress, "--size": "2rem" }}
+        className="radial-progress text-success text-xs"
+        style={{ "--value": progress, "--size": "1.5rem" }}
         aria-valuenow={progress}
         role="progressbar"
       >

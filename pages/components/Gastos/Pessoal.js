@@ -94,8 +94,6 @@ const Pessoal = ({ letras }) => {
       // Atualiza o registro no backend
       const updatedEntry = {
         ...entry,
-        proximo: null, // Define próximo como vazio
-        dia: 30, // Define dia como 30
         pago: new Date().toISOString().split("T")[0], // Atualiza a data do último pagamento
       };
 
@@ -138,7 +136,7 @@ const Pessoal = ({ letras }) => {
       valor,
       gastos,
       pago,
-      proximo === "" ? null : proximo,
+      proximo,
       dia,
       alerta,
     );
@@ -158,34 +156,36 @@ const Pessoal = ({ letras }) => {
 
   const getStatusVencimento = (entry) => {
     const hoje = new Date();
-    hoje.setHours(23, 59, 59, 999);
+    hoje.setUTCHours(23, 59, 59, 999);
 
-    let dataVencimento;
-    if (entry.proximo) {
-      dataVencimento = new Date(entry.proximo);
-    } else if (entry.pago && entry.dia) {
-      const dataPago = new Date(entry.pago);
-      dataVencimento = new Date(dataPago);
-      dataVencimento.setDate(dataPago.getDate() + parseInt(entry.dia, 10));
-    } else {
-      return "invalid";
+    const dataVencimentoStr = Use.formatarProximo(
+      entry.pago,
+      entry.proximo,
+      entry.dia,
+    );
+    const [dd, mm, yyyy] = dataVencimentoStr.split("/");
+    const dataVencimento = new Date(
+      Date.UTC(yyyy, mm - 1, dd, 23, 59, 59, 999),
+    );
+
+    if (dataVencimento < hoje) {
+      return "vencido";
     }
 
-    if (isNaN(dataVencimento.getTime())) return "invalid";
-    dataVencimento.setHours(23, 59, 59, 999);
-
-    // Calcula diferença de dias
     const diffTime = dataVencimento - hoje;
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
-    if (diffDays < 0) return "vencido";
-    if (diffDays <= parseInt(entry.alerta, 10)) return "proximo";
+    const alerta = parseInt(entry.alerta, 10);
+    if (!isNaN(alerta) && diffDays <= alerta) {
+      return "proximo";
+    }
+
     return "ok";
   };
 
   const shouldShowAlert = (entry) => {
-    if (!entry.alerta || isNaN(parseInt(entry.alerta, 10))) return false;
-    return getStatusVencimento(entry) === "proximo";
+    const alerta = parseInt(entry.alerta, 10);
+    return !isNaN(alerta) && getStatusVencimento(entry) === "proximo";
   };
 
   return (
@@ -239,10 +239,11 @@ const Pessoal = ({ letras }) => {
             onChange={(e) => setPago(e.target.value)}
           />
           <input
-            type="date"
-            placeholder="Proximo"
+            type="number"
+            required
+            placeholder="Mês"
             className="input input-warning input-xs custom-date-input"
-            value={proximo || ""}
+            value={proximo}
             onChange={(e) => setProximo(e.target.value)}
           />
           <input
@@ -275,7 +276,7 @@ const Pessoal = ({ letras }) => {
               <th>Valor</th>
               <th>Gastos</th>
               <th>Pago</th>
-              <th>Proximo</th>
+              <th>Mês</th>
               <th>Dia</th>
               <th>Alerta</th>
               <th>Ações</th>
@@ -285,7 +286,7 @@ const Pessoal = ({ letras }) => {
             {processedData.map((entry) =>
               entry.isFirst ? (
                 // Primeira linha do grupo com rowSpan para o campo Item
-                <tr key={entry.id}>
+                <tr key={entry.id} className="text-center">
                   <td className="hidden">{entry.id}</td>
                   <td className="px-0.5 text-center" rowSpan={entry.rowSpan}>
                     {editingId === entry.id ? (
@@ -376,19 +377,15 @@ const Pessoal = ({ letras }) => {
                   <td className="px-0.5">
                     {editingId === entry.id ? (
                       <input
-                        type="date"
-                        value={
-                          editedData.proximo
-                            ? editedData.proximo.split("T")[0]
-                            : ""
-                        }
+                        type="number"
+                        value={editedData.proximo}
                         onChange={(e) =>
                           handleInputChange("proximo", e.target.value)
                         }
                         className="input input-xs p-0 m-0 text-center"
                       />
                     ) : (
-                      Use.formatarDataAno(entry.proximo)
+                      Use.formatarProximo(entry.pago, entry.proximo, entry.dia)
                     )}
                   </td>
                   <td className="px-0.5">
