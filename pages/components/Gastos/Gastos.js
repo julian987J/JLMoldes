@@ -8,10 +8,12 @@ import SaidasOficina from "./SaidasOficina.js";
 import TabelaAnual from "../T/TabelaAnual.js";
 import SaldoMensal from "../T/SaldoMensal.js";
 import Execute from "models/functions.js";
+import { useWebSocket } from "../../../contexts/WebSocketContext.js"; // Importar o hook
 
 const Gastos = ({ letras }) => {
   const [variosData, setVariosData] = useState([]);
   const [gastosData, setGastosData] = useState([]);
+  const { lastMessage } = useWebSocket(); // Usar o hook WebSocket
 
   const formatCurrency = (value) => {
     const numberValue = Number(value) || 0;
@@ -50,28 +52,51 @@ const Gastos = ({ letras }) => {
   };
 
   useEffect(() => {
-    const buscarDados = async () => {
+    const fetchInitialVariosData = async () => {
+      if (!letras) return;
       try {
-        const [varios, gastos] = await Promise.all([
-          Execute.receiveFromCGastos(letras),
-          Execute.receiveFromSaidaP(letras),
-        ]);
-
+        const varios = await Execute.receiveFromCGastos(letras);
         setVariosData(
           varios ? processarDados(varios, "data", ["real", "pix"]) : [],
         );
+      } catch (error) {
+        console.error("Erro ao buscar dados 'varios':", error);
+        setVariosData([]);
+      }
+    };
+
+    const fetchInitialGastosData = async () => {
+      if (!letras) return;
+      try {
+        const gastos = await Execute.receiveFromSaidaP(letras);
         setGastosData(gastos ? processarDados(gastos, "pago", "valor") : []);
       } catch (error) {
-        console.error("Erro ao buscar dados:", error);
-        setVariosData([]);
+        console.error("Erro ao buscar dados 'gastos':", error);
         setGastosData([]);
       }
     };
 
-    buscarDados();
-    const intervalo = setInterval(buscarDados, 5000);
-    return () => clearInterval(intervalo);
-  }, [letras]);
+    fetchInitialVariosData();
+    fetchInitialGastosData();
+    // O polling com setInterval foi removido
+  }, [letras]); // Re-fetch se 'letras' mudar
+
+  // Efeito para lidar com mensagens WebSocket
+  useEffect(() => {
+    if (lastMessage && lastMessage.data) {
+      const { type, payload } = lastMessage.data;
+
+      if (payload && payload.letras === letras) {
+        if (type === "GASTOS_C_UPDATED" && payload.items) {
+          // payload.items deve ser a lista bruta de Execute.receiveFromCGastos
+          setVariosData(processarDados(payload.items, "data", ["real", "pix"]));
+        } else if (type === "GASTOS_SAIDAP_UPDATED" && payload.items) {
+          // payload.items deve ser a lista bruta de Execute.receiveFromSaidaP
+          setGastosData(processarDados(payload.items, "pago", "valor"));
+        }
+      }
+    }
+  }, [lastMessage, letras]); // Adicionado 'letras' para re-processar se necessário, embora o filtro no payload seja o principal
 
   return (
     <div>

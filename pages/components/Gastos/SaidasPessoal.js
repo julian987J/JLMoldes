@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import Execute from "models/functions";
 import Edit from "../Edit";
 import Use from "models/utils";
+import { useWebSocket } from "../../../contexts/WebSocketContext.js"; // Importar o hook
 
 const formatCurrency = (value) => {
   const number = Number(value);
@@ -12,27 +13,46 @@ const SaidasPessoal = ({ letras }) => {
   const [dados, setDados] = useState([]);
   const [editingId, setEditingId] = useState(null);
   const [editedData, setEditedData] = useState({});
+  const { lastMessage } = useWebSocket(); // Usar o hook WebSocket
 
   useEffect(() => {
     const fetchData = async () => {
+      if (!letras) return;
       try {
         const results = await Execute.receiveFromSaidaP(letras);
-
-        // Ordenar resultados pela data mais recente primeiro
-        const sortedResults =
-          results?.sort((a, b) => new Date(b.pago) - new Date(a.pago)) || [];
-
+        const sortedResults = Array.isArray(results)
+          ? results.sort((a, b) => new Date(b.pago) - new Date(a.pago))
+          : [];
         setDados(sortedResults);
       } catch (error) {
         console.error("Erro ao buscar dados:", error);
         setDados([]);
       }
     };
-
     fetchData();
-    const intervalId = setInterval(fetchData, 5000);
-    return () => clearInterval(intervalId);
-  }, [letras]);
+    // O polling com setInterval foi removido
+  }, [letras]); // Re-fetch se 'letras' mudar
+
+  // Efeito para lidar com mensagens WebSocket
+  useEffect(() => {
+    if (lastMessage && lastMessage.data) {
+      const { type, payload } = lastMessage.data;
+
+      // Verificar se a mensagem é relevante (mesmas 'letras')
+      // O payload deve conter a lista atualizada de itens de 'SaidasPessoal'
+      // e uma propriedade 'letras' para filtragem.
+      if (
+        type === "SAIDAS_PESSOAL_UPDATED" &&
+        payload &&
+        payload.letras === letras
+      ) {
+        const sortedResults = Array.isArray(payload.items)
+          ? payload.items.sort((a, b) => new Date(b.pago) - new Date(a.pago))
+          : [];
+        setDados(sortedResults);
+      }
+    }
+  }, [lastMessage, letras]);
 
   const handleSave = async () => {
     try {
@@ -44,12 +64,7 @@ const SaidasPessoal = ({ letras }) => {
 
       if (!response.ok) throw new Error("Falha ao atualizar");
 
-      // Atualiza os dados locais imediatamente
-      setDados(
-        dados.map((item) =>
-          item.id === editedData.id ? { ...item, ...editedData } : item,
-        ),
-      );
+      // A atualização do estado 'dados' será feita pela mensagem WebSocket 'SAIDAS_PESSOAL_UPDATED'
       setEditingId(null);
     } catch (error) {
       console.error("Erro ao salvar:", error);
@@ -68,8 +83,8 @@ const SaidasPessoal = ({ letras }) => {
 
   const handleRemove = async (id) => {
     try {
+      // Execute.removeSaidaP fará o DELETE. O backend enviará 'SAIDAS_PESSOAL_UPDATED'.
       await Execute.removeSaidaP(id);
-      setDados(dados.filter((item) => item.id !== id));
     } catch (error) {
       console.error("Erro ao remover:", error);
     }
