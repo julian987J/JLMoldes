@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import Execute from "models/functions";
 import Edit from "../Edit";
 import Use from "models/utils";
-import { useWebSocket } from "../../../contexts/WebSocketContext.js"; // Importar o hook
+import { useWebSocket } from "../../../contexts/WebSocketContext.js";
 
 const formatCurrency = (value) => {
   const number = Number(value);
@@ -13,7 +13,7 @@ const SaidasOficina = ({ letras }) => {
   const [dados, setDados] = useState([]);
   const [editingId, setEditingId] = useState(null);
   const [editedData, setEditedData] = useState({});
-  const { lastMessage } = useWebSocket(); // Usar o hook WebSocket
+  const { lastMessage } = useWebSocket();
 
   useEffect(() => {
     const fetchData = async () => {
@@ -30,27 +30,51 @@ const SaidasOficina = ({ letras }) => {
       }
     };
     fetchData();
-    // O polling com setInterval foi removido
-  }, [letras]); // Re-fetch se 'letras' mudar
+  }, [letras]);
 
-  // Efeito para lidar com mensagens WebSocket
   useEffect(() => {
-    if (lastMessage && lastMessage.data) {
-      const { type, payload } = lastMessage.data;
+    if (!lastMessage?.data) return;
 
-      // Verificar se a mensagem é relevante (mesmas 'letras')
-      // O payload deve conter a lista atualizada de itens de 'SaidasOficina'
-      // e uma propriedade 'letras' para filtragem.
-      if (
-        type === "SAIDAS_OFICINA_UPDATED" &&
-        payload &&
-        payload.letras === letras
-      ) {
-        const sortedResults = Array.isArray(payload.items)
-          ? payload.items.sort((a, b) => new Date(b.pago) - new Date(a.pago))
-          : [];
-        setDados(sortedResults);
-      }
+    let parsed;
+    try {
+      parsed =
+        typeof lastMessage.data === "string"
+          ? JSON.parse(lastMessage.data)
+          : lastMessage.data;
+    } catch (e) {
+      console.error("Mensagem WebSocket inválida:", lastMessage.data);
+      return;
+    }
+
+    const { type, payload } = parsed;
+    if (!payload || payload.dec !== letras) return;
+
+    switch (type) {
+      case "SAIDAS_OFICINA_UPDATED":
+        if (Array.isArray(payload.items)) {
+          const sorted = payload.items.sort(
+            (a, b) => new Date(b.pago) - new Date(a.pago),
+          );
+          setDados(sorted);
+        }
+        break;
+
+      case "SAIDAS_OFICINA_NEW_ITEM":
+        setDados((prev) => [payload, ...prev]);
+        break;
+
+      case "SAIDAS_OFICINA_DELETED_ITEM":
+        setDados((prev) => prev.filter((item) => item.id !== payload.id));
+        break;
+
+      case "SAIDAS_OFICINA_UPDATED_ITEM":
+        setDados((prev) =>
+          prev.map((item) => (item.id === payload.id ? payload : item)),
+        );
+        break;
+
+      default:
+        break;
     }
   }, [lastMessage, letras]);
 
@@ -63,12 +87,9 @@ const SaidasOficina = ({ letras }) => {
       });
 
       if (!response.ok) throw new Error("Falha ao atualizar");
-
-      // A atualização do estado 'dados' será feita pela mensagem WebSocket 'SAIDAS_OFICINA_UPDATED'
-      setEditingId(null);
+      setEditingId(null); // A resposta via WebSocket atualizará a lista
     } catch (error) {
       console.error("Erro ao salvar:", error);
-      // Adicione um estado de erro se necessário
     }
   };
 
@@ -83,7 +104,6 @@ const SaidasOficina = ({ letras }) => {
 
   const handleRemove = async (id) => {
     try {
-      // Execute.removeSaidaO fará o DELETE. O backend enviará 'SAIDAS_OFICINA_UPDATED'.
       await Execute.removeSaidaO(id);
     } catch (error) {
       console.error("Erro ao remover:", error);
@@ -91,14 +111,13 @@ const SaidasOficina = ({ letras }) => {
   };
 
   return (
-    <div className="overflow-x-auto rounded-box border border-secondary bg-base-100">
-      <h1 className="text-center w-full">GASTOS OFICINAS</h1>
+    <div className="overflow-x-auto rounded-box border border-primary bg-base-100">
+      <h1 className="text-center w-full">GASTOS OFICINA</h1>
       <table className="table table-xs w-full">
         <thead>
           <tr>
             <th className="hidden">ID</th>
             <th>DATA</th>
-            <th>Oficina</th>
             <th>Gastos</th>
             <th>Valor</th>
             <th>Ações</th>
@@ -109,7 +128,6 @@ const SaidasOficina = ({ letras }) => {
             <tr key={item.id}>
               <td className="hidden">{item.id}</td>
               <td>{Use.formatarDataAno(item.pago)}</td>
-              <td>{item.oficina}</td>
               <td>
                 {editingId === item.id ? (
                   <input
@@ -143,9 +161,7 @@ const SaidasOficina = ({ letras }) => {
                   isEditing={editingId === item.id}
                   onEdit={() => startEditing(item)}
                   onSave={handleSave}
-                  onCancel={() => {
-                    setEditingId(null);
-                  }}
+                  onCancel={() => setEditingId(null)}
                 />
                 <button
                   className={`btn btn-soft btn-xs btn-error ml-1 ${

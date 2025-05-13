@@ -47,7 +47,10 @@ const Oficina = ({ letras }) => {
   useEffect(() => {
     if (lastMessage && lastMessage.data && lastMessage.timestamp) {
       // Se o timestamp da mensagem atual for o mesmo da última processada, ignore.
-      if (lastMessage.timestamp === lastProcessedTimestampRef.current) {
+      if (
+        lastProcessedTimestampRef.current &&
+        lastMessage.timestamp <= lastProcessedTimestampRef.current
+      ) {
         console.log(
           "Oficina.js: Ignorando mensagem WebSocket já processada (mesmo timestamp). Timestamp:",
           lastMessage.timestamp,
