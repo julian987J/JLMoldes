@@ -19,6 +19,7 @@ const EditorNotes = ({ r, colum }) => {
 
   const editorRef = useRef(null);
   const savedSelection = useRef(null);
+  const lastProcessedTimestampRef = useRef(null); // Para evitar processamento duplicado
 
   const { lastMessage } = useWebSocket(); // Usar o hook WebSocket
   const colors = [
@@ -83,11 +84,25 @@ const EditorNotes = ({ r, colum }) => {
 
   // Efeito para lidar com mensagens WebSocket
   useEffect(() => {
-    if (lastMessage && lastMessage.data) {
+    if (lastMessage && lastMessage.data && lastMessage.timestamp) {
+      if (
+        lastProcessedTimestampRef.current &&
+        lastMessage.timestamp <= lastProcessedTimestampRef.current
+      ) {
+        // console.log("EditorNotes.js: Ignorando mensagem WebSocket já processada:", lastMessage.timestamp);
+        return;
+      }
+
       const { type, payload } = lastMessage.data;
+      // console.log("EditorNotes WS:", type, payload, "Props r:", r, "Props colum:", colum, "Timestamp:", lastMessage.timestamp);
 
       // Verificar se a nota pertence a este editor (mesmo 'r' e 'colum')
-      if (payload && payload.r === r && payload.colum === colum) {
+      // Comparar como strings para robustez contra tipos diferentes
+      if (
+        payload &&
+        String(payload.r) === String(r) &&
+        String(payload.colum) === String(colum)
+      ) {
         if (type === "NOTA_NEW_ITEM") {
           setNotes((prevNotes) => {
             // Evitar duplicatas se a nota já existir (improvável se a lógica estiver correta)
@@ -102,13 +117,32 @@ const EditorNotes = ({ r, colum }) => {
             ),
           );
         } else if (type === "NOTA_DELETED_ITEM") {
+          // Se o backend enviar NOTA_DELETED_ITEM apenas com ID, esta condição de filtro (payload.r e payload.colum)
+          // precisaria ser ajustada especificamente para NOTA_DELETED_ITEM, como foi feito em Coluna-1.js.
+          // No momento, o backend para delete de nota está configurado para enviar apenas ID.
           setNotes((prevNotes) =>
             prevNotes.filter((note) => note.id !== payload.id),
           );
         }
       }
+      // Lógica para NOTA_DELETED_ITEM se o payload só tiver ID (como está no backend atualmente)
+      // Esta lógica é separada porque não podemos filtrar por r e colum se eles não estão no payload.
+      // Isso significa que TODAS as instâncias de EditorNotes tentarão remover a nota pelo ID.
+      // Se isso for um problema (ex: IDs não únicos globalmente), o backend DEVE enviar r e colum para delete.
+      else if (
+        type === "NOTA_DELETED_ITEM" &&
+        payload &&
+        payload.id !== undefined &&
+        payload.r === undefined &&
+        payload.colum === undefined
+      ) {
+        setNotes((prevNotes) =>
+          prevNotes.filter((note) => note.id !== payload.id),
+        );
+      }
+      lastProcessedTimestampRef.current = lastMessage.timestamp;
     }
-  }, [lastMessage, r, colum]);
+  }, [lastMessage, r, colum, setNotes]);
 
   // Handlers
   const handleInput = () => setCurrentNote(editorRef.current.innerHTML);
