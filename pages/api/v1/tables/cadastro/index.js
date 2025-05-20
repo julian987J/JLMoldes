@@ -82,12 +82,10 @@ async function getHandler(request, response) {
     }
   } catch (error) {
     console.error("GET /api/v1/tables/cadastro: Error fetching data:", error);
-    response
-      .status(500)
-      .json({
-        error: "Internal server error while fetching cadastro data.",
-        message: error.message,
-      });
+    response.status(500).json({
+      error: "Internal server error while fetching cadastro data.",
+      message: error.message,
+    });
   }
 }
 
