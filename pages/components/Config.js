@@ -44,8 +44,6 @@ const Config = () => {
       switch (type) {
         case "CONFIG_UPDATED_ITEM":
           if (payload) {
-            // Assuming payload is the full config object { id, m, e, d, ... }
-            // And 'result' state is an array holding this single config object
             setResult([payload]);
             if (editingId === payload.id) {
               setEditingId(null);
@@ -78,9 +76,6 @@ const Config = () => {
       });
 
       if (!response.ok) throw new Error("Erro ao atualizar");
-
-      // State update and closing edit mode will be handled by WebSocket message
-      // setEditingId(null); // This will be handled by the WebSocket listener
     } catch (error) {
       console.error("Erro ao salvar:", error);
     }
