@@ -1,20 +1,29 @@
-import React, { useEffect, useState } from "react";
+import React, {
+  useEffect,
+  useState,
+  useCallback,
+  useRef,
+  useMemo,
+} from "react";
 import Execute from "models/functions";
 import Edit from "../Edit";
 import Use from "models/utils";
+import { useWebSocket } from "../../../contexts/WebSocketContext.js"; // Ajuste o caminho
 
 const formatCurrency = (value) => {
-  const number = Number(value);
+  const number = parseFloat(value);
   return isNaN(number) ? "0.00" : number.toFixed(2);
 };
 
 const Coluna = ({ r }) => {
   const [dados, setDados] = useState([]);
-  const [groupedResults, setGroupedResults] = useState({});
+  // groupedResults será derivado de 'dados' usando useMemo
   const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState(null);
   const [editedData, setEditedData] = useState({});
-  const [exists, setExists] = useState([]); // Adicione junto aos outros estados
+  const [exists, setExists] = useState([]); // Dados da tabela "Deve"
+  const { lastMessage } = useWebSocket();
+  const lastProcessedTimestampRef = useRef(null);
 
   const handleSave = async (editedData) => {
     try {
@@ -25,11 +34,7 @@ const Coluna = ({ r }) => {
       });
 
       if (!response.ok) throw new Error("Erro ao atualizar");
-      setDados(
-        dados.map((item) =>
-          item.id === editedData.id ? { ...item, ...editedData } : item,
-        ),
-      );
+      // A atualização do estado 'dados' (PapelC) virá via mensagem WebSocket (PAPELC_UPDATED_ITEM)
       setEditingId(null);
     } catch (error) {
       console.error("Erro ao salvar:", error);
@@ -37,52 +42,162 @@ const Coluna = ({ r }) => {
   };
 
   const fetchData = async () => {
+    if (typeof r === "undefined" || r === null) return;
     try {
       const results = await Execute.receiveFromPapelC(r);
-
       const existsData = await Execute.receiveFromDeve(r);
-      setExists(existsData);
 
-      const grouped = results.reduce((acc, item) => {
-        // Formata a data removendo o horário
-        const rawDate = Use.formatarData(item.data);
-
-        // Formata a hora para 00:00
-        const dateObj = new Date(item.data);
-        const horas = String(dateObj.getHours()).padStart(2, "0");
-        const minutos = String(dateObj.getMinutes()).padStart(2, "0");
-        const segundos = String(dateObj.getSeconds()).padStart(2, "0");
-        const horaFormatada = `${horas}:${minutos}:${segundos}`;
-
-        acc[rawDate] = acc[rawDate] || [];
-        acc[rawDate].push({
-          ...item,
-          horaSeparada: horaFormatada,
-          papelreal: Number(item.papelreal) || 0,
-          papelpix: Number(item.papelpix) || 0,
-          encaixereal: Number(item.encaixereal) || 0,
-          encaixepix: Number(item.encaixepix) || 0,
-          desperdicio: Number(item.desperdicio) || 0,
-          util: Number(item.util) || 0,
-          perdida: Number(item.perdida) || 0,
-        });
-        return acc;
-      }, {});
-
-      setGroupedResults(grouped);
+      setDados(
+        Array.isArray(results)
+          ? results.sort((a, b) => new Date(a.data) - new Date(b.data))
+          : [],
+      );
+      setExists(Array.isArray(existsData) ? existsData : []);
     } catch (error) {
       console.error("Erro:", error);
     } finally {
       setLoading(false);
     }
   };
+  const memoizedFetchData = useCallback(fetchData, [r]);
 
   useEffect(() => {
-    fetchData();
-    const intervalId = setInterval(fetchData, 5000);
-    return () => clearInterval(intervalId);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    memoizedFetchData();
+  }, [memoizedFetchData]);
+
+  // Efeito para lidar com mensagens WebSocket
+  useEffect(() => {
+    if (lastMessage && lastMessage.data && lastMessage.timestamp) {
+      if (
+        lastProcessedTimestampRef.current &&
+        lastMessage.timestamp <= lastProcessedTimestampRef.current
+      ) {
+        return; // Ignora mensagem já processada
+      }
+
+      const { type, payload } = lastMessage.data;
+
+      // --- Lida com atualizações na tabela PapelC (dados principais) ---
+      if (
+        // Condição para PAPELC_NEW_ITEM e PAPELC_UPDATED_ITEM: requer 'r' no payload
+        ((type === "PAPELC_NEW_ITEM" || type === "PAPELC_UPDATED_ITEM") &&
+          payload &&
+          String(payload.r) === String(r)) ||
+        // Condição para PAPELC_DELETED_ITEM: requer apenas 'id' no payload
+        (type === "PAPELC_DELETED_ITEM" && payload && payload.id !== undefined)
+      ) {
+        setDados((prevDadosPapelC) => {
+          let newDadosPapelC = [...prevDadosPapelC];
+          const itemIndex =
+            payload.id !== undefined
+              ? newDadosPapelC.findIndex(
+                  (item) => String(item.id) === String(payload.id),
+                )
+              : -1;
+
+          switch (type) {
+            case "PAPELC_NEW_ITEM":
+              if (itemIndex === -1) newDadosPapelC.push(payload);
+              break;
+            case "PAPELC_UPDATED_ITEM":
+              if (itemIndex !== -1) {
+                newDadosPapelC[itemIndex] = {
+                  ...newDadosPapelC[itemIndex],
+                  ...payload,
+                };
+              } else {
+                newDadosPapelC.push(payload);
+              }
+              if (editingId === payload.id) setEditingId(null);
+              break;
+            case "PAPELC_DELETED_ITEM":
+              newDadosPapelC = newDadosPapelC.filter(
+                (item) => String(item.id) !== String(payload.id),
+              );
+              if (editingId === payload.id) setEditingId(null);
+              break;
+          }
+          return newDadosPapelC.sort(
+            (a, b) => new Date(a.data) - new Date(b.data),
+          );
+        });
+      }
+
+      // --- Lida com atualizações na tabela Deve (dados 'exists') ---
+      // Assumindo que Deve.js já foi refatorado e envia mensagens DEVE_*
+      if (
+        type === "DEVE_NEW_ITEM" ||
+        type === "DEVE_UPDATED_ITEM" ||
+        type === "DEVE_DELETED_ITEM"
+      ) {
+        // A tabela "Deve" é filtrada por 'r' no `receiveFromDeve`,
+        // então as mensagens WebSocket para "Deve" também devem ser filtradas por 'r'.
+        if (payload && String(payload.r) === String(r)) {
+          setExists((prevExists) => {
+            let newExists = [...prevExists];
+            // A tabela "Deve" usa 'codigo' como identificador principal nas mensagens,
+            // mas 'id' para os itens em si. Ajuste conforme a estrutura do payload de DEVE_*.
+            // Se o payload de DEVE_* usa 'id':
+            const itemIdentifier = payload.id || payload.codigo; // Prioriza id se existir
+            const itemIndex = newExists.findIndex(
+              (item) =>
+                String(item.id) === String(itemIdentifier) ||
+                String(item.codigo) === String(itemIdentifier),
+            );
+
+            switch (type) {
+              case "DEVE_NEW_ITEM":
+                if (itemIndex === -1) newExists.push(payload);
+                break;
+              case "DEVE_UPDATED_ITEM": // Supondo que DEVE_UPDATED_ITEM existe
+                if (itemIndex !== -1)
+                  newExists[itemIndex] = {
+                    ...newExists[itemIndex],
+                    ...payload,
+                  };
+                else newExists.push(payload);
+                break;
+              case "DEVE_DELETED_ITEM": // Payload é { codigo: "some-codigo", r: "some-r" }
+                newExists = newExists.filter(
+                  (item) => String(item.codigo) !== String(payload.codigo),
+                );
+                break;
+            }
+            return newExists.sort(
+              (a, b) => new Date(a.data) - new Date(b.data),
+            ); // Ordena se necessário
+          });
+        }
+      }
+
+      lastProcessedTimestampRef.current = lastMessage.timestamp;
+    }
+  }, [lastMessage, r, editingId, setDados, setExists]);
+
+  const groupedResults = useMemo(() => {
+    return dados.reduce((acc, item) => {
+      const rawDate = Use.formatarData(item.data);
+      const dateObj = new Date(item.data);
+      const horas = String(dateObj.getHours()).padStart(2, "0");
+      const minutos = String(dateObj.getMinutes()).padStart(2, "0");
+      const segundos = String(dateObj.getSeconds()).padStart(2, "0");
+      const horaFormatada = `${horas}:${minutos}:${segundos}`;
+
+      acc[rawDate] = acc[rawDate] || [];
+      acc[rawDate].push({
+        ...item,
+        horaSeparada: horaFormatada,
+        papelreal: parseFloat(item.papelreal) || 0,
+        papelpix: parseFloat(item.papelpix) || 0,
+        encaixereal: parseFloat(item.encaixereal) || 0,
+        encaixepix: parseFloat(item.encaixepix) || 0,
+        desperdicio: parseFloat(item.desperdicio) || 0,
+        util: parseFloat(item.util) || 0,
+        perdida: parseFloat(item.perdida) || 0,
+      });
+      return acc;
+    }, {});
+  }, [dados]);
 
   if (loading) {
     return <div className="text-center p-4">Carregando...</div>;
@@ -94,7 +209,31 @@ const Coluna = ({ r }) => {
 
   const startEditing = (item) => {
     setEditingId(item.id);
-    setEditedData({ ...item });
+    // Garante que os valores em editedData sejam strings para os inputs controlados
+    setEditedData({
+      ...item,
+      nome: String(item.nome !== undefined ? item.nome : ""),
+      multi: String(item.multi !== undefined ? item.multi : "0"),
+      papel: String(item.papel !== undefined ? item.papel : "1"),
+      papelreal: formatCurrency(
+        item.papelreal !== undefined ? item.papelreal : 0,
+      ),
+      papelpix: formatCurrency(item.papelpix !== undefined ? item.papelpix : 0),
+      encaixereal: formatCurrency(
+        item.encaixereal !== undefined ? item.encaixereal : 0,
+      ),
+      encaixepix: formatCurrency(
+        item.encaixepix !== undefined ? item.encaixepix : 0,
+      ),
+      desperdicio: formatCurrency(
+        item.desperdicio !== undefined ? item.desperdicio : 0,
+      ), // formatCurrency para consistência, embora o input seja number
+      util: String(item.util !== undefined ? item.util : "1"),
+      perdida: String(item.perdida !== undefined ? item.perdida : "0"),
+      comentarios: String(
+        item.comentarios !== undefined ? item.comentarios : "",
+      ),
+    });
   };
 
   return (
@@ -102,31 +241,31 @@ const Coluna = ({ r }) => {
       {Object.entries(groupedResults).map(([date, items]) => {
         // Cálculo dos totais para cada coluna
         const totalPapelReal = items.reduce(
-          (sum, item) => sum + (Number(item.papelreal) || 0),
+          (sum, item) => sum + (parseFloat(item.papelreal) || 0),
           0,
         );
         const totalPapelPix = items.reduce(
-          (sum, item) => sum + (Number(item.papelpix) || 0),
+          (sum, item) => sum + (parseFloat(item.papelpix) || 0),
           0,
         );
         const totalEncaixeReal = items.reduce(
-          (sum, item) => sum + (Number(item.encaixereal) || 0),
+          (sum, item) => sum + (parseFloat(item.encaixereal) || 0),
           0,
         );
         const totalEncaixePix = items.reduce(
-          (sum, item) => sum + (Number(item.encaixepix) || 0),
+          (sum, item) => sum + (parseFloat(item.encaixepix) || 0),
           0,
         );
         const totalDesperdicio = items.reduce(
-          (sum, item) => sum + (Number(item.desperdicio) || 0),
+          (sum, item) => sum + (parseFloat(item.desperdicio) || 0),
           0,
         );
         const totalUtil = items.reduce(
-          (sum, item) => sum + (Number(item.util) || 0),
+          (sum, item) => sum + (parseFloat(item.util) || 0),
           0,
         );
         const totalPerdida = items.reduce(
-          (sum, item) => sum + (Number(item.perdida) || 0),
+          (sum, item) => sum + (parseFloat(item.perdida) || 0),
           0,
         );
 
@@ -287,7 +426,7 @@ const Coluna = ({ r }) => {
                         <input
                           type="number"
                           min="1"
-                          value={formatCurrency(editedData.papelreal)}
+                          value={editedData.papelreal} // Usar string diretamente
                           onChange={(e) =>
                             handleInputChange("papelreal", e.target.value)
                           }
@@ -302,7 +441,7 @@ const Coluna = ({ r }) => {
                         <input
                           type="number"
                           min="1"
-                          value={formatCurrency(editedData.papelpix)}
+                          value={editedData.papelpix} // Usar string diretamente
                           onChange={(e) =>
                             handleInputChange("papelpix", e.target.value)
                           }
@@ -317,7 +456,7 @@ const Coluna = ({ r }) => {
                         <input
                           type="number"
                           min="1"
-                          value={formatCurrency(editedData.encaixereal)}
+                          value={editedData.encaixereal} // Usar string diretamente
                           onChange={(e) =>
                             handleInputChange("encaixereal", e.target.value)
                           }
@@ -332,7 +471,7 @@ const Coluna = ({ r }) => {
                         <input
                           type="number"
                           min="1"
-                          value={formatCurrency(editedData.encaixepix)}
+                          value={editedData.encaixepix} // Usar string diretamente
                           onChange={(e) =>
                             handleInputChange("encaixepix", e.target.value)
                           }
@@ -347,14 +486,10 @@ const Coluna = ({ r }) => {
                         <input
                           type="number"
                           min="1"
-                          value={formatCurrency(editedData.desperdicio)}
-                          onChange={(e) => {
-                            if (isNaN(e.target.value) || e.target.value <= 0) {
-                              handleInputChange("desperdicio", 1);
-                            } else {
-                              handleInputChange("desperdicio", e.target.value);
-                            }
-                          }}
+                          value={editedData.desperdicio} // Usar string diretamente
+                          onChange={(e) =>
+                            handleInputChange("desperdicio", e.target.value)
+                          }
                           className="input input-xs p-0 m-0 text-center"
                         />
                       ) : (
@@ -367,13 +502,9 @@ const Coluna = ({ r }) => {
                           type="number"
                           min="1"
                           value={editedData.util}
-                          onChange={(e) => {
-                            if (isNaN(e.target.value) || e.target.value <= 0) {
-                              handleInputChange("util", 1);
-                            } else {
-                              handleInputChange("util", e.target.value);
-                            }
-                          }}
+                          onChange={(e) =>
+                            handleInputChange("util", e.target.value)
+                          }
                           className="input input-xs p-0 m-0 text-center"
                         />
                       ) : (
@@ -420,7 +551,17 @@ const Coluna = ({ r }) => {
                         className={`btn btn-xs btn-soft btn-error ${
                           editingId === item.id ? "hidden" : ""
                         }`}
-                        onClick={() => Execute.removePapelC(item.id)}
+                        onClick={async () => {
+                          try {
+                            await Execute.removePapelC(item.id);
+                            // A UI será atualizada via WebSocket (PAPELC_DELETED_ITEM)
+                          } catch (error) {
+                            console.error(
+                              "Erro ao excluir item PapelC:",
+                              error,
+                            );
+                          }
+                        }}
                       >
                         Excluir
                       </button>
