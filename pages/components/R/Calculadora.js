@@ -1,4 +1,3 @@
-/* global Map */
 import Execute from "models/functions";
 import { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
