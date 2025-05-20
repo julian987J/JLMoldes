@@ -61,10 +61,33 @@ async function postHandler(request, response) {
 
 async function getHandler(request, response) {
   try {
-    const ordemGetValues = await ordem.getCad();
-    response.status(200).json({ rows: ordemGetValues });
+    const resultFromModel = await ordem.getCad(); // Espera-se { rows: [...] } ou similar
+
+    // Verifica se resultFromModel tem uma propriedade 'rows' que é um array
+    if (resultFromModel && Array.isArray(resultFromModel.rows)) {
+      response.status(200).json({ rows: resultFromModel.rows });
+    }
+    // Verifica se resultFromModel é diretamente um array (menos provável, mas bom para robustez)
+    else if (Array.isArray(resultFromModel)) {
+      response.status(200).json({ rows: resultFromModel });
+    }
+    // Fallback: se a estrutura for inesperada ou o resultado for vazio/nulo
+    else {
+      console.warn(
+        "GET /api/v1/tables/cadastro: Data from ordem.getCad() did not have a .rows array nor was it an array itself. Received:",
+        resultFromModel,
+      );
+      // Garante que o cliente receba a estrutura esperada { rows: array }
+      response.status(200).json({ rows: [] });
+    }
   } catch (error) {
-    response.status(500).json({ error: error.message });
+    console.error("GET /api/v1/tables/cadastro: Error fetching data:", error);
+    response
+      .status(500)
+      .json({
+        error: "Internal server error while fetching cadastro data.",
+        message: error.message,
+      });
   }
 }
 

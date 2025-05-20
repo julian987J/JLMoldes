@@ -162,7 +162,7 @@ const TableCad = () => {
         </thead>
         <tbody>
           {cadastroData.map((item) => (
-            <tr key={item.id} className="text-center">
+            <tr key={item.id} className="">
               <td className="hidden">{item.id}</td>
               {/* Região/País */}
               <td>
@@ -173,7 +173,7 @@ const TableCad = () => {
                     onChange={(e) =>
                       handleInputChange("regiao", e.target.value)
                     }
-                    className="input input-xs p-0 m-0 text-center"
+                    className="input input-xs p-0 m-0 "
                   />
                 ) : (
                   item.regiao
@@ -188,7 +188,7 @@ const TableCad = () => {
                     onChange={(e) =>
                       handleInputChange("codigo", e.target.value)
                     }
-                    className="input input-xs p-0 m-0 text-center"
+                    className="input input-xs p-0 m-0 "
                   />
                 ) : (
                   item.codigo
@@ -203,7 +203,7 @@ const TableCad = () => {
                     onChange={(e) =>
                       handleInputChange("facebook", e.target.value)
                     }
-                    className="input input-xs p-0 m-0 text-center"
+                    className="input input-xs p-0 m-0 "
                   />
                 ) : (
                   item.facebook
@@ -218,7 +218,7 @@ const TableCad = () => {
                     onChange={(e) =>
                       handleInputChange("instagram", e.target.value)
                     }
-                    className="input input-xs p-0 m-0 text-center"
+                    className="input input-xs p-0 m-0 "
                   />
                 ) : (
                   item.instagram
@@ -231,7 +231,7 @@ const TableCad = () => {
                     type="email"
                     value={editedData.email}
                     onChange={(e) => handleInputChange("email", e.target.value)}
-                    className="input input-xs p-0 m-0 text-center"
+                    className="input input-xs p-0 m-0 "
                   />
                 ) : (
                   item.email
@@ -246,7 +246,7 @@ const TableCad = () => {
                     onChange={(e) =>
                       handleInputChange("whatsapp1", e.target.value)
                     }
-                    className="input input-xs p-0 m-0 text-center"
+                    className="input input-xs p-0 m-0 "
                   />
                 ) : (
                   item.whatsapp1
@@ -261,7 +261,7 @@ const TableCad = () => {
                     onChange={(e) =>
                       handleInputChange("whatsapp2", e.target.value)
                     }
-                    className="input input-xs p-0 m-0 text-center"
+                    className="input input-xs p-0 m-0 "
                   />
                 ) : (
                   item.whatsapp2
@@ -274,7 +274,7 @@ const TableCad = () => {
                     type="text"
                     value={editedData.nome}
                     onChange={(e) => handleInputChange("nome", e.target.value)}
-                    className="input input-xs p-0 m-0 text-center"
+                    className="input input-xs p-0 m-0 "
                   />
                 ) : (
                   item.nome
@@ -287,7 +287,7 @@ const TableCad = () => {
                     type="text"
                     value={editedData.grupo}
                     onChange={(e) => handleInputChange("grupo", e.target.value)}
-                    className="input input-xs p-0 m-0 text-center"
+                    className="input input-xs p-0 m-0 "
                   />
                 ) : (
                   item.grupo
@@ -302,7 +302,7 @@ const TableCad = () => {
                     onChange={(e) =>
                       handleInputChange("observacao", e.target.value)
                     }
-                    className="input input-xs p-0 m-0 text-center"
+                    className="input input-xs p-0 m-0 "
                   />
                 ) : (
                   item.observacao

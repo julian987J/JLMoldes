@@ -56,46 +56,57 @@ const Mcontent = ({ oficina, r }) => {
             item.id === payload.id ? { ...item, ...payload } : item,
           ),
         );
-      } else if (type === "CADASTRO_DELETED_ITEM" && payload && payload.id) {
-        setCadastroItems((prevItems) =>
-          prevItems.filter((item) => item.id !== payload.id),
-        );
       }
     }
   }, [lastMessage]);
 
+  // useEffect para código (modificado)
   useEffect(() => {
-    if (!codigo) {
+    const codigoBuscado = codigo.trim().toUpperCase();
+
+    // Sempre limpa quando o código está vazio
+    if (!codigoBuscado) {
       setObservacao("");
       setNome("");
       return;
     }
-    const registroEncontrado = cadastroItems.find(
-      (item) => item.codigo === codigo,
+
+    const registro = cadastroItems.find(
+      (item) => item.codigo?.toString().trim().toUpperCase() === codigoBuscado,
     );
-    if (registroEncontrado) {
-      setObservacao(registroEncontrado.observacao || "");
-      setNome(registroEncontrado.nome || "");
+
+    if (registro) {
+      setObservacao(registro.observacao || "");
+      setNome(registro.nome || "");
     } else {
       setObservacao("");
       setNome("");
     }
   }, [codigo, cadastroItems]);
 
+  // useEffect para nome (modificado)
   useEffect(() => {
-    if (!nome) {
-      if (!codigo) {
-        setObservacao("");
-        setCodigo("");
-      }
+    const nomeBuscado = nome.trim().toLowerCase();
+
+    // Sempre limpa quando o nome está vazio
+    if (!nomeBuscado) {
+      setObservacao("");
+      setCodigo("");
       return;
     }
-    const registroEncontrado = cadastroItems.find((item) => item.nome === nome);
-    if (registroEncontrado) {
-      setObservacao(registroEncontrado.observacao || "");
-      setCodigo(registroEncontrado.codigo || "");
+
+    const registro = cadastroItems.find(
+      (item) => item.nome?.trim().toLowerCase() === nomeBuscado,
+    );
+
+    if (registro) {
+      setObservacao(registro.observacao || "");
+      setCodigo(registro.codigo?.toString() || "");
+    } else {
+      setObservacao("");
+      setCodigo("");
     }
-  }, [nome, cadastroItems, codigo]);
+  }, [nome, cadastroItems]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -279,12 +290,21 @@ const Mcontent = ({ oficina, r }) => {
         <Config />
       </div>
       <div className="columns-2">
-        <TabelaM oficina={oficina} r={r} />
         <TabelaM
           oficina={oficina}
           r={r}
-          mainEndpoint="Base"
-          secondaryEndpoint="tables/R"
+          filterType="alt_sis" // Para a tabela que mostra sis > 0 ou alt > 0
+          columnsConfig={[
+            { field: "sis", label: "Sis", min: 1 },
+            { field: "alt", label: "Alt", min: 1 },
+          ]}
+          filterCondition={(item) => item.sis > 0 || item.alt > 0}
+        />
+        <TabelaM
+          oficina={oficina}
+          r={r}
+          filterType="base" // Para a tabela que mostra base > 0
+          secondaryEndpoint="tables/R" // Mantido se necessário para o handleSave
           columnsConfig={[{ field: "base", label: "Base", min: 0 }]}
           filterCondition={(item) => item.base > 0}
         />
