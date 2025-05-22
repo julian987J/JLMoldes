@@ -12,7 +12,7 @@ router.put(updateHandler);
 export default router.handler(controller.errorHandlers);
 
 async function notifyWebSocketServer(data) {
-  const wsNotifyUrl = `http://${process.env.RAILWAY_WB}:8080/broadcast`;
+  const wsNotifyUrl = `https://${process.env.RAILWAY_WB}/broadcast`;
 
   if (!wsNotifyUrl) {
     console.error(

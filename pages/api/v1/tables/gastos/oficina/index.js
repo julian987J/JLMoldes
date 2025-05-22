@@ -13,8 +13,7 @@ export default router.handler(controller.errorHandlers);
 
 async function notifyWebSocketServer(data) {
   // Assume que WS_PORT é a porta base do servidor WebSocket, e o endpoint de broadcast está em WS_PORT + 1
-  const wsHttpPort = parseInt(process.env.WS_PORT || "8080") + 1;
-  const wsNotifyUrl = `http://localhost:${wsHttpPort}/broadcast`;
+  const wsNotifyUrl = `https://${process.env.RAILWAY_WB}/broadcast`;
   try {
     const response = await fetch(wsNotifyUrl, {
       method: "POST",

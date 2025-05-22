@@ -3,8 +3,7 @@ import controller from "infra/controller";
 import ordem from "models/tables.js";
 
 async function notifyWebSocketServer(data) {
-  const wsHttpPort = parseInt(process.env.WS_PORT || "8080") + 1;
-  const wsNotifyUrl = `http://localhost:${wsHttpPort}/broadcast`;
+  const wsNotifyUrl = `https://${process.env.RAILWAY_WB}/broadcast`;
 
   try {
     const response = await fetch(wsNotifyUrl, {
