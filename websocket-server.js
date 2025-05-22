@@ -1,42 +1,11 @@
 // /home/judhagsan/JLMoldes/websocket-server.js
 const WebSocket = require("ws");
+const http = require("http");
 
 const PORT = process.env.PORT || 8080;
 
-const wss = new WebSocket.Server({ port: PORT });
-
-console.log(`Servidor WebSocket iniciado na porta ${PORT}`);
-
 // Guardar clientes conectados
 const clients = new Set();
-
-wss.on("connection", (ws) => {
-  clients.add(ws);
-  console.log("Novo cliente conectado. Total:", clients.size);
-
-  ws.on("message", (message) => {
-    console.log("Mensagem recebida do cliente: %s", message);
-
-    broadcast(message, ws);
-  });
-
-  ws.on("close", () => {
-    clients.delete(ws);
-    console.log("Cliente desconectado. Total:", clients.size);
-  });
-
-  ws.on("error", (error) => {
-    console.error("Erro no WebSocket do cliente:", error);
-    clients.delete(ws); // Remove em caso de erro também
-  });
-
-  ws.send(
-    JSON.stringify({
-      type: "INFO",
-      payload: "Conectado ao servidor WebSocket local!",
-    }),
-  );
-});
 
 // Função para transmitir mensagens para todos os clientes (exceto o remetente, opcionalmente)
 function broadcast(message, sender) {
@@ -61,9 +30,8 @@ function broadcast(message, sender) {
   });
 }
 
-const http = require("http");
-
-const httpServer = http.createServer(async (req, res) => {
+// Criar servidor HTTP
+const server = http.createServer(async (req, res) => {
   if (req.method === "POST" && req.url === "/broadcast") {
     let body = "";
     req.on("data", (chunk) => {
@@ -83,16 +51,46 @@ const httpServer = http.createServer(async (req, res) => {
       }
     });
   } else {
+    // Para qualquer outra requisição HTTP que não seja /broadcast, retorne 404
+    // O WebSocket server cuidará das requisições de upgrade para WebSocket
     res.writeHead(404);
     res.end();
   }
 });
 
-const HTTP_PORT = parseInt(PORT) + 1; // Roda o servidor HTTP em uma porta diferente
-httpServer.listen(HTTP_PORT, () => {
-  console.log(
-    `Servidor HTTP para notificações WebSocket rodando em ${HTTP_PORT}`,
+// Anexar o WebSocket.Server ao servidor HTTP
+const wss = new WebSocket.Server({ server });
+
+console.log(`Servidor HTTP e WebSocket iniciado na porta ${PORT}`);
+
+wss.on("connection", (ws) => {
+  clients.add(ws);
+  console.log("Novo cliente WebSocket conectado. Total:", clients.size);
+
+  ws.on("message", (message) => {
+    console.log("Mensagem recebida do cliente WebSocket: %s", message);
+  });
+
+  ws.on("close", () => {
+    clients.delete(ws);
+    console.log("Cliente WebSocket desconectado. Total:", clients.size);
+  });
+
+  ws.on("error", (error) => {
+    console.error("Erro no WebSocket do cliente:", error);
+    clients.delete(ws);
+  });
+
+  ws.send(
+    JSON.stringify({
+      type: "INFO",
+      payload: "Conectado ao servidor WebSocket!",
+    }),
   );
 });
 
-module.exports = { broadcast }; // Exporte se for usar em um servidor Next.js customizado
+server.listen(PORT, () => {
+  console.log(`Servidor HTTP e WebSocket escutando na porta ${PORT}`);
+});
+
+module.exports = { broadcast, server, wss }; // Exporte se for usar em um servidor Next.js customizado

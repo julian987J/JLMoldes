@@ -4,7 +4,7 @@ import ordem from "models/tables.js";
 
 async function notifyWebSocketServer(data) {
   // Descomente se este endpoint precisar notificar
-  const wsHttpPort = parseInt(process.env.WS_PORT || "8080") + 1;
+  const wsHttpPort = parseInt(process.env.PORT || "8080") + 1;
   const wsNotifyUrl = `http://localhost:${wsHttpPort}/broadcast`;
 
   try {

@@ -12,8 +12,15 @@ router.put(updateHandler);
 export default router.handler(controller.errorHandlers);
 
 async function notifyWebSocketServer(data) {
-  const wsHttpPort = parseInt(process.env.WS_PORT || "8080") + 1;
-  const wsNotifyUrl = `http://localhost:${wsHttpPort}/broadcast`;
+  const wsNotifyUrl = `http://${process.env.RAILWAY_WB}:8080/broadcast`;
+
+  if (!wsNotifyUrl) {
+    console.error(
+      "WEBSOCKET_WB não está definida. Não é possível notificar o servidor WebSocket para CADASTRO.",
+    );
+    return;
+  }
+
   try {
     const response = await fetch(wsNotifyUrl, {
       method: "POST",
