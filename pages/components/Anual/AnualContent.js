@@ -105,19 +105,31 @@ const AnualContent = () => {
 
   useEffect(() => {
     if (lastMessage?.data) {
-      const { type } = lastMessage.data; // Payload might not be needed if we refetch all annual data
+      let messageData;
 
-      if (type.startsWith("PAPELC_")) {
-        fetchPapelData();
-      } else if (type.startsWith("SAIDAS_PESSOAL_")) {
-        // Assuming this corresponds to SaidaP
-        fetchDespesasPData();
-      } else if (type.startsWith("SAIDAS_OFICINA_")) {
-        // Assuming this corresponds to SaidaO
-        fetchDespesasOData();
-      } else if (type.startsWith("C_")) {
-        // Assuming this corresponds to a C table change
-        fetchVariosData();
+      try {
+        if (typeof lastMessage.data === "string") {
+          messageData = JSON.parse(lastMessage.data);
+        } else {
+          messageData = lastMessage.data;
+        }
+      } catch (error) {
+        console.error("Erro ao parsear lastMessage.data:", error);
+        return; // Sai do efeito
+      }
+
+      const { type } = messageData;
+
+      if (typeof type === "string") {
+        if (type.startsWith("PAPELC_")) {
+          fetchPapelData();
+        } else if (type.startsWith("SAIDAS_PESSOAL_")) {
+          fetchDespesasPData();
+        } else if (type.startsWith("SAIDAS_OFICINA_")) {
+          fetchDespesasOData();
+        } else if (type.startsWith("C_")) {
+          fetchVariosData();
+        }
       }
     }
   }, [

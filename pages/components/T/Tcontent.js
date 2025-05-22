@@ -76,25 +76,42 @@ const Tcontent = ({ r, oficina }) => {
 
   useEffect(() => {
     if (lastMessage?.data) {
-      const { type, payload } = lastMessage.data;
+      let messageData;
 
-      if (type.startsWith("PAPELC_")) {
-        if (
-          (payload &&
-            payload.r !== undefined &&
-            String(payload.r) === String(r)) ||
-          (payload && payload.r === undefined)
-        ) {
-          fetchPapelData();
+      try {
+        // Tenta parsear se for JSON string
+        if (typeof lastMessage.data === "string") {
+          messageData = JSON.parse(lastMessage.data);
+        } else {
+          // Caso já seja objeto
+          messageData = lastMessage.data;
         }
-      } else if (type.startsWith("SAIDAS_OFICINA_")) {
-        if (
-          (payload &&
-            payload.oficina !== undefined &&
-            String(payload.oficina) === String(oficina)) ||
-          (payload && payload.oficina === undefined)
-        ) {
-          fetchDespesasData();
+      } catch (error) {
+        console.error("Erro ao parsear lastMessage.data:", error);
+        return; // Sai do useEffect, pois não conseguimos processar
+      }
+
+      const { type, payload } = messageData;
+
+      if (typeof type === "string") {
+        if (type.startsWith("PAPELC_")) {
+          if (
+            (payload &&
+              payload.r !== undefined &&
+              String(payload.r) === String(r)) ||
+            (payload && payload.r === undefined)
+          ) {
+            fetchPapelData();
+          }
+        } else if (type.startsWith("SAIDAS_OFICINA_")) {
+          if (
+            (payload &&
+              payload.oficina !== undefined &&
+              String(payload.oficina) === String(oficina)) ||
+            (payload && payload.oficina === undefined)
+          ) {
+            fetchDespesasData();
+          }
         }
       }
     }

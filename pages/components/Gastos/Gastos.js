@@ -78,15 +78,30 @@ const Gastos = ({ letras }) => {
 
   useEffect(() => {
     if (lastMessage?.data) {
-      const { type } = lastMessage.data;
+      let messageData;
 
-      // Atualizar váriosData (CGastos)
-      if (type.startsWith("GASTOS_C_")) {
-        fetchVariosData();
+      try {
+        if (typeof lastMessage.data === "string") {
+          messageData = JSON.parse(lastMessage.data);
+        } else {
+          messageData = lastMessage.data;
+        }
+      } catch (error) {
+        console.error("Erro ao parsear lastMessage.data:", error);
+        return; // Sai do efeito se falhar
       }
-      // Atualizar gastosData (SaidaP) sem verificar o payload
-      else if (type.startsWith("SAIDAS_PESSOAL_")) {
-        fetchGastosData();
+
+      const { type } = messageData;
+
+      if (typeof type === "string") {
+        // Atualizar váriosData (CGastos)
+        if (type.startsWith("GASTOS_C_")) {
+          fetchVariosData();
+        }
+        // Atualizar gastosData (SaidaP) sem verificar o payload
+        else if (type.startsWith("SAIDAS_PESSOAL_")) {
+          fetchGastosData();
+        }
       }
     }
   }, [lastMessage, letras]);
