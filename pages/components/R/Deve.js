@@ -102,6 +102,8 @@ const Deve = ({ codigo, r }) => {
             <th className="w-36">Data</th>
             <th className="hidden">CODIGO</th>
             <th>Nome</th>
+            <th>V. Papel</th>
+            <th>V. Comissão</th>
             <th className="w-20">Deve</th>
           </tr>
         </thead>
@@ -119,6 +121,8 @@ const Deve = ({ codigo, r }) => {
               <td>{Use.formatarDataHora(item.data)}</td>
               <td className="hidden">{item.codigo}</td>
               <td>{item.nome}</td>
+              <td>$ {Number(item.valorpapel).toFixed(2)}</td>
+              <td>$ {Number(item.valorcomissao).toFixed(2)}</td>
               <td>$ {Number(item.valor).toFixed(2)}</td>
             </tr>
           ))}

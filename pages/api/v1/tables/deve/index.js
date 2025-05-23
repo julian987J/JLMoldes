@@ -70,6 +70,5 @@ async function deleteHandler(request, response) {
 async function updateHandler(request, response) {
   const updatedData = request.body;
   const result = await ordem.updateDeve(updatedData);
-  // TODO: Se updateDeve retornar o item atualizado, notificar com DEVE_UPDATED_ITEM
   return response.status(200).json(result);
 }

@@ -124,50 +124,111 @@ const Coluna = ({ r }) => {
       }
 
       // --- Lida com atualizações na tabela Deve (dados 'exists') ---
-      // Assumindo que Deve.js já foi refatorado e envia mensagens DEVE_*
       if (
-        type === "DEVE_NEW_ITEM" ||
-        type === "DEVE_UPDATED_ITEM" ||
-        type === "DEVE_DELETED_ITEM"
+        (type === "DEVE_NEW_ITEM" || type === "DEVE_UPDATED_ITEM") &&
+        payload &&
+        String(payload.r) === String(r)
       ) {
-        // A tabela "Deve" é filtrada por 'r' no `receiveFromDeve`,
-        // então as mensagens WebSocket para "Deve" também devem ser filtradas por 'r'.
-        if (payload && String(payload.r) === String(r)) {
-          setExists((prevExists) => {
+        // Processa DEVE_NEW_ITEM e DEVE_UPDATED_ITEM apenas se 'r' do payload corresponder ao 'r' do componente.
+        // ATENÇÃO: O backend em /api/v1/tables/deve/index.js atualmente não envia DEVE_UPDATED_ITEM.
+        // Essa parte da lógica só funcionará completamente quando o backend for atualizado para enviar essa mensagem.
+        setExists((prevExists) => {
+          if (payload) {
             let newExists = [...prevExists];
-            // A tabela "Deve" usa 'codigo' como identificador principal nas mensagens,
-            // mas 'id' para os itens em si. Ajuste conforme a estrutura do payload de DEVE_*.
-            // Se o payload de DEVE_* usa 'id':
-            const itemIdentifier = payload.id || payload.codigo; // Prioriza id se existir
-            const itemIndex = newExists.findIndex(
-              (item) =>
-                String(item.id) === String(itemIdentifier) ||
-                String(item.codigo) === String(itemIdentifier),
-            );
+            let itemIndex = -1;
+
+            const pId = payload.id;
+            const pCodigo = payload.codigo;
+
+            // Tenta encontrar o item pelo ID do payload, se existir
+            if (pId !== undefined) {
+              itemIndex = newExists.findIndex(
+                (item) =>
+                  item.id !== undefined && String(item.id) === String(pId),
+              );
+            }
+
+            // Se não encontrado pelo ID (ou se o payload não tinha ID), tenta pelo código, se existir
+            if (itemIndex === -1 && pCodigo !== undefined) {
+              itemIndex = newExists.findIndex(
+                (item) =>
+                  item.codigo !== undefined &&
+                  String(item.codigo) === String(pCodigo),
+              );
+            }
 
             switch (type) {
               case "DEVE_NEW_ITEM":
-                if (itemIndex === -1) newExists.push(payload);
-                break;
-              case "DEVE_UPDATED_ITEM": // Supondo que DEVE_UPDATED_ITEM existe
-                if (itemIndex !== -1)
+                if (itemIndex === -1) {
+                  newExists.push(payload); // Adiciona se realmente novo
+                } else {
+                  // Se já existe (ex: mensagem duplicada ou chegou fora de ordem), atualiza
                   newExists[itemIndex] = {
                     ...newExists[itemIndex],
                     ...payload,
                   };
-                else newExists.push(payload);
+                }
                 break;
-              case "DEVE_DELETED_ITEM": // Payload é { codigo: "some-codigo", r: "some-r" }
-                newExists = newExists.filter(
-                  (item) => String(item.codigo) !== String(payload.codigo),
-                );
+              case "DEVE_UPDATED_ITEM":
+                if (itemIndex !== -1) {
+                  newExists[itemIndex] = {
+                    ...newExists[itemIndex],
+                    ...payload,
+                  };
+                } else {
+                  // Item não encontrado para atualização. Isso pode ser a causa do problema.
+                  console.warn(
+                    "DEVE_UPDATED_ITEM: Item não encontrado no estado 'exists' para o payload:",
+                    payload,
+                    "Estado 'exists' atual:",
+                    prevExists,
+                  );
+                  // Opcionalmente, adicionar como novo se essa for a política,
+                  // mas é importante investigar por que não foi encontrado.
+                  // newExists.push(payload);
+                }
                 break;
+              // DEVE_DELETED_ITEM é tratado em um bloco 'else if' separado
             }
             return newExists.sort(
               (a, b) => new Date(a.data) - new Date(b.data),
             ); // Ordena se necessário
-          });
-        }
+          }
+          return prevExists; // Retorna o estado anterior se o payload for nulo (segurança)
+        });
+      } else if (type === "DEVE_DELETED_ITEM" && payload) {
+        // Processa DEVE_DELETED_ITEM independentemente de payload.r.
+        // A remoção é baseada no ID/código do item no array 'exists' atual.
+        setExists((prevExists) => {
+          let newExists = [...prevExists];
+          const pId = payload.id; // Payload de DEVE_DELETED_ITEM pode não ter 'id' vindo do backend atual
+          const pCodigo = payload.codigo; // Backend envia 'codigo'
+
+          if (pCodigo !== undefined) {
+            newExists = newExists.filter(
+              (item) =>
+                !(
+                  item.codigo !== undefined &&
+                  String(item.codigo) === String(pCodigo)
+                ),
+            );
+          }
+          // Adicionado para robustez, caso o payload de deleção comece a enviar 'id' no futuro
+          if (pId !== undefined) {
+            newExists = newExists.filter(
+              (item) =>
+                !(item.id !== undefined && String(item.id) === String(pId)),
+            );
+          }
+
+          if (pCodigo === undefined && pId === undefined) {
+            console.warn(
+              "DEVE_DELETED_ITEM: Payload sem 'codigo' ou 'id' para identificar o item a ser deletado",
+              payload,
+            );
+          }
+          return newExists.sort((a, b) => new Date(a.data) - new Date(b.data)); // Ordena se necessário
+        });
       }
 
       lastProcessedTimestampRef.current = lastMessage.timestamp;
@@ -177,16 +238,10 @@ const Coluna = ({ r }) => {
   const groupedResults = useMemo(() => {
     return dados.reduce((acc, item) => {
       const rawDate = Use.formatarData(item.data);
-      const dateObj = new Date(item.data);
-      const horas = String(dateObj.getHours()).padStart(2, "0");
-      const minutos = String(dateObj.getMinutes()).padStart(2, "0");
-      const segundos = String(dateObj.getSeconds()).padStart(2, "0");
-      const horaFormatada = `${horas}:${minutos}:${segundos}`;
 
       acc[rawDate] = acc[rawDate] || [];
       acc[rawDate].push({
         ...item,
-        horaSeparada: horaFormatada,
         papelreal: parseFloat(item.papelreal) || 0,
         papelpix: parseFloat(item.papelpix) || 0,
         encaixereal: parseFloat(item.encaixereal) || 0,
@@ -286,7 +341,7 @@ const Coluna = ({ r }) => {
             <table className="table table-xs">
               <thead>
                 <tr>
-                  <th colSpan={4}></th>
+                  <th colSpan={5}></th>
                   <th colSpan={2} className="text-center text-xs bg-accent/30">
                     {formatCurrency(totalRP)}
                   </th>
@@ -301,7 +356,7 @@ const Coluna = ({ r }) => {
                 {/* Linha com os totais de cada coluna */}
                 <tr>
                   {/* Colunas vazias até "Papel" (6 colunas: ID, Código, Hora, Nome, M, Papel) */}
-                  <th colSpan={4}></th>
+                  <th colSpan={5}></th>
                   <th className="text-center text-xs bg-accent/30">
                     {formatCurrency(totalPapelReal)}
                   </th>
@@ -338,6 +393,7 @@ const Coluna = ({ r }) => {
                   <th>Hora</th>
                   <th>Nome</th>
                   <th>M</th>
+                  <th>C</th>
                   <th>Papel</th>
                   <th className="bg-accent">R$</th>
                   <th className="bg-accent">PIX</th>
@@ -355,25 +411,14 @@ const Coluna = ({ r }) => {
                   <tr
                     key={item.id}
                     className={`border-b border-success ${
-                      exists.some((e) => {
-                        const itemDate = new Date(item.data);
-                        const eDate = new Date(e.data);
-
-                        return (
-                          e.codigo === item.codigo &&
-                          Use.formatarData(e.data) === date &&
-                          itemDate.getHours() === eDate.getHours() &&
-                          itemDate.getMinutes() === eDate.getMinutes() &&
-                          itemDate.getSeconds() === eDate.getSeconds()
-                        );
-                      })
+                      exists.some((e) => e.deveid === item.deveid)
                         ? "bg-error/70"
                         : ""
                     }`}
                   >
                     <td className="hidden">{item.id}</td>
                     <td className="hidden">{item.codigo}</td>
-                    <td>{item.horaSeparada}</td>
+                    <td>{Use.formatarDataHoraSegundo(item.data)}</td>
                     <td>
                       {editingId === item.id ? (
                         <input
@@ -400,6 +445,20 @@ const Coluna = ({ r }) => {
                         />
                       ) : (
                         item.multi
+                      )}
+                    </td>
+                    <td>
+                      {editingId === item.id ? (
+                        <input
+                          type="number"
+                          value={editedData.comissao}
+                          onChange={(e) =>
+                            handleInputChange("comissao", e.target.value)
+                          }
+                          className="input input-xs p-0 m-0 text-center"
+                        />
+                      ) : (
+                        item.comissao
                       )}
                     </td>
                     <td>
