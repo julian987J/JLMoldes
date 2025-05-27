@@ -285,6 +285,50 @@ async function sendToOficina(
   }
 }
 
+async function sendToPapel(
+  letras,
+  item,
+  quantidade,
+  unidade,
+  valor,
+  gastos,
+  pago,
+  proximo,
+  dia,
+  alerta,
+  metragem,
+) {
+  try {
+    const response = await fetch("/api/v1/tables/gastos/papel", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        letras,
+        item,
+        quantidade,
+        unidade,
+        valor,
+        gastos,
+        pago,
+        proximo,
+        dia,
+        alerta,
+        metragem,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || "Erro ao criar registro em Papel");
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error("Erro no createPapel:", error);
+    throw error;
+  }
+}
+
 async function sendToC(itemData) {
   try {
     const response = await fetch("/api/v1/tables/c", {
@@ -747,7 +791,25 @@ async function receiveFromOficina(letras) {
     const data = await response.json();
     return Array.isArray(data.rows) ? data.rows : [];
   } catch (error) {
-    console.error("Erro ao buscar dados Pessoal:", error);
+    console.error("Erro ao buscar dados Oficina:", error);
+  }
+}
+
+async function receiveFromPapel(letras) {
+  try {
+    const response = await fetch(
+      `/api/v1/tables/gastos/papel?letras=${letras}`,
+    );
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || "Erro ao carregar os dados");
+    }
+
+    const data = await response.json();
+    return Array.isArray(data.rows) ? data.rows : [];
+  } catch (error) {
+    console.error("Erro ao buscar dados Papel:", error);
   }
 }
 
@@ -847,6 +909,17 @@ async function removeOficina(id) {
   console.log(result);
 }
 
+async function removePapel(id) {
+  const response = await fetch("/api/v1/tables/gastos/papel", {
+    method: "DELETE",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ id }), // Envia o `id` no corpo da requisição
+  });
+
+  const result = await response.json();
+  console.log(result);
+}
+
 async function removeDeve(codigo) {
   const response = await fetch("/api/v1/tables/deve", {
     method: "DELETE",
@@ -881,6 +954,7 @@ const execute = {
   sendToSaidaP,
   sendToSaidaO,
   sendToOficina,
+  sendToPapel,
   sendToPapelC,
   receiveFromC,
   receiveAnualFromC,
@@ -895,6 +969,7 @@ const execute = {
   receiveFromCData,
   receiveAnualFromPapelC,
   receiveFromConfig,
+  receiveFromPapel,
   receiveFromPapelC,
   receiveFromPapelCData,
   receiveFromRDeveDevo,
@@ -907,6 +982,7 @@ const execute = {
   receiveFromRJustBSA,
   removeC,
   removeNota,
+  removePapel,
   removePapelC,
   removePessoal,
   removeSaidaP,

@@ -298,11 +298,13 @@ const Pessoal = ({ letras }) => {
             type="text"
             placeholder="Item"
             className="input input-info input-xs"
+            required
             value={item}
             onChange={(e) => setItem(e.target.value)}
           />
           <input
             type="number"
+            required
             placeholder="Quantidade"
             className="input input-info input-xs"
             value={quantidade}
@@ -310,6 +312,7 @@ const Pessoal = ({ letras }) => {
           />
           <input
             type="number"
+            required
             placeholder="Unidade"
             className="input input-info input-xs"
             value={unidade}
@@ -368,7 +371,7 @@ const Pessoal = ({ letras }) => {
           </button>
         </form>
         <table className="table table-xs">
-          <thead>
+          <thead className="text-center">
             <tr>
               <th className="hidden">ID</th>
               <th>Item</th>
@@ -573,7 +576,7 @@ const Pessoal = ({ letras }) => {
                 // Demais linhas do grupo sem a célula do Item
                 <tr key={entry.id}>
                   <td className="hidden">{entry.id}</td>
-                  <td className="px-0.5">
+                  <td className="px-0.5 text-center">
                     {editingId === entry.id ? (
                       <input
                         type="number"
@@ -587,7 +590,7 @@ const Pessoal = ({ letras }) => {
                       entry.quantidade
                     )}
                   </td>
-                  <td className="px-0.5">
+                  <td className="px-0.5 text-center">
                     {editingId === entry.id ? (
                       <input
                         type="number"
@@ -601,7 +604,7 @@ const Pessoal = ({ letras }) => {
                       entry.unidade
                     )}
                   </td>
-                  <td className="px-0.5">
+                  <td className="px-0.5 text-center">
                     {editingId === entry.id ? (
                       <input
                         type="number"
@@ -615,7 +618,7 @@ const Pessoal = ({ letras }) => {
                       entry.valor
                     )}
                   </td>
-                  <td className="px-0.5">
+                  <td className="px-0.5 text-center">
                     {editingId === entry.id ? (
                       <input
                         type="text"
@@ -629,7 +632,7 @@ const Pessoal = ({ letras }) => {
                       entry.gastos
                     )}
                   </td>
-                  <td className="px-0.5">
+                  <td className="px-0.5 text-center">
                     {editingId === entry.id ? (
                       <input
                         type="date"
@@ -645,7 +648,7 @@ const Pessoal = ({ letras }) => {
                       Use.formatarDataAno(entry.pago)
                     )}
                   </td>
-                  <td className="px-0.5">
+                  <td className="px-0.5 text-center">
                     {editingId === entry.id ? (
                       <input
                         type="date"
@@ -663,7 +666,7 @@ const Pessoal = ({ letras }) => {
                       Use.formatarDataAno(entry.proximo) // Assumindo que proximo também é uma data
                     )}
                   </td>
-                  <td className="px-0.5">
+                  <td className="px-0.5 text-center">
                     {editingId === entry.id ? (
                       <input
                         type="number"
@@ -677,7 +680,7 @@ const Pessoal = ({ letras }) => {
                       entry.dia
                     )}
                   </td>
-                  <td className="px-0.5">
+                  <td className="px-0.5 text-center">
                     {editingId === entry.id ? (
                       <input
                         type="number"
@@ -691,7 +694,7 @@ const Pessoal = ({ letras }) => {
                       entry.alerta
                     )}
                   </td>
-                  <td className="px-0.5">
+                  <td className="px-0.5 text-center">
                     <button
                       className={`btn btn-xs btn-soft btn-success ${editingId === entry.id ? "hidden" : ""}`}
                       onClick={() => handlePagar(entry)}

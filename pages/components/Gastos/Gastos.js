@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import Pessoal from "./Pessoal.js";
 import Oficina from "./Oficina.js";
+import Papel from "./Papel.js";
 import SaidasPessoal from "./SaidasPessoal.js";
 import SaidasOficina from "./SaidasOficina.js";
 import TabelaAnual from "../T/TabelaAnual.js";
@@ -111,6 +112,9 @@ const Gastos = ({ letras }) => {
       <div className="grid grid-cols-2 gap-2">
         <Pessoal letras={letras} />
         <Oficina letras={letras} />
+      </div>
+      <div className="my-2">
+        <Papel letras={letras} />
       </div>
       <div className="grid grid-cols-3 gap-2 mt-2">
         <TabelaAnual titulo="VARIOS" cor="warning" dados={variosData} />

@@ -7,7 +7,7 @@ import { CheckIcon } from "@primer/octicons-react";
 import { AlertIcon } from "@primer/octicons-react";
 import { useWebSocket } from "../../../contexts/WebSocketContext.js"; // Importar o hook
 
-const Oficina = ({ letras }) => {
+const Papel = ({ letras }) => {
   const [data, setData] = useState([]);
   const [item, setItem] = useState("");
   const [quantidade, setQuantidade] = useState("");
@@ -18,6 +18,7 @@ const Oficina = ({ letras }) => {
   const [proximo, setProximo] = useState("");
   const [dia, setDia] = useState("");
   const [alerta, setAlerta] = useState("");
+  const [metragem, setMetragem] = useState("");
 
   // Estados para edição
   const [editingId, setEditingId] = useState(null);
@@ -30,10 +31,10 @@ const Oficina = ({ letras }) => {
     const fetchData = async () => {
       if (!letras) return;
       try {
-        const results = await Execute.receiveFromOficina(letras);
+        const results = await Execute.receiveFromPapel(letras);
         setData(results || []); // Garante que seja um array
       } catch (error) {
-        console.error("Erro ao buscar dados de Oficina:", error);
+        console.error("Erro ao buscar dados de Papel:", error);
         setData([]);
       }
     };
@@ -52,7 +53,7 @@ const Oficina = ({ letras }) => {
         lastMessage.timestamp <= lastProcessedTimestampRef.current
       ) {
         console.log(
-          "Oficina.js: Ignorando mensagem WebSocket já processada (mesmo timestamp). Timestamp:",
+          "Papel.js: Ignorando mensagem WebSocket já processada (mesmo timestamp). Timestamp:",
           lastMessage.timestamp,
         );
         return;
@@ -60,7 +61,7 @@ const Oficina = ({ letras }) => {
 
       const { type, payload } = lastMessage.data;
       console.log(
-        "Oficina.js: Mensagem WebSocket recebida:",
+        "Papel.js: Mensagem WebSocket recebida:",
         type,
         payload,
         "Timestamp:",
@@ -70,7 +71,7 @@ const Oficina = ({ letras }) => {
       // Verifica se o payload existe e se a mensagem é relevante para este componente (mesmo 'letras', que parece ser 'dec' no payload)
       if (payload) {
         switch (type) {
-          case "OFICINA_NEW_ITEM":
+          case "PAPEL_NEW_ITEM":
             // Adiciona o novo item se corresponder à 'letra' (dec) atual do componente
             if (payload.dec === letras) {
               setData((prevData) => {
@@ -84,7 +85,7 @@ const Oficina = ({ letras }) => {
               });
             }
             break;
-          case "OFICINA_UPDATED_ITEM":
+          case "PAPEL_UPDATED_ITEM":
             setData((prevData) =>
               prevData.map((item) =>
                 item.id === payload.id ? { ...item, ...payload } : item,
@@ -93,12 +94,12 @@ const Oficina = ({ letras }) => {
 
             if (editingId == payload.id) {
               console.log(
-                `Oficina.js: WebSocket está fechando a edição para ID: ${payload.id}. Current editingId: ${editingId}`,
+                `Papel.js: WebSocket está fechando a edição para ID: ${payload.id}. Current editingId: ${editingId}`,
               );
               setEditingId(null); // Fecha o formulário de edição se o item editado foi atualizado
             }
             break;
-          case "OFICINA_DELETED_ITEM":
+          case "PAPEL_DELETED_ITEM":
             console.log("Payload recebido para exclusão:", payload);
             if (payload && payload.id !== undefined) {
               const idToRemove = String(payload.id);
@@ -119,7 +120,7 @@ const Oficina = ({ letras }) => {
       // Após processar a mensagem, atualize o timestamp da última mensagem processada.
       lastProcessedTimestampRef.current = lastMessage.timestamp;
       console.log(
-        "Oficina.js: Timestamp da última mensagem processada atualizado para:",
+        "Papel.js: Timestamp da última mensagem processada atualizado para:",
         lastMessage.timestamp,
       );
     }
@@ -157,14 +158,14 @@ const Oficina = ({ letras }) => {
   // Função para salvar as alterações (PUT)
   const handleSave = async () => {
     try {
-      const response = await fetch("/api/v1/tables/gastos/oficina", {
+      const response = await fetch("/api/v1/tables/gastos/papel", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(editedData),
       });
       if (!response.ok) throw new Error("Erro ao atualizar");
       console.log(
-        "Oficina.js: Dados salvos via API. Aguardando mensagem WebSocket para fechar o modo de edição.",
+        "Papel.js: Dados salvos via API. Aguardando mensagem WebSocket para fechar o modo de edição.",
       );
     } catch (error) {
       console.error("Erro ao salvar:", error);
@@ -179,17 +180,14 @@ const Oficina = ({ letras }) => {
         pago: new Date().toISOString().split("T")[0], // Atualiza a data do último pagamento
       };
 
-      const response = await fetch("/api/v1/tables/gastos/oficina", {
+      const response = await fetch("/api/v1/tables/gastos/papel", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(updatedEntry),
       });
 
-      if (!response.ok) throw new Error("Erro ao atualizar pagamento");
+      if (!response.ok) throw new Error("Erro ao atualizar");
 
-      // A atualização do estado 'data' será feita pela mensagem WebSocket 'OFICINA_UPDATED'
-
-      // Registra na saída
       await Execute.sendToSaidaO(
         letras,
         entry.item,
@@ -209,10 +207,8 @@ const Oficina = ({ letras }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    // Execute.sendToOficina fará o POST.
-    // O backend, após salvar, enviará uma mensagem WebSocket 'OFICINA_UPDATED'.
 
-    await Execute.sendToOficina(
+    await Execute.sendToPapel(
       letras,
       item,
       quantidade,
@@ -223,10 +219,9 @@ const Oficina = ({ letras }) => {
       proximo,
       dia,
       alerta,
+      metragem,
     );
 
-    // Execute.sendToSaidaO também fará um POST.
-    // O backend correspondente também precisará notificar via WebSocket se essa ação afeta outros componentes.
     await Execute.sendToSaidaO(letras, item, gastos, valor, pago);
 
     setItem("");
@@ -238,14 +233,14 @@ const Oficina = ({ letras }) => {
     setProximo("");
     setDia("");
     setAlerta("");
+    setMetragem("");
   };
 
   const handleDelete = async (id) => {
     try {
-      await Execute.removeOficina(id);
-      // A atualização do estado 'data' virá via WebSocket 'OFICINA_UPDATED'
+      await Execute.removePapel(id);
     } catch (error) {
-      console.error("Erro ao excluir item de Oficina:", error);
+      console.error("Erro ao excluir item de Papel:", error);
     }
   };
 
@@ -285,13 +280,12 @@ const Oficina = ({ letras }) => {
 
   return (
     <>
-      <div className="overflow-x-auto rounded-box border border-secondary bg-base-100">
-        <h1 className="text-center w-full">OFICINA</h1>
+      <div className="overflow-x-auto rounded-box border border-accent bg-base-100">
+        <h1 className="text-center w-full">PAPEL</h1>
         <form onSubmit={handleSubmit} className="flex gap-2 p-2">
           <select
             className="select select-info select-xs"
             value={item}
-            required
             onChange={(e) => setItem(e.target.value)}
           >
             <option disabled value="">
@@ -303,7 +297,6 @@ const Oficina = ({ letras }) => {
           </select>
           <input
             type="number"
-            required
             placeholder="Quantidade"
             className="input input-info input-xs"
             value={quantidade}
@@ -311,7 +304,6 @@ const Oficina = ({ letras }) => {
           />
           <input
             type="number"
-            required
             placeholder="Unidade"
             className="input input-info input-xs"
             value={unidade}
@@ -325,14 +317,21 @@ const Oficina = ({ letras }) => {
             value={valor}
             onChange={(e) => setValor(e.target.value)}
           />
-          <input
-            type="text"
-            required
-            placeholder="Gastos"
-            className="input input-info input-xs"
+          <select
+            className="select select-info select-xs"
             value={gastos}
+            required
             onChange={(e) => setGastos(e.target.value)}
-          />
+          >
+            <option disabled value="">
+              Gastos
+            </option>
+            <option>PAPEL-01</option>
+            <option>PAPEL-02</option>
+            <option>PAPEL-03</option>
+            <option>PAPEL-04</option>
+            <option>PAPEL-05</option>
+          </select>
           <input
             type="date"
             required
@@ -343,7 +342,6 @@ const Oficina = ({ letras }) => {
           />
           <input
             type="number"
-            required
             placeholder="Mês"
             className="input input-warning input-xs custom-date-input"
             value={proximo}
@@ -365,6 +363,14 @@ const Oficina = ({ letras }) => {
             value={alerta}
             onChange={(e) => setAlerta(e.target.value)}
           />
+          <input
+            type="number"
+            required
+            placeholder="Metragem"
+            className="input input-accent input-xs"
+            value={metragem}
+            onChange={(e) => setMetragem(e.target.value)}
+          />
           <button type="submit" className="btn btn-xs btn-info">
             Enviar
           </button>
@@ -382,6 +388,7 @@ const Oficina = ({ letras }) => {
               <th>Proximo</th>
               <th>Dia</th>
               <th>Alerta</th>
+              <th>Metragem</th>
               <th>Ações</th>
             </tr>
           </thead>
@@ -517,6 +524,20 @@ const Oficina = ({ letras }) => {
                       />
                     ) : (
                       entry.alerta
+                    )}
+                  </td>
+                  <td className="px-0.5">
+                    {editingId === entry.id ? (
+                      <input
+                        type="number"
+                        value={editedData.metragem}
+                        onChange={(e) =>
+                          handleInputChange("metragem", e.target.value)
+                        }
+                        className="input input-xs p-0 m-0 text-center"
+                      />
+                    ) : (
+                      entry.metragem
                     )}
                   </td>
                   <td className="px-0">
@@ -694,6 +715,20 @@ const Oficina = ({ letras }) => {
                     )}
                   </td>
                   <td className="px-0.5 text-center">
+                    {editingId === entry.id ? (
+                      <input
+                        type="number"
+                        value={editedData.metragem}
+                        onChange={(e) =>
+                          handleInputChange("metragem", e.target.value)
+                        }
+                        className="input input-xs p-0 m-0 text-center"
+                      />
+                    ) : (
+                      entry.metragem
+                    )}
+                  </td>
+                  <td className="px-0.5 text-center">
                     <button
                       className={`btn btn-xs btn-soft btn-success ${editingId === entry.id ? "hidden" : ""}`}
                       onClick={() => handlePagar(entry)}
@@ -708,7 +743,7 @@ const Oficina = ({ letras }) => {
                     />
                     <button
                       className={`btn btn-xs btn-soft btn-error ${editingId === entry.id ? "hidden" : ""}`}
-                      onClick={() => Execute.removeOficina(entry.id)}
+                      onClick={() => Execute.removePapel(entry.id)}
                     >
                       Excluir
                     </button>
@@ -754,4 +789,4 @@ const Oficina = ({ letras }) => {
   );
 };
 
-export default Oficina;
+export default Papel;
