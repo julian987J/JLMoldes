@@ -15,8 +15,6 @@ const Papel = ({ letras }) => {
   const [valor, setValor] = useState("");
   const [gastos, setGastos] = useState("");
   const [pago, setPago] = useState("");
-  const [proximo, setProximo] = useState("");
-  const [dia, setDia] = useState("");
   const [alerta, setAlerta] = useState("");
   const [metragem, setMetragem] = useState("");
 
@@ -216,8 +214,6 @@ const Papel = ({ letras }) => {
       valor,
       gastos,
       pago,
-      proximo,
-      dia,
       alerta,
       metragem,
     );
@@ -230,8 +226,6 @@ const Papel = ({ letras }) => {
     setValor("");
     setGastos("");
     setPago("");
-    setProximo("");
-    setDia("");
     setAlerta("");
     setMetragem("");
   };
@@ -245,37 +239,31 @@ const Papel = ({ letras }) => {
   };
 
   const getStatusVencimento = (entry) => {
-    const hoje = new Date();
-    hoje.setUTCHours(23, 59, 59, 999);
+    const metragem = parseFloat(entry.metragem);
+    const alertaThreshold = parseFloat(entry.alerta);
 
-    const dataVencimentoStr = Use.formatarProximo(
-      entry.pago,
-      entry.proximo,
-      entry.dia,
-    );
-    const [dd, mm, yyyy] = dataVencimentoStr.split("/");
-    const dataVencimento = new Date(
-      Date.UTC(yyyy, mm - 1, dd, 23, 59, 59, 999),
-    );
+    // Se metragem não for um número válido, consideramos 'ok' para evitar erros.
+    if (isNaN(metragem)) {
+      return "ok";
+    }
 
-    if (dataVencimento < hoje) {
+    if (metragem === 0) {
       return "vencido";
     }
 
-    const diffTime = dataVencimento - hoje;
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    // Se alertaThreshold não for um número válido, não podemos comparar, então 'ok'.
+    if (isNaN(alertaThreshold)) {
+      return "ok";
+    }
 
-    const alerta = parseInt(entry.alerta, 10);
-    if (!isNaN(alerta) && diffDays <= alerta) {
+    if (metragem < alertaThreshold) {
       return "proximo";
     }
 
     return "ok";
   };
-
   const shouldShowAlert = (entry) => {
-    const alerta = parseInt(entry.alerta, 10);
-    return !isNaN(alerta) && getStatusVencimento(entry) === "proximo";
+    return getStatusVencimento(entry) === "proximo";
   };
 
   return (
@@ -342,24 +330,9 @@ const Papel = ({ letras }) => {
           />
           <input
             type="number"
-            placeholder="Mês"
-            className="input input-warning input-xs custom-date-input"
-            value={proximo}
-            onChange={(e) => setProximo(e.target.value)}
-          />
-          <input
-            type="number"
             required
-            placeholder="Dia"
-            className="input input-info input-xs"
-            value={dia}
-            onChange={(e) => setDia(e.target.value)}
-          />
-          <input
-            type="number"
-            required
-            placeholder="Alerta"
-            className="input input-info input-xs"
+            placeholder="Alerta Por Metragem"
+            className="input input-warning input-xs"
             value={alerta}
             onChange={(e) => setAlerta(e.target.value)}
           />
@@ -385,8 +358,6 @@ const Papel = ({ letras }) => {
               <th>Valor</th>
               <th>Gastos</th>
               <th>Pago</th>
-              <th>Proximo</th>
-              <th>Dia</th>
               <th>Alerta</th>
               <th>Metragem</th>
               <th>Ações</th>
@@ -482,34 +453,6 @@ const Papel = ({ letras }) => {
                       />
                     ) : (
                       Use.formatarDataAno(entry.pago)
-                    )}
-                  </td>
-                  <td className="px-0.5">
-                    {editingId === entry.id ? (
-                      <input
-                        type="number"
-                        value={editedData.proximo}
-                        onChange={(e) =>
-                          handleInputChange("proximo", e.target.value)
-                        }
-                        className="input input-xs p-0 m-0 text-center"
-                      />
-                    ) : (
-                      Use.formatarProximo(entry.pago, entry.proximo, entry.dia)
-                    )}
-                  </td>
-                  <td className="px-0.5">
-                    {editingId === entry.id ? (
-                      <input
-                        type="number"
-                        value={editedData.dia}
-                        onChange={(e) =>
-                          handleInputChange("dia", e.target.value)
-                        }
-                        className="input input-xs p-0 m-0 text-center"
-                      />
-                    ) : (
-                      entry.dia
                     )}
                   </td>
                   <td className="px-0.5">
@@ -666,38 +609,6 @@ const Papel = ({ letras }) => {
                       />
                     ) : (
                       Use.formatarDataAno(entry.pago)
-                    )}
-                  </td>
-                  <td className="px-0.5 text-center">
-                    {editingId === entry.id ? (
-                      <input
-                        type="date"
-                        value={
-                          editedData.proximo
-                            ? editedData.proximo.split("T")[0]
-                            : ""
-                        }
-                        onChange={(e) =>
-                          handleInputChange("proximo", e.target.value)
-                        }
-                        className="input input-xs p-0 m-0 text-center"
-                      />
-                    ) : (
-                      Use.formatarDataAno(entry.proximo)
-                    )}
-                  </td>
-                  <td className="px-0.5 text-center">
-                    {editingId === entry.id ? (
-                      <input
-                        type="number"
-                        value={editedData.dia}
-                        onChange={(e) =>
-                          handleInputChange("dia", e.target.value)
-                        }
-                        className="input input-xs p-0 m-0 text-center"
-                      />
-                    ) : (
-                      entry.dia
                     )}
                   </td>
                   <td className="px-0.5 text-center">

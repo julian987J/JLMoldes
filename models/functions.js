@@ -293,8 +293,6 @@ async function sendToPapel(
   valor,
   gastos,
   pago,
-  proximo,
-  dia,
   alerta,
   metragem,
 ) {
@@ -310,8 +308,6 @@ async function sendToPapel(
         valor,
         gastos,
         pago,
-        proximo,
-        dia,
         alerta,
         metragem,
       }),

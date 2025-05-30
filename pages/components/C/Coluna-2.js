@@ -22,6 +22,7 @@ const Coluna = ({ r }) => {
   const [editingId, setEditingId] = useState(null);
   const [editedData, setEditedData] = useState({});
   const [exists, setExists] = useState([]); // Dados da tabela "Deve"
+  const [config, setConfig] = useState({ m: 1 }); // Estado para armazenar configurações
   const { lastMessage } = useWebSocket();
   const lastProcessedTimestampRef = useRef(null);
 
@@ -46,6 +47,7 @@ const Coluna = ({ r }) => {
     try {
       const results = await Execute.receiveFromPapelC(r);
       const existsData = await Execute.receiveFromDeve(r);
+      const configurationsData = await Execute.receiveFromConfig();
 
       setDados(
         Array.isArray(results)
@@ -53,6 +55,9 @@ const Coluna = ({ r }) => {
           : [],
       );
       setExists(Array.isArray(existsData) ? existsData : []);
+      if (configurationsData && configurationsData.length > 0) {
+        setConfig(configurationsData[0]); // Armazena a primeira configuração encontrada
+      }
     } catch (error) {
       console.error("Erro:", error);
     } finally {
@@ -299,6 +304,10 @@ const Coluna = ({ r }) => {
           (sum, item) => sum + (parseFloat(item.papelreal) || 0),
           0,
         );
+        const totalPapel = items.reduce(
+          (sum, item) => sum + (parseFloat(item.papel) || 0),
+          0,
+        );
         const totalPapelPix = items.reduce(
           (sum, item) => sum + (parseFloat(item.papelpix) || 0),
           0,
@@ -341,7 +350,15 @@ const Coluna = ({ r }) => {
             <table className="table table-xs">
               <thead>
                 <tr>
-                  <th colSpan={5}></th>
+                  <th colSpan={3}></th>
+                  <th className="text-center text-xs bg-warning/30">
+                    {formatCurrency(totalPapel / (config.m || 1))}
+                  </th>
+                  <th className="text-center text-xs bg-warning/30">
+                    {formatCurrency(
+                      (totalDesperdicio + totalPerdida) * (config.m || 1),
+                    )}
+                  </th>
                   <th colSpan={2} className="text-center text-xs bg-accent/30">
                     {formatCurrency(totalRP)}
                   </th>
@@ -355,8 +372,16 @@ const Coluna = ({ r }) => {
                 </tr>
                 {/* Linha com os totais de cada coluna */}
                 <tr>
-                  {/* Colunas vazias até "Papel" (6 colunas: ID, Código, Hora, Nome, M, Papel) */}
-                  <th colSpan={5}></th>
+                  <th colSpan={2}></th>
+                  <th className="text-center text-xs bg-warning/30">
+                    Metragem
+                  </th>
+                  <th className="text-center text-xs bg-warning/30">
+                    {formatCurrency(totalPapel)}
+                  </th>
+                  <th className="text-center text-xs bg-warning/30">
+                    {formatCurrency(totalDesperdicio + totalPerdida)}
+                  </th>
                   <th className="text-center text-xs bg-accent/30">
                     {formatCurrency(totalPapelReal)}
                   </th>

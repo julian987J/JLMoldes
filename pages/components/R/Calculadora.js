@@ -651,6 +651,10 @@ const Calculadora = ({
     pix: Number(pix),
   };
 
+  const activeValuesCount = values.reduce((count, currentValue) => {
+    return count + (currentValue !== "" ? 1 : 0);
+  }, 0);
+
   const ObjPapelC = {
     deveid: 0,
     codigo,
@@ -677,9 +681,9 @@ const Calculadora = ({
               (Number(pix) > 0 ? Math.min(Number(pix), comitions) : 0),
           )
         : 0,
-    desperdicio,
+    desperdicio: (Number(desperdicio) || 0) * activeValuesCount,
     util: sumValues,
-    perdida: perdida || 0,
+    perdida: Number(perdida) || 0,
     comentario,
   };
 

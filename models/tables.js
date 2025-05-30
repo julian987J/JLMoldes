@@ -172,8 +172,8 @@ async function createOficina(ordemInputValues) {
 async function createPapel(ordemInputValues) {
   const result = await database.query({
     text: `
-      INSERT INTO "Papel" (dec, item, quantidade, unidade, valor, gastos, pago, proximo, dia, alerta, metragem) 
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+      INSERT INTO "Papel" (dec, item, quantidade, unidade, valor, gastos, pago, alerta, metragem) 
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
       RETURNING *;
     `,
     values: [
@@ -184,8 +184,6 @@ async function createPapel(ordemInputValues) {
       ordemInputValues.valor,
       ordemInputValues.gastos,
       ordemInputValues.pago,
-      ordemInputValues.proximo,
-      ordemInputValues.dia,
       ordemInputValues.alerta,
       ordemInputValues.metragem,
     ],
@@ -570,11 +568,9 @@ async function updatePapel(updatedData) {
         valor = $4,
         gastos = $5,
         pago = $6,
-        proximo = $7,
-        dia = $8,
-        alerta = $9,
-        metragem = $10
-      WHERE id = $11
+        alerta = $7,
+        metragem = $8
+      WHERE id = $9
       RETURNING *;
     `,
     values: [
@@ -584,8 +580,6 @@ async function updatePapel(updatedData) {
       updatedData.valor,
       updatedData.gastos,
       updatedData.pago,
-      updatedData.proximo,
-      updatedData.dia,
       updatedData.alerta,
       updatedData.metragem,
       updatedData.id,
