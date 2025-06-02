@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import TabelaM from "./TabelaM.js";
+import TableDec from "./TableDec.js";
 import CodigoVerifier from "../CodigoVerifier.js";
 import ErrorComponent from "../Errors.js";
 import Rcontent from "../R/RContent.js";
@@ -289,7 +290,7 @@ const Mcontent = ({ oficina, r }) => {
         </form>
         <Config />
       </div>
-      <div className="columns-2">
+      <div className="grid grid-cols-[2fr_2fr_1fr] gap-2">
         <TabelaM
           oficina={oficina}
           r={r}
@@ -308,6 +309,7 @@ const Mcontent = ({ oficina, r }) => {
           columnsConfig={[{ field: "base", label: "Base", min: 0 }]}
           filterCondition={(item) => item.base > 0}
         />
+        <TableDec r={r} />
       </div>
       <div className="divider divider-neutral">OFICINA</div>
       <div>

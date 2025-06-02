@@ -533,6 +533,19 @@ async function receiveFromDevo(r) {
   }
 }
 
+async function receiveFromDec(r) {
+  try {
+    const response = await fetch(`/api/v1/tables/dec?r=${r}`);
+    if (!response.ok) throw new Error("Erro ao carregar os dados");
+    const data = await response.json();
+    // A API já retorna o array de linhas diretamente.
+    return Array.isArray(data) ? data : [];
+  } catch (error) {
+    console.error("Erro ao buscar dados Dec:", error);
+    return [];
+  }
+}
+
 async function receiveFromC(r) {
   try {
     const response = await fetch(`/api/v1/tables/c?r=${r}`);
@@ -989,6 +1002,7 @@ const execute = {
   receiveFromPapelCData,
   receiveFromRDeveDevo,
   receiveFromDeve,
+  receiveFromDec,
   receiveFromDeveJustValor,
   receiveFromDevo,
   receiveFromDevoJustValor,

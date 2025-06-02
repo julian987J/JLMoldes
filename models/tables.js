@@ -1,10 +1,5 @@
 import database from "infra/database.js";
 
-// It's good practice to ensure 'fetch' is available.
-// If you are using Node.js v18+, fetch is available globally.
-// For older Node.js versions, you might need to install and import 'node-fetch':
-// import fetch from 'node-fetch';
-
 async function notifyWebSocketServer(data) {
   const wsNotifyUrl = process.env.RAILWAY_WB
     ? `https://${process.env.RAILWAY_WB}/broadcast`
@@ -356,6 +351,30 @@ async function updateC(updatedData) {
     ],
   });
 
+  return result;
+}
+
+async function updateDec(updatedData) {
+  const result = await database.query({
+    text: `
+      UPDATE "Dec"
+      SET
+        "on" = COALESCE($1, "on"),
+        sis  = COALESCE(sis, 0) + $2,
+        base = COALESCE(base, 0) + $3,
+        alt  = COALESCE(alt, 0) + $4
+      WHERE r = $5 AND dec = $6
+      RETURNING *;
+    `,
+    values: [
+      updatedData.on !== undefined ? updatedData.on : null,
+      Number(updatedData.sis) || 0,
+      Number(updatedData.base) || 0,
+      Number(updatedData.alt) || 0,
+      updatedData.r,
+      updatedData.dec,
+    ],
+  });
   return result;
 }
 
@@ -998,6 +1017,14 @@ async function getC(r) {
   return result;
 }
 
+async function getDec(r) {
+  const result = await database.query({
+    text: `SELECT * FROM "Dec" WHERE r = $1;`,
+    values: [r],
+  });
+  return result;
+}
+
 async function getAnualC() {
   const result = await database.query({
     text: `SELECT * FROM "C"`,
@@ -1357,6 +1384,7 @@ const ordem = {
   getOficina,
   getValorOficinas,
   getC,
+  getDec,
   getAnualC,
   getNotas,
   getCByDec,
@@ -1391,6 +1419,7 @@ const ordem = {
   updateDeve,
   updateConfig,
   updateC,
+  updateDec,
   updateNota,
   updateCBSA,
   updatePessoal,

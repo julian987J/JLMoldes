@@ -195,8 +195,40 @@ const TabelaM = ({
 
   if (Object.keys(filteredGroupedData).length === 0) return null;
 
+  const handleUpdateDec = async (updatePayload) => {
+    try {
+      const decItems = await Execute.receiveFromDec(r);
+      const targetDecItem = decItems.find(
+        (item) => String(item.dec) === String(updatePayload.dec),
+      );
+
+      if (targetDecItem && targetDecItem.on === true) {
+        // Proceed with the PUT request only if the item exists and its 'on' property is true
+        const response = await fetch("/api/v1/tables/dec", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(updatePayload),
+        });
+
+        if (!response.ok) {
+          const errorData = await response.text();
+          console.error(
+            `Erro ao atualizar Dec item (${response.status}): ${errorData}`,
+          );
+        }
+      } else {
+        console.log(
+          `Atualização para Dec ${updatePayload.dec} não realizada. Item não encontrado ou 'on' não é true.`,
+          targetDecItem,
+        );
+      }
+    } catch (error) {
+      console.error("Erro ao enviar atualização para Dec item:", error);
+    }
+  };
+
   return (
-    <div>
+    <>
       <div className="overflow-x-auto rounded-box border border-base-content/5 bg-base-100">
         <table className="table table-xs">
           <thead>
@@ -426,9 +458,17 @@ const TabelaM = ({
                             real: 0,
                             pix: sis + alt + base,
                           });
+
+                          handleUpdateDec({
+                            dec: item.dec,
+                            r: r,
+                            sis: sis,
+                            alt: alt,
+                            base: base,
+                          });
+
                           Execute.removeMandR(item.id);
-                          // A remoção acima (removeMandR) deve fazer o backend
-                          // enviar uma mensagem TABELAM_DELETED_ITEM
+                          setDados([]);
                         }}
                       >
                         Pagar
@@ -437,9 +477,10 @@ const TabelaM = ({
                         className={`btn btn-xs btn-soft btn-error ${
                           editingId === item.id ? "hidden" : ""
                         }`}
-                        onClick={() => Execute.removeMandR(item.id)}
-                        // A remoção acima (removeMandR) deve fazer o backend
-                        // enviar uma mensagem TABELAM_DELETED_ITEM
+                        onClick={() => {
+                          Execute.removeMandR(item.id);
+                          setDados([]);
+                        }}
                       >
                         Excluir
                       </button>
@@ -451,7 +492,7 @@ const TabelaM = ({
           </tbody>
         </table>
       </div>
-    </div>
+    </>
   );
 };
 
