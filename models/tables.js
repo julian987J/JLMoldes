@@ -561,27 +561,27 @@ async function updatePapel(updatedData) {
   const result = await database.query({
     text: `
       UPDATE "Papel"
-      SET 
-        item = $1,
-        quantidade = $2,
-        unidade = $3,
-        valor = $4,
-        gastos = $5,
-        pago = $6,
-        alerta = $7,
-        metragem = $8
+      SET
+        item = COALESCE($1, item),
+        quantidade = COALESCE($2, quantidade),
+        unidade = COALESCE($3, unidade),
+        valor = COALESCE($4, valor),
+        gastos = COALESCE($5, gastos),
+        pago = COALESCE($6, pago),
+        alerta = COALESCE($7, alerta),
+        metragem = COALESCE($8, metragem)
       WHERE id = $9
       RETURNING *;
     `,
     values: [
-      updatedData.item,
-      updatedData.quantidade,
-      updatedData.unidade,
-      updatedData.valor,
-      updatedData.gastos,
-      updatedData.pago,
-      updatedData.alerta,
-      updatedData.metragem,
+      updatedData.item !== undefined ? updatedData.item : null,
+      updatedData.quantidade !== undefined ? updatedData.quantidade : null,
+      updatedData.unidade !== undefined ? updatedData.unidade : null,
+      updatedData.valor !== undefined ? updatedData.valor : null,
+      updatedData.gastos !== undefined ? updatedData.gastos : null,
+      updatedData.pago !== undefined ? updatedData.pago : null,
+      updatedData.alerta !== undefined ? updatedData.alerta : null,
+      updatedData.metragem !== undefined ? updatedData.metragem : null,
       updatedData.id,
     ],
   });
@@ -1067,6 +1067,14 @@ async function getPapel(letras) {
   return result.rows;
 }
 
+async function getPapelCalculadora(oficina) {
+  const result = await database.query({
+    text: `SELECT * FROM "Papel" WHERE item = $1;`,
+    values: [oficina],
+  });
+  return result;
+}
+
 async function getValorOficinas(oficina) {
   const result = await database.query({
     text: `SELECT * FROM "SaidaO" WHERE oficina = $1;`,
@@ -1354,6 +1362,7 @@ const ordem = {
   getCByDec,
   getCData,
   getPapel,
+  getPapelCalculadora,
   getPapelC,
   getAnualPapelC,
   getPapelData,

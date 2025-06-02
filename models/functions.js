@@ -809,6 +809,24 @@ async function receiveFromPapel(letras) {
   }
 }
 
+async function receiveFromPapelCalculadora(oficina) {
+  try {
+    const response = await fetch(
+      `/api/v1/tables/calculadora/papel?oficina=${oficina}`,
+    );
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || "Erro ao carregar os dados");
+    }
+
+    const data = await response.json();
+    return Array.isArray(data.rows) ? data.rows : [];
+  } catch (error) {
+    console.error("Erro ao buscar dados Papel:", error);
+  }
+}
+
 async function removeMandR(id) {
   const response = await fetch("/api/v1/tables", {
     method: "DELETE",
@@ -966,6 +984,7 @@ const execute = {
   receiveAnualFromPapelC,
   receiveFromConfig,
   receiveFromPapel,
+  receiveFromPapelCalculadora,
   receiveFromPapelC,
   receiveFromPapelCData,
   receiveFromRDeveDevo,

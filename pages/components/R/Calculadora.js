@@ -193,6 +193,57 @@ const Calculadora = ({
     }
   };
 
+  const hadleUpdatePapel = async (metroConsumido) => {
+    const oficina = `R${r}`;
+    const result = await Execute.receiveFromPapelCalculadora(oficina);
+
+    if (!result || result.length === 0) {
+      console.error(
+        "hadleUpdatePapel: Nenhum dado retornado de receiveFromPapelCalculadora para a oficina:",
+        oficina,
+      );
+      return;
+    }
+
+    // Encontrar o item com o menor ID
+    const itemComMenorId = result.reduce((menor, itemAtual) => {
+      if (!menor || Number(itemAtual.id) < Number(menor.id)) {
+        return itemAtual;
+      }
+      return menor;
+    }, null);
+
+    if (!itemComMenorId || typeof itemComMenorId.metragem === "undefined") {
+      console.error(
+        "hadleUpdatePapel: Não foi possível encontrar o item com menor ID ou a propriedade 'metragem' está ausente.",
+        itemComMenorId,
+      );
+      return;
+    }
+
+    const metragemAtual = Number(itemComMenorId.metragem);
+    const novaMetragem = metragemAtual - Number(metroConsumido);
+
+    try {
+      const dadosParaAtualizar = {
+        id: itemComMenorId.id,
+        metragem: novaMetragem,
+      };
+
+      const response = await fetch("/api/v1/tables/gastos/papel", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(dadosParaAtualizar),
+      });
+      if (!response.ok) throw new Error("Erro ao atualizar");
+      console.log(
+        "Papel.js: Dados salvos via API. Aguardando mensagem WebSocket para fechar o modo de edição.",
+      );
+    } catch (error) {
+      console.error("Erro ao salvar:", error);
+    }
+  };
+
   const handleUpdateC = async (codigo, data, New, currentTotal, dec) => {
     try {
       // Decodificar a data
@@ -624,6 +675,9 @@ const Calculadora = ({
         console.log("Caiu em sem condições");
       }
 
+      hadleUpdatePapel(
+        Number(sumValues) + Number(desperdicio) + Number(perdida),
+      );
       setPix("");
       setPlus(0);
       setReal("");
