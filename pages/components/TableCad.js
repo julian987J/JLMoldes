@@ -157,6 +157,7 @@ const TableCad = () => {
             <th>Nome</th>
             <th>Grupo</th>
             <th>Observações</th>
+            <th>Comentario</th>
             <th>Ações</th>
           </tr>
         </thead>
@@ -308,7 +309,21 @@ const TableCad = () => {
                   item.observacao
                 )}
               </td>
-              {/* Ações */}
+              <td>
+                {editingId === item.id ? (
+                  <input
+                    type="text"
+                    value={editedData.comentario}
+                    onChange={(e) =>
+                      handleInputChange("comentario", e.target.value)
+                    }
+                    className="input input-xs p-0 m-0 "
+                  />
+                ) : (
+                  item.comentario
+                )}
+              </td>
+
               <td className="px-0">
                 <EditM
                   isEditing={editingId === item.id}

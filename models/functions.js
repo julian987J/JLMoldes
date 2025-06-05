@@ -858,6 +858,19 @@ async function receiveFromPapel(letras) {
   }
 }
 
+async function receiveFromCad(codigo) {
+  try {
+    const response = await fetch(
+      `/api/v1/tables/calculadora/cadastro?codigo=${codigo}`,
+    );
+
+    const data = await response.json();
+    return Array.isArray(data.rows) ? data.rows : [];
+  } catch (error) {
+    console.error("Erro ao buscar dados comentario:", error);
+  }
+}
+
 async function receiveFromPapelCalculadora(oficina) {
   try {
     const response = await fetch(
@@ -1069,6 +1082,7 @@ const execute = {
   receiveFromNota,
   receiveFromR,
   receiveFromRJustBSA,
+  receiveFromCad,
   removeC,
   removeNota,
   removePapel,

@@ -54,6 +54,7 @@ const Calculadora = ({
   const [real, setReal] = useState("");
   const [comentario, setComentario] = useState("");
   const [perdida, setPerdida] = useState("");
+  const [comentarioCadastro, setComentarioCadastro] = useState("");
 
   // Calcula a soma bruta dos valores (novo cálculo)
   const sumValues = values.reduce((sum, current) => {
@@ -182,6 +183,38 @@ const Calculadora = ({
     const intervalId = setInterval(fetchData, 5000);
     return () => clearInterval(intervalId);
   }, []);
+
+  useEffect(() => {
+    const fetchComentarioFromCadastro = async () => {
+      // If both codigo and nome are empty, clear comment and exit
+      if (!codigo && !nome) {
+        setComentarioCadastro("");
+        return;
+      }
+
+      try {
+        const cadastroItems = await Execute.receiveFromCad(codigo);
+
+        let foundItem = null;
+        if (codigo) {
+          foundItem = cadastroItems.find((item) => item.codigo === codigo);
+        }
+
+        if (!foundItem && nome) {
+          foundItem = cadastroItems.find((item) => item.nome === nome);
+        }
+
+        setComentarioCadastro(foundItem?.comentario || "");
+      } catch (error) {
+        console.error(
+          "Calculadora: Erro ao buscar comentário do cadastro:",
+          error,
+        );
+        setComentarioCadastro("");
+      }
+    };
+    fetchComentarioFromCadastro();
+  }, [codigo, nome]);
 
   const handleSave = async (editedData) => {
     try {
@@ -781,9 +814,12 @@ const Calculadora = ({
   };
 
   return (
-    <>
+    <div className="flex flex-col gap-1">
+      <div className="badge badge-accent badge-sm w-62 whitespace-normal h-auto">
+        {comentarioCadastro}
+      </div>
+
       <form onSubmit={handleSubmit}>
-        {/* Inputs superiores */}
         <div className="join">
           <input
             type="text"
@@ -908,7 +944,7 @@ const Calculadora = ({
       {typeof window !== "undefined" && showError && (
         <ErrorComponent errorCode="Nulo" />
       )}
-    </>
+    </div>
   );
 };
 export default Calculadora;

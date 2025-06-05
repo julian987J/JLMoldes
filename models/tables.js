@@ -1304,6 +1304,17 @@ async function getTemp() {
   return result;
 }
 
+async function getComentario(codigo) {
+  const result = await database.query({
+    // Seleciona todas as colunas da tabela "cadastro" onde o código corresponde.
+    // Isso garante que 'codigo' e 'comentario' estejam disponíveis.
+    text: `SELECT * FROM "cadastro" WHERE codigo = $1;`,
+    values: [codigo],
+  });
+  // Retorna o array de linhas do resultado da query.
+  return result.rows;
+}
+
 async function deleteM(ids) {
   const result = await database.query({
     text: `DELETE FROM "Mtable" WHERE id = ANY($1) RETURNING *`,
@@ -1423,6 +1434,7 @@ const ordem = {
   createPapelC,
   createTemp,
   getTemp,
+  getComentario,
   getPessoal,
   getSaidaP,
   getAnualSaidaP,
