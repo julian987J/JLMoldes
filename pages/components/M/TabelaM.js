@@ -228,7 +228,7 @@ const TabelaM = ({
   };
 
   return (
-    <>
+    <div>
       <div className="overflow-x-auto rounded-box border border-base-content/5 bg-base-100">
         <table className="table table-xs">
           <thead>
@@ -492,7 +492,7 @@ const TabelaM = ({
           </tbody>
         </table>
       </div>
-    </>
+    </div>
   );
 };
 

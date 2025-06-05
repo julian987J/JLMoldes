@@ -300,6 +300,35 @@ async function createDeve(ordemInputValues) {
   return result;
 }
 
+async function createTemp(tempData) {
+  const valuesPlaceholders = Array.from(
+    { length: 28 },
+    (_, i) => `$${i + 7}`,
+  ).join(", ");
+  const valuesColumns = Array.from(
+    { length: 28 },
+    (_, i) => `v${String(i + 1).padStart(2, "0")}`,
+  ).join(", ");
+
+  const result = await database.query({
+    text: `
+      INSERT INTO "Temp" (nome, codigo, multi, r, data, comissao, ${valuesColumns})
+      VALUES ($1, $2, $3, $4, $5, $6, ${valuesPlaceholders})
+      RETURNING *;
+    `,
+    values: [
+      tempData.nome,
+      tempData.codigo,
+      tempData.multi,
+      tempData.r,
+      tempData.data,
+      tempData.comissao,
+      ...tempData.values_array,
+    ],
+  });
+  return result.rows[0];
+}
+
 async function updateAltSis(updatedData) {
   const result = await database.query({
     text: `
@@ -1268,6 +1297,13 @@ async function getDevoJustValor(codigo) {
   );
 }
 
+async function getTemp() {
+  const result = await database.query({
+    text: `SELECT * FROM "Temp" ORDER BY data DESC;`,
+  });
+  return result;
+}
+
 async function deleteM(ids) {
   const result = await database.query({
     text: `DELETE FROM "Mtable" WHERE id = ANY($1) RETURNING *`,
@@ -1363,6 +1399,15 @@ export async function deleteDeve(codigo) {
   return result.rows;
 }
 
+export async function deleteTemp(id) {
+  const result = await database.query({
+    text: `DELETE FROM "Temp" WHERE id = $1 RETURNING id;`,
+    values: [id],
+  });
+  // Retorna o objeto de resultado da query, que inclui rows (com o id do item deletado se encontrado)
+  return result;
+}
+
 const ordem = {
   createM,
   createPessoal,
@@ -1376,6 +1421,8 @@ const ordem = {
   createNota,
   createPapel,
   createPapelC,
+  createTemp,
+  getTemp,
   getPessoal,
   getSaidaP,
   getAnualSaidaP,
@@ -1416,6 +1463,7 @@ const ordem = {
   deleteR,
   deleteDeve,
   deleteDevo,
+  deleteTemp,
   updateDeve,
   updateConfig,
   updateC,

@@ -13,8 +13,12 @@ function gerarEArmazenarCodigoAleatorio() {
 const Calculadora = ({
   codigo,
   nome,
+  plus,
+  values = Array(28).fill(""), // Provide a default value for values
   onCodigoChange,
   onNomeChange,
+  onPlusChange, // Recebido como prop
+  onValuesChange, // Recebido como prop
   data,
   r,
 }) => {
@@ -44,8 +48,8 @@ const Calculadora = ({
   const [multiplier, setMultiplier] = useState(0);
   const [comissi, setComissi] = useState(0);
   const [desperdicio, setDesperdicio] = useState(0);
-  const [plus, setPlus] = useState(0);
-  const [values, setValues] = useState(Array(28).fill(""));
+  // const [plus, setPlus] = useState(0); // Removido, agora é prop
+  // const [values, setValues] = useState(Array(28).fill("")); // Removido, agora é prop
   const [pix, setPix] = useState("");
   const [real, setReal] = useState("");
   const [comentario, setComentario] = useState("");
@@ -61,14 +65,14 @@ const Calculadora = ({
     setMultiplier(Number(e.target.value));
   };
   const handlePlusChange = (e) => {
-    setPlus(Number(e.target.value));
+    onPlusChange(Number(e.target.value)); // Usa o handler do prop
   };
 
   const handleValueChange = (index, e) => {
     const newValue = e.target.value;
-    const newValues = [...values];
+    const newValues = [...values]; // Usa o 'values' do prop
     newValues[index] = newValue;
-    setValues(newValues);
+    onValuesChange(newValues); // Usa o handler do prop
   };
 
   // calculos da calculadora
@@ -679,16 +683,51 @@ const Calculadora = ({
         Number(sumValues) + Number(desperdicio) + Number(perdida),
       );
       setPix("");
-      setPlus(0);
+      onPlusChange(0); // Usa o handler do prop
       setReal("");
       setComentario("");
       setPerdida("");
       onNomeChange("");
       onCodigoChange("");
-      setValues(Array(28).fill(""));
+      onValuesChange(Array(28).fill("")); // Usa o handler do prop
     } catch (error) {
       console.error("Erro ao salvar:", error);
       alert("Erro ao salvar os dados!");
+    }
+  };
+
+  const handlePendente = async () => {
+    if (!nome || !codigo) {
+      alert("Nome e Código são obrigatórios para salvar como pendente.");
+      return;
+    }
+
+    // Garante que o array 'values' tenha sempre 28 posições, preenchendo com null se necessário
+    const preparedValues = Array.from(
+      { length: 28 },
+      (_, i) => (values[i] !== "" ? Number(values[i]) : null), // 'values' é prop
+    );
+
+    const dataToSend = {
+      nome, // 'nome' é prop
+      codigo, // 'codigo' é prop
+      multi: multiplier,
+      r,
+      data: Use.NowData(),
+      comissao: plus, // 'plus' é prop
+      values_array: preparedValues, // Array com os 28 valores
+    };
+
+    try {
+      await Execute.sendToTemp(dataToSend);
+      onValuesChange(Array(28).fill("")); // Usa o handler do prop
+      onPlusChange(0); // Usa o handler do prop
+      console.log("Dados pendentes salvos com sucesso!");
+      // Nome e código podem ser mantidos ou limpos conforme a preferência
+      // onNomeChange("");
+      // onCodigoChange("");
+    } catch (error) {
+      console.error("Erro ao salvar dados pendentes:", error);
     }
   };
 
@@ -745,7 +784,7 @@ const Calculadora = ({
     <>
       <form onSubmit={handleSubmit}>
         {/* Inputs superiores */}
-        <div className="join z-2">
+        <div className="join">
           <input
             type="text"
             placeholder="Nome"
@@ -757,14 +796,14 @@ const Calculadora = ({
           <input
             type="text"
             placeholder="CODIGO"
-            className="input input-warning input-xs w-23 join-item"
+            className="input input-warning input-xs w-23 join-item" // Ajuste de largura
             value={codigo}
             onChange={(e) => onCodigoChange(e.target.value)}
             required
           />
           <input
             type="number"
-            className="input input-warning text-warning text-left input-xs w-7.5 join-item"
+            className="input input-warning text-warning text-left input-xs w-7.5 join-item" // w-7.5 é bem pequeno, verificar se é intencional
             value={plus}
             placeholder={0}
             onChange={handlePlusChange}
@@ -783,7 +822,7 @@ const Calculadora = ({
                 min="0"
                 step="0.01"
                 type="number"
-                className="input input-info input-xs w-15.5 appearance-none"
+                className="input input-info input-xs w-15.5 appearance-none" // Ajuste de largura
                 value={values[i]}
                 onChange={(e) => handleValueChange(i, e)}
               />
@@ -795,7 +834,7 @@ const Calculadora = ({
             type="text" // Mudei para type="text" para permitir valor vazio
             placeholder="Total"
             value={typeof total === "number" ? total.toFixed(2) : ""}
-            className="input input-warning input-xs w-62 z-3 text-center text-warning font-bold"
+            className="input input-warning input-xs w-62 z-3 text-center text-warning font-bold" // Ajuste de largura
             readOnly
           />
         </div>
@@ -803,7 +842,7 @@ const Calculadora = ({
           <input
             type="text"
             placeholder="SOMA TOTAL"
-            value={totalGeral !== 0 ? totalGeral.toFixed(2) : ""}
+            value={totalGeral !== 0 ? totalGeral.toFixed(2) : ""} // Mantido como estava
             className="input input-success input-xl w-62 z-3 text-center text-success mt-0.5 font-bold"
             readOnly
           />
@@ -834,15 +873,24 @@ const Calculadora = ({
             value={real}
             onChange={(e) => setReal(e.target.value)}
           />
-          <button type="submit" className="btn px-30.5 btn-secondary">
-            Salvar
-          </button>
+          <div className="grid grid-cols-2 col-span-3 my-0.5 z-50">
+            <button
+              type="button" // Importante para não submeter o formulário
+              className="btn btn-warning w-full"
+              onClick={handlePendente}
+            >
+              Pendente
+            </button>
+            <button type="submit" className="btn btn-secondary w-full">
+              Salvar
+            </button>
+          </div>
         </div>
         <div className="join">
           <input
             type="text"
             placeholder="Comentário"
-            className="input input-primary w-42 input-xs join-item"
+            className="input input-primary w-42 input-xs join-item" // Ajuste de largura
             value={comentario}
             onChange={(e) => setComentario(e.target.value)}
           />

@@ -417,6 +417,42 @@ async function sendToPapelC(itemData) {
   }
 }
 
+async function sendToTemp(itemData) {
+  try {
+    const response = await fetch("/api/v1/tables/temp", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(itemData),
+    });
+
+    if (!response.ok) {
+      const errorData = await response
+        .json()
+        .catch(() => ({ error: "Erro desconhecido ao enviar para Temp" }));
+      throw new Error(
+        errorData.error || `Erro ${response.status} ao criar registro em Temp`,
+      );
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error("Erro no sendToTemp:", error);
+    throw error;
+  }
+}
+
+async function receiveFromTemp() {
+  try {
+    const response = await fetch(`/api/v1/tables/temp`);
+    if (!response.ok) throw new Error("Erro ao carregar os dados de Temp");
+    const data = await response.json();
+    return Array.isArray(data.rows) ? data.rows : [];
+  } catch (error) {
+    console.error("Erro ao buscar dados Temp:", error);
+    return [];
+  }
+}
+
 async function receiveFromRDeveDevo(tableName) {
   try {
     const response = await fetch(`/api/v1/tables/${tableName}`);
@@ -962,13 +998,35 @@ async function removeDevo(codigo) {
   const response = await fetch("/api/v1/tables/devo", {
     method: "DELETE",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ codigo }), // Envia o `id` no corpo da requisição
+    body: JSON.stringify({ codigo }),
   });
 
   const result = await response.json();
   console.log(result);
 }
 
+async function removeTemp(itemId) {
+  try {
+    const response = await fetch(`/api/v1/tables/temp`, {
+      method: "DELETE",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ id: itemId }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({
+        error: `Erro ao excluir item Temp ${itemId} (Status: ${response.status})`,
+      }));
+      throw new Error(errorData.error || `Erro HTTP ${response.status}`);
+    }
+    return await response.json();
+  } catch (error) {
+    console.error(`Erro em removeTemp (ID ${itemId}):`, error);
+    throw error;
+  }
+}
 const execute = {
   sendTrueMR,
   sendToR,
@@ -983,6 +1041,8 @@ const execute = {
   sendToOficina,
   sendToPapel,
   sendToPapelC,
+  receiveFromTemp,
+  sendToTemp,
   receiveFromC,
   receiveAnualFromC,
   receiveFromCGastos,
@@ -1020,6 +1080,7 @@ const execute = {
   removeMandR,
   removeDeve,
   removeDevo,
+  removeTemp,
 };
 
 export default execute;
