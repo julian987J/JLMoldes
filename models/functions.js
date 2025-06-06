@@ -416,6 +416,30 @@ async function sendToPapelC(itemData) {
     throw error;
   }
 }
+async function sendToPagamentos(itemData) {
+  try {
+    const response = await fetch("/api/v1/tables/pagamentos", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(itemData), // Send the whole itemData object
+    });
+
+    if (!response.ok) {
+      let errorMsg = `Erro ao criar registro em Pagamentos (Status: ${response.status})`;
+      try {
+        const errorData = await response.json();
+        errorMsg = errorData.error || errorData.message || errorMsg;
+      } catch (parseError) {
+        // Ignora se o corpo não for JSON válido
+      }
+      throw new Error(errorMsg);
+    }
+    return await response.json();
+  } catch (error) {
+    console.error("Erro no sendToPagamentos:", error);
+    throw error;
+  }
+}
 
 async function sendToTemp(itemData) {
   try {
@@ -557,6 +581,30 @@ async function receiveFromDevoJustValor(codigo) {
   }
 }
 
+async function receiveFromPagamentos(r) {
+  try {
+    if (typeof r === "undefined" || r === null) {
+      console.warn("receiveFromPagamentos: 'r' parameter is missing.");
+      return [];
+    }
+    const response = await fetch(`/api/v1/tables/pagamentos?r=${r}`);
+    if (!response.ok) {
+      let errorMsg = `Error fetching pagamentos (Status: ${response.status})`;
+      try {
+        const errorData = await response.json();
+        errorMsg = errorData.error || errorData.message || errorMsg;
+      } catch (e) {
+        // ignore if not json
+      }
+      throw new Error(errorMsg);
+    }
+    const data = await response.json();
+    return Array.isArray(data) ? data : [];
+  } catch (error) {
+    console.error(`Error fetching pagamentos for r=${r}:`, error);
+    return [];
+  }
+}
 async function receiveFromDevo(r) {
   try {
     const response = await fetch(`/api/v1/tables/devo?r=${r}`);
@@ -1040,6 +1088,30 @@ async function removeTemp(itemId) {
     throw error;
   }
 }
+
+async function deleteAllPagamentos() {
+  try {
+    const response = await fetch(`/api/v1/tables/pagamentos`, {
+      // Sem query param 'r'
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+    });
+
+    if (!response.ok) {
+      let errorMsg = `Erro ao deletar todos os pagamentos (Status: ${response.status})`;
+      try {
+        const errorData = await response.json();
+        errorMsg = errorData.error || errorData.message || errorMsg;
+      } catch (parseError) {
+        // Ignora se o corpo não for JSON válido
+      }
+      throw new Error(errorMsg);
+    }
+  } catch (error) {
+    console.error(`Erro em deleteAllPagamentos:`, error);
+    throw error;
+  }
+}
 const execute = {
   sendTrueMR,
   sendToR,
@@ -1054,6 +1126,7 @@ const execute = {
   sendToOficina,
   sendToPapel,
   sendToPapelC,
+  sendToPagamentos,
   receiveFromTemp,
   sendToTemp,
   receiveFromC,
@@ -1080,6 +1153,7 @@ const execute = {
   receiveFromDevo,
   receiveFromDevoJustValor,
   receiveFromNota,
+  receiveFromPagamentos,
   receiveFromR,
   receiveFromRJustBSA,
   receiveFromCad,
@@ -1095,6 +1169,7 @@ const execute = {
   removeDeve,
   removeDevo,
   removeTemp,
+  deleteAllPagamentos,
 };
 
 export default execute;

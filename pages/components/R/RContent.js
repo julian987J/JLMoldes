@@ -4,7 +4,8 @@ import Execute from "models/functions";
 import BSTA from "./BSATable.js";
 import Deve from "./Deve.js";
 import Devo from "./Devo.js";
-import Pendente from "./Pendente";
+import Pendente from "./Pendente.js";
+import Pagamentos from "./Pagamentos.js";
 
 const Rcontent = ({ codigoExterno, r }) => {
   // Referência para o valor de codigoExterno, para garantir que não altere depois de passado
@@ -179,7 +180,7 @@ const Rcontent = ({ codigoExterno, r }) => {
           <Devo codigo={codigo} r={r} />
         </div>
         <div>
-          <h1>PAPEL CONTAGEM</h1>
+          <Pagamentos r={r} />
         </div>
       </div>
     </div>

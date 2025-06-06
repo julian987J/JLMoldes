@@ -109,7 +109,7 @@ const Pendente = ({ r: propR, onSelectItem }) => {
         </thead>
         <tbody>
           {dados.map((item) => (
-            <tr key={item.id} className="border-b border-warning">
+            <tr key={item.id} className="border-b border-warning bg-warning/50">
               <td className="hidden">{item.id}</td>
               <td>{Use.formatarDataHora(item.data)}</td>
               <td>{item.nome}</td>
@@ -128,15 +128,12 @@ const Pendente = ({ r: propR, onSelectItem }) => {
               <td>
                 <button
                   className="btn btn-xs btn-soft btn-primary"
-                  onClick={() => onSelectItem(item)}
+                  onClick={() => {
+                    onSelectItem(item);
+                    handleDeleteItem(item.id);
+                  }}
                 >
                   Mostrar
-                </button>
-                <button
-                  className="btn btn-xs btn-soft btn-error ml-2" // ml-2 para margem à esquerda
-                  onClick={() => handleDeleteItem(item.id)}
-                >
-                  Excluir
                 </button>
               </td>
             </tr>

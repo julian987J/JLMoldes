@@ -329,6 +329,26 @@ async function createTemp(tempData) {
   return result.rows[0];
 }
 
+async function createPagamento(pagamentoData) {
+  // Ensure you have a "Pagamentos" table with columns: nome, r, data, pix, real, etc.
+  // Adjust column names and placeholders ($1, $2, etc.) as per your table structure.
+  const result = await database.query({
+    text: `
+      INSERT INTO "Pagamentos" (nome, r, data, pix, real) 
+      VALUES ($1, $2, $3, $4, $5)
+      RETURNING *; 
+    `,
+    values: [
+      pagamentoData.nome,
+      pagamentoData.r,
+      pagamentoData.data, // Ensure this is in a format PostgreSQL understands (e.g., ISO string)
+      parseFloat(pagamentoData.pix) || 0,
+      parseFloat(pagamentoData.real) || 0,
+    ],
+  });
+  return result; // The handler expects result.rows[0]
+}
+
 async function updateAltSis(updatedData) {
   const result = await database.query({
     text: `
@@ -1304,6 +1324,15 @@ async function getTemp() {
   return result;
 }
 
+async function getPagamentos(r) {
+  const result = await database.query({
+    text: `SELECT * FROM "Pagamentos" WHERE r = $1 ORDER BY data DESC;`,
+    values: [r],
+  });
+  // The API handler will access result.rows
+  return result;
+}
+
 async function getComentario(codigo) {
   const result = await database.query({
     // Seleciona todas as colunas da tabela "cadastro" onde o código corresponde.
@@ -1419,6 +1448,14 @@ export async function deleteTemp(id) {
   return result;
 }
 
+async function deleteAllPagamentos() {
+  const result = await database.query({
+    text: `DELETE FROM "Pagamentos" RETURNING id;`, // Sem cláusula WHERE
+  });
+  // result will contain rowCount and potentially the deleted rows if RETURNING was used effectively
+  return result;
+}
+
 const ordem = {
   createM,
   createPessoal,
@@ -1433,6 +1470,7 @@ const ordem = {
   createPapel,
   createPapelC,
   createTemp,
+  createPagamento,
   getTemp,
   getComentario,
   getPessoal,
@@ -1463,6 +1501,7 @@ const ordem = {
   getDeveJustValor,
   getDevo,
   getDevoJustValor,
+  getPagamentos,
   deleteC,
   deleteNota,
   deletePapel,
@@ -1476,6 +1515,7 @@ const ordem = {
   deleteDeve,
   deleteDevo,
   deleteTemp,
+  deleteAllPagamentos,
   updateDeve,
   updateConfig,
   updateC,

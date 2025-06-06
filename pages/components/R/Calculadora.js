@@ -715,14 +715,23 @@ const Calculadora = ({
       hadleUpdatePapel(
         Number(sumValues) + Number(desperdicio) + Number(perdida),
       );
+
+      await Execute.sendToPagamentos({
+        nome,
+        r,
+        data: Use.NowData(),
+        pix,
+        real,
+      });
+
       setPix("");
-      onPlusChange(0); // Usa o handler do prop
+      onPlusChange(0);
       setReal("");
       setComentario("");
       setPerdida("");
       onNomeChange("");
       onCodigoChange("");
-      onValuesChange(Array(28).fill("")); // Usa o handler do prop
+      onValuesChange(Array(28).fill(""));
     } catch (error) {
       console.error("Erro ao salvar:", error);
       alert("Erro ao salvar os dados!");
@@ -815,7 +824,7 @@ const Calculadora = ({
 
   return (
     <div className="flex flex-col gap-1">
-      <div className="badge badge-accent badge-sm w-62 whitespace-normal h-auto">
+      <div className="badge badge-accent badge-sm w-62 whitespace-normal h-auto text-black">
         {comentarioCadastro}
       </div>
 
@@ -832,14 +841,14 @@ const Calculadora = ({
           <input
             type="text"
             placeholder="CODIGO"
-            className="input input-warning input-xs w-23 join-item" // Ajuste de largura
+            className="input input-warning input-xs w-23 join-item"
             value={codigo}
             onChange={(e) => onCodigoChange(e.target.value)}
             required
           />
           <input
             type="number"
-            className="input input-warning text-warning text-left input-xs w-7.5 join-item" // w-7.5 é bem pequeno, verificar se é intencional
+            className="input input-warning text-warning text-left input-xs w-7.5 join-item"
             value={plus}
             placeholder={0}
             onChange={handlePlusChange}
@@ -858,7 +867,7 @@ const Calculadora = ({
                 min="0"
                 step="0.01"
                 type="number"
-                className="input input-info input-xs w-15.5 appearance-none" // Ajuste de largura
+                className="input input-info input-xs w-15.5 appearance-none"
                 value={values[i]}
                 onChange={(e) => handleValueChange(i, e)}
               />
@@ -867,10 +876,10 @@ const Calculadora = ({
         </div>
         <div>
           <input
-            type="text" // Mudei para type="text" para permitir valor vazio
+            type="text"
             placeholder="Total"
             value={typeof total === "number" ? total.toFixed(2) : ""}
-            className="input input-warning input-xs w-62 z-3 text-center text-warning font-bold" // Ajuste de largura
+            className="input input-warning input-xs w-62 z-3 text-center text-warning font-bold"
             readOnly
           />
         </div>
@@ -878,7 +887,7 @@ const Calculadora = ({
           <input
             type="text"
             placeholder="SOMA TOTAL"
-            value={totalGeral !== 0 ? totalGeral.toFixed(2) : ""} // Mantido como estava
+            value={totalGeral !== 0 ? totalGeral.toFixed(2) : ""}
             className="input input-success input-xl w-62 z-3 text-center text-success mt-0.5 font-bold"
             readOnly
           />

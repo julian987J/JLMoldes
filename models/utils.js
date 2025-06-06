@@ -51,6 +51,14 @@ function formatarDataHoraSegundo(dataStr) {
   return `${hora}:${minutos}:${segundo}`;
 }
 
+// Função para formatar apenas a hora e os minutos
+function formatarHora(dataStr) {
+  const data = new Date(dataStr);
+  const hora = String(data.getHours()).padStart(2, "0");
+  const minutos = String(data.getMinutes()).padStart(2, "0");
+  return `${hora}:${minutos}`;
+}
+
 // models/utils.js
 export function formatarDataAno(dataString) {
   if (!dataString) return "—";
@@ -83,6 +91,7 @@ function NowData() {
 const use = {
   formatarDataHora,
   formatarDataHoraSegundo,
+  formatarHora,
   formatarData,
   formatarDataAno,
   formatarProximo,
