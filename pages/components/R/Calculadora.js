@@ -765,11 +765,45 @@ const Calculadora = ({
       onValuesChange(Array(28).fill("")); // Usa o handler do prop
       onPlusChange(0); // Usa o handler do prop
       console.log("Dados pendentes salvos com sucesso!");
-      // Nome e código podem ser mantidos ou limpos conforme a preferência
-      // onNomeChange("");
-      // onCodigoChange("");
     } catch (error) {
       console.error("Erro ao salvar dados pendentes:", error);
+    }
+  };
+
+  const handleSaveCommentWaste = async () => {
+    const activeValuesCount = values.reduce((count, currentValue) => {
+      return count + (currentValue !== "" ? 1 : 0);
+    }, 0);
+
+    const dataToSave = {
+      deveid: 0,
+      codigo: 0,
+      r,
+      data: Use.NowData(),
+      nome: "Desperdício",
+      multi: 0,
+      comissao: 0,
+      papel: 0,
+      papelpix: 0,
+      papelreal: 0,
+      encaixepix: 0,
+      encaixereal: 0,
+      desperdicio: (Number(desperdicio) || 0) * activeValuesCount,
+      util: 0,
+      perdida: Number(perdida) || 0,
+      comentario,
+    };
+
+    try {
+      await Execute.sendToPapelC(dataToSave);
+      hadleUpdatePapel(
+        Number(sumValues) + Number(desperdicio) + Number(perdida),
+      );
+
+      setComentario("");
+      setPerdida("");
+    } catch (error) {
+      console.error("Erro ao salvar comentário e desperdício:", error);
     }
   };
 
@@ -931,11 +965,11 @@ const Calculadora = ({
             </button>
           </div>
         </div>
-        <div className="join">
+        <div className="join items-end">
           <input
             type="text"
             placeholder="Comentário"
-            className="input input-primary w-42 input-xs join-item" // Ajuste de largura
+            className="input input-primary w-30 input-xs join-item" // Ajuste de largura
             value={comentario}
             onChange={(e) => setComentario(e.target.value)}
           />
@@ -948,6 +982,13 @@ const Calculadora = ({
             value={perdida}
             onChange={(e) => setPerdida(e.target.value)}
           />
+          <button
+            type="button"
+            className="btn btn-info btn-xs join-item" // Adjust styling as needed
+            onClick={handleSaveCommentWaste}
+          >
+            Enviar
+          </button>
         </div>
       </form>
       {typeof window !== "undefined" && showError && (
