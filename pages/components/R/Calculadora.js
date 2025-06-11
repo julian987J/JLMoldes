@@ -44,7 +44,7 @@ const Calculadora = ({
 
   const [valorDevo, setValorDevo] = useState(0);
   const [valorDeve, setValorDeve] = useState(0);
-  const [deveIdsArray, setDeveIdsArray] = useState([]); // Novo estado para armazenar os deveids
+  const [deveIdsArray, setDeveIdsArray] = useState([]);
   const [multiplier, setMultiplier] = useState(0);
   const [comissi, setComissi] = useState(0);
   const [desperdicio, setDesperdicio] = useState(0);
@@ -769,14 +769,17 @@ const Calculadora = ({
       multi: multiplier,
       r,
       data: Use.NowData(),
-      comissao: plus, // 'plus' é prop
+      comissao: plus || 0,
+      comentario,
       values_array: preparedValues, // Array com os 28 valores
     };
 
     try {
       await Execute.sendToTemp(dataToSend);
-      onValuesChange(Array(28).fill("")); // Usa o handler do prop
-      onPlusChange(0); // Usa o handler do prop
+      onValuesChange(Array(28).fill(""));
+      onPlusChange(0);
+      onNomeChange(""); // Limpa o campo nome
+      onCodigoChange(""); // Limpa o campo codigo
       console.log("Dados pendentes salvos com sucesso!");
     } catch (error) {
       console.error("Erro ao salvar dados pendentes:", error);
@@ -921,6 +924,7 @@ const Calculadora = ({
                 className="input input-info input-xs w-15.5 appearance-none"
                 value={values[i]}
                 autoComplete="nope"
+                disabled={!codigo} // Adicionado aqui
                 onChange={(e) => handleValueChange(i, e)}
               />
             </div>

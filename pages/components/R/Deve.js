@@ -121,9 +121,9 @@ const Deve = ({ codigo, r }) => {
               <td>{Use.formatarDataHora(item.data)}</td>
               <td className="hidden">{item.codigo}</td>
               <td>{item.nome}</td>
-              <td>$ {Number(item.valorpapel).toFixed(2)}</td>
-              <td>$ {Number(item.valorcomissao).toFixed(2)}</td>
-              <td>$ {Number(item.valor).toFixed(2)}</td>
+              <td>{Number(item.valorpapel).toFixed(2)}</td>
+              <td>{Number(item.valorcomissao).toFixed(2)}</td>
+              <td>{Number(item.valor).toFixed(2)}</td>
             </tr>
           ))}
         </tbody>

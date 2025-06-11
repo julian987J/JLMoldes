@@ -108,7 +108,7 @@ const Devo = ({ codigo, r }) => {
               <td>{Use.formatarDataHora(item.data)}</td>
               <td className="hidden">{item.codigo}</td>
               <td>{item.nome}</td>
-              <td>$ {Number(item.valor).toFixed(2)}</td>
+              <td>{Number(item.valor).toFixed(2)}</td>
             </tr>
           ))}
         </tbody>
