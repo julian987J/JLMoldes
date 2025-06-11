@@ -62,11 +62,18 @@ const TableDec = ({ r }) => {
   }, [lastMessage, r, setDecData]); // Added setDecData to dependency array as it's used.
 
   const handleToggleOn = async (itemToToggle) => {
-    const updatePayload = {
+    const isTurningOff = itemToToggle.on; // If current 'on' is true, we are turning it off
+    let updatePayload = {
       on: !itemToToggle.on,
       r: itemToToggle.r,
       dec: itemToToggle.dec,
     };
+
+    if (isTurningOff) {
+      updatePayload.sis = 0;
+      updatePayload.base = 0;
+      updatePayload.alt = 0;
+    }
 
     try {
       const response = await fetch("/api/v1/tables/dec", {

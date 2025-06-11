@@ -404,27 +404,83 @@ async function updateC(updatedData) {
 }
 
 async function updateDec(updatedData) {
-  const result = await database.query({
-    text: `
+  const client = await database.getNewClient();
+  try {
+    const setClauses = [];
+    const queryValues = [];
+    let placeholderIndex = 1;
+
+    // Handle 'on' state
+    if (updatedData.on !== undefined) {
+      setClauses.push(`"on" = $${placeholderIndex++}`);
+      queryValues.push(updatedData.on);
+    }
+
+    if (updatedData.on === false) {
+      // Explicitly setting values (e.g., to 0 when turning off)
+      if (updatedData.sis !== undefined) {
+        setClauses.push(`sis = $${placeholderIndex++}`);
+        queryValues.push(Number(updatedData.sis));
+      }
+      if (updatedData.base !== undefined) {
+        setClauses.push(`base = $${placeholderIndex++}`);
+        queryValues.push(Number(updatedData.base));
+      }
+      if (updatedData.alt !== undefined) {
+        setClauses.push(`alt = $${placeholderIndex++}`);
+        queryValues.push(Number(updatedData.alt));
+      }
+    } else {
+      if (updatedData.sis !== undefined) {
+        setClauses.push(`sis = COALESCE(sis, 0) + $${placeholderIndex++}`);
+        queryValues.push(Number(updatedData.sis));
+      }
+      if (updatedData.base !== undefined) {
+        setClauses.push(`base = COALESCE(base, 0) + $${placeholderIndex++}`);
+        queryValues.push(Number(updatedData.base));
+      }
+      if (updatedData.alt !== undefined) {
+        setClauses.push(`alt = COALESCE(alt, 0) + $${placeholderIndex++}`);
+        queryValues.push(Number(updatedData.alt));
+      }
+    }
+
+    if (setClauses.length === 0) {
+      throw new Error(
+        "updateDec: No fields to update were provided in the payload.",
+      );
+    }
+
+    if (!updatedData.r || !updatedData.dec) {
+      throw new Error(
+        "updateDec: 'r' and 'dec' are required for the WHERE clause.",
+      );
+    }
+
+    queryValues.push(updatedData.r, updatedData.dec);
+
+    const queryText = `
       UPDATE "Dec"
-      SET
-        "on" = COALESCE($1, "on"),
-        sis  = COALESCE(sis, 0) + $2,
-        base = COALESCE(base, 0) + $3,
-        alt  = COALESCE(alt, 0) + $4
-      WHERE r = $5 AND dec = $6
+      SET ${setClauses.join(", ")}
+      WHERE r = $${placeholderIndex++} AND dec = $${placeholderIndex++}
       RETURNING *;
-    `,
-    values: [
-      updatedData.on !== undefined ? updatedData.on : null,
-      Number(updatedData.sis) || 0,
-      Number(updatedData.base) || 0,
-      Number(updatedData.alt) || 0,
-      updatedData.r,
-      updatedData.dec,
-    ],
-  });
-  return result;
+    `;
+
+    const result = await client.query(queryText, queryValues);
+
+    if (result.rows.length > 0) {
+      await notifyWebSocketServer({
+        type: "DEC_UPDATED_ITEM",
+        payload: result.rows[0],
+      });
+    }
+    return result;
+  } catch (error) {
+    console.error("Error in updateDec:", error);
+    throw error; // Re-throw the error to be handled by the caller
+  } finally {
+    await client.end();
+  }
 }
 
 async function updateNota(updatedData) {
