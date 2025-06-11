@@ -94,6 +94,11 @@ const Calculadora = ({
     valorDeve +
     comitions;
 
+  // Calculate the display value for totalGeral according to the new rounding rules
+  const roundedTotalGeral = Math.round(totalGeral / 0.5) * 0.5;
+  const displayTotalGeral =
+    roundedTotalGeral === 0 ? "0.50" : roundedTotalGeral.toFixed(2);
+
   const totalTroco = totalGeral - (Number(pix) || 0) - (Number(real) || 0);
   const pixMaisReal = Number(pix) + Number(real);
   // Buscar dados R agrupados por dec
@@ -921,7 +926,7 @@ const Calculadora = ({
           <input
             type="text"
             placeholder="SOMA TOTAL"
-            value={totalGeral !== 0 ? totalGeral.toFixed(2) : ""}
+            value={displayTotalGeral}
             className="input input-success input-xl w-62 z-3 text-center text-success mt-0.5 font-bold"
             readOnly
           />
