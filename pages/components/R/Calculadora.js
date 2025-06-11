@@ -66,7 +66,13 @@ const Calculadora = ({
     setMultiplier(Number(e.target.value));
   };
   const handlePlusChange = (e) => {
-    onPlusChange(Number(e.target.value)); // Usa o handler do prop
+    const inputValue = e.target.value;
+    if (inputValue === "") {
+      onPlusChange(null); // Send null for empty
+    } else {
+      const numericValue = parseFloat(inputValue);
+      onPlusChange(isNaN(numericValue) ? null : numericValue);
+    }
   };
 
   const handleValueChange = (index, e) => {
@@ -97,9 +103,11 @@ const Calculadora = ({
   // Calculate the display value for totalGeral according to the new rounding rules
   const roundedTotalGeral = Math.round(totalGeral / 0.5) * 0.5;
   const displayTotalGeral =
-    roundedTotalGeral === 0 ? "0.50" : roundedTotalGeral.toFixed(2);
+    roundedTotalGeral === 0 ? "SOMA TOTAL" : roundedTotalGeral.toFixed(2);
 
   const totalTroco = totalGeral - (Number(pix) || 0) - (Number(real) || 0);
+  const roundedTroco = Math.round(totalTroco / 0.5) * 0.5;
+
   const pixMaisReal = Number(pix) + Number(real);
   // Buscar dados R agrupados por dec
   useEffect(() => {
@@ -867,13 +875,14 @@ const Calculadora = ({
         {comentarioCadastro}
       </div>
 
-      <form onSubmit={handleSubmit}>
+      <form onSubmit={handleSubmit} autoComplete="nope">
         <div className="join">
           <input
             type="text"
             placeholder="Nome"
             className="input input-warning input-xs w-32 join-item"
             value={nome}
+            autoComplete="nope"
             onChange={(e) => onNomeChange(e.target.value)}
             required
           />
@@ -882,14 +891,16 @@ const Calculadora = ({
             placeholder="CODIGO"
             className="input input-warning input-xs w-23 join-item"
             value={codigo}
+            autoComplete="nope"
             onChange={(e) => onCodigoChange(e.target.value)}
             required
           />
           <input
             type="number"
             className="input input-warning text-warning text-left input-xs w-7.5 join-item"
-            value={plus}
+            value={plus === null || plus === undefined ? "" : plus}
             placeholder={0}
+            autoComplete="nope"
             onChange={handlePlusChange}
           />
         </div>
@@ -897,6 +908,7 @@ const Calculadora = ({
           type="number"
           className="input input-warning hidden text-warning input-xs w-7.5"
           value={multiplier}
+          autoComplete="nope"
           onChange={handleMultiplierChange}
         />
         <div className="grid grid-cols-4 mt-0.5 w-fit">
@@ -908,6 +920,7 @@ const Calculadora = ({
                 type="number"
                 className="input input-info input-xs w-15.5 appearance-none"
                 value={values[i]}
+                autoComplete="nope"
                 onChange={(e) => handleValueChange(i, e)}
               />
             </div>
@@ -918,6 +931,7 @@ const Calculadora = ({
             type="text"
             placeholder="Total"
             value={typeof total === "number" ? total.toFixed(2) : ""}
+            autoComplete="nope"
             className="input input-warning input-xs w-62 z-3 text-center text-warning font-bold"
             readOnly
           />
@@ -927,6 +941,7 @@ const Calculadora = ({
             type="text"
             placeholder="SOMA TOTAL"
             value={displayTotalGeral}
+            autoComplete="nope"
             className="input input-success input-xl w-62 z-3 text-center text-success mt-0.5 font-bold"
             readOnly
           />
@@ -939,13 +954,15 @@ const Calculadora = ({
             placeholder="Pix"
             className="input input-secondary input-lg z-2 text-secondary font-bold join-item"
             value={pix}
+            autoComplete="nope"
             onChange={(e) => setPix(e.target.value)}
           />
           <input
             min="0"
             type="text"
             placeholder="Troco"
-            value={totalTroco !== 0 ? totalTroco.toFixed(2) : ""}
+            value={roundedTroco.toFixed(2)}
+            autoComplete="nope"
             className="input input-defaut input-lg join-item font-bold"
           />
           <input
@@ -955,6 +972,7 @@ const Calculadora = ({
             placeholder="Real"
             className="input input-secondary input-lg z-2 text-secondary font-bold join-item"
             value={real}
+            autoComplete="nope"
             onChange={(e) => setReal(e.target.value)}
           />
           <div className="grid grid-cols-2 col-span-3 my-0.5 z-50">
@@ -975,6 +993,7 @@ const Calculadora = ({
             type="text"
             placeholder="Comentário"
             className="input input-primary w-30 input-xs join-item" // Ajuste de largura
+            autoComplete="nope"
             value={comentario}
             onChange={(e) => setComentario(e.target.value)}
           />
@@ -984,6 +1003,7 @@ const Calculadora = ({
             type="number"
             placeholder="Desperdício"
             className="input input-primary w-20 input-xs join-item"
+            autoComplete="nope"
             value={perdida}
             onChange={(e) => setPerdida(e.target.value)}
           />

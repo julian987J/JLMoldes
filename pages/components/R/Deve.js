@@ -103,7 +103,7 @@ const Deve = ({ codigo, r }) => {
             <th className="hidden">CODIGO</th>
             <th>Nome</th>
             <th>V. Papel</th>
-            <th>V. Comissão</th>
+            <th>Encaixe</th>
             <th className="w-20">Deve</th>
           </tr>
         </thead>

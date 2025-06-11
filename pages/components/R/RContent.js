@@ -15,7 +15,7 @@ const Rcontent = ({ codigoExterno, r }) => {
   // Se o codigoExterno for passado, não alteramos o estado de codigo
   const [codigo, setCodigo] = useState(codigoExterno || "");
   const [nome, setNome] = useState("");
-  const [plusCalculadora, setPlusCalculadora] = useState(0);
+  const [plusCalculadora, setPlusCalculadora] = useState(null);
   const [valuesCalculadora, setValuesCalculadora] = useState(
     Array(28).fill(""),
   );
@@ -114,7 +114,7 @@ const Rcontent = ({ codigoExterno, r }) => {
     if (!codigoExternoRef.current) {
       setCodigo(novoCodigo); // Só altera o código se codigoExterno não estiver definido
       setSelectedPendenteItem(null); // Limpa a seleção do pendente
-      setPlusCalculadora(0); // Reseta o plus
+      setPlusCalculadora(null); // Reseta o plus para null
       setValuesCalculadora(Array(28).fill("")); // Reseta os values
     }
   };
@@ -122,7 +122,7 @@ const Rcontent = ({ codigoExterno, r }) => {
   const handleNomeChange = (novoNome) => {
     setNome(novoNome);
     setSelectedPendenteItem(null); // Limpa a seleção do pendente
-    setPlusCalculadora(0); // Reseta o plus
+    setPlusCalculadora(null); // Reseta o plus para null
     setValuesCalculadora(Array(28).fill("")); // Reseta os values
   };
 
@@ -142,7 +142,23 @@ const Rcontent = ({ codigoExterno, r }) => {
     setSelectedPendenteItem(item);
     setCodigo(item.codigo || "");
     setNome(item.nome || "");
-    setPlusCalculadora(Number(item.comissao) || 0);
+
+    const rawComissao = item.comissao;
+    let newPlusState = null; // Default to null for empty/invalid
+    if (rawComissao !== undefined && rawComissao !== null) {
+      const valStr = String(rawComissao).trim();
+      if (valStr === "") {
+        // Explicitly empty string from data
+        newPlusState = null;
+      } else {
+        const num = parseFloat(valStr);
+        if (!isNaN(num)) {
+          newPlusState = num; // This will be 0 if item.comissao was "0" or 0
+        }
+      }
+    }
+    setPlusCalculadora(newPlusState);
+
     const itemValues = Array.from({ length: 28 }, (_, i) => {
       const propName = `v${String(i + 1).padStart(2, "0")}`;
       return item[propName] !== undefined && item[propName] !== null
