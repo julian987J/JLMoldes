@@ -1089,6 +1089,38 @@ async function removeTemp(itemId) {
   }
 }
 
+async function removePagamentoById(id) {
+  try {
+    const response = await fetch(`/api/v1/tables/pagamentos`, {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id }), // Send ID in the body
+    });
+
+    if (!response.ok) {
+      let errorMsg = `Erro ao excluir pagamento ID ${id} (Status: ${response.status})`;
+      try {
+        const errorData = await response.json();
+        errorMsg = errorData.error || errorData.message || errorMsg;
+      } catch (parseError) {
+        // Ignore if body is not valid JSON
+      }
+      throw new Error(errorMsg);
+    }
+    // Handle 204 No Content or non-JSON responses
+    if (
+      response.status === 204 ||
+      !response.headers.get("content-type")?.includes("application/json")
+    ) {
+      return { message: `Pagamento com ID ${id} deletado com sucesso.` };
+    }
+    return await response.json();
+  } catch (error) {
+    console.error(`Erro em removePagamentoById (ID ${id}):`, error);
+    throw error;
+  }
+}
+
 async function deleteAllPagamentos() {
   try {
     const response = await fetch(`/api/v1/tables/pagamentos`, {
@@ -1168,6 +1200,7 @@ const execute = {
   removeMandR,
   removeDeve,
   removeDevo,
+  removePagamentoById,
   removeTemp,
   deleteAllPagamentos,
 };

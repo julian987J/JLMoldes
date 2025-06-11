@@ -1512,6 +1512,24 @@ async function deleteAllPagamentos() {
   return result;
 }
 
+export async function deletePagamentoById(id) {
+  const result = await database.query({
+    text: `DELETE FROM "Pagamentos" WHERE id = $1 RETURNING id, r;`, // RETURNING id and r for notification payload
+    values: [id],
+  });
+  return result;
+}
+
+export async function deletePagamentosByR(rValue) {
+  // This function was implied by the API endpoint but might not have been fully implemented or present.
+  // Adding a basic implementation.
+  const result = await database.query({
+    text: `DELETE FROM "Pagamentos" WHERE r = $1 RETURNING id;`,
+    values: [rValue],
+  });
+  return result;
+}
+
 const ordem = {
   createM,
   createPessoal,
@@ -1570,6 +1588,8 @@ const ordem = {
   deleteR,
   deleteDeve,
   deleteDevo,
+  deletePagamentoById,
+  deletePagamentosByR,
   deleteTemp,
   deleteAllPagamentos,
   updateDeve,

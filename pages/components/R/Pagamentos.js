@@ -8,12 +8,14 @@ import React, {
 import Execute from "models/functions"; // Assuming this will have receiveFromPagamentos
 import Use from "models/utils"; // For date/time formatting
 import { useWebSocket } from "../../../contexts/WebSocketContext.js"; // Adjust path if necessary
+import { useAuth } from "../../../contexts/AuthContext.js"; // Import useAuth
 
 const sortDadosByDate = (dataArray) =>
   [...dataArray].sort((a, b) => new Date(a.data) - new Date(b.data));
 
 const Pagamentos = ({ r }) => {
   const [dados, setDados] = useState([]);
+  const { user } = useAuth(); // Get user from AuthContext
   const [loading, setLoading] = useState(true);
   const { lastMessage } = useWebSocket();
   const [deleteAttemptedThisSlot, setDeleteAttemptedThisSlot] = useState(false);
@@ -121,9 +123,12 @@ const Pagamentos = ({ r }) => {
           }
           break;
         case "PAGAMENTOS_DELETED_ITEM":
-          if (payload && payload.id !== undefined) {
-            // Assuming deletion is primarily by ID.
-            // Add String(payload.r) === String(r) if necessary for your backend logic
+          // Payload from API: { id: deletedItemId, r: deletedItemR }
+          if (
+            payload &&
+            payload.id !== undefined &&
+            String(payload.r) === String(r)
+          ) {
             setDados((prevDados) =>
               sortDadosByDate(
                 prevDados.filter(
@@ -133,13 +138,12 @@ const Pagamentos = ({ r }) => {
             );
           }
           break;
-        case "PAGAMENTOS_R_CLEARED": // New case for all payments deleted for an 'r'
+        case "PAGAMENTOS_R_CLEARED":
           if (payload && String(payload.r) === String(r)) {
             setDados([]);
           }
           break;
-        case "PAGAMENTOS_TABLE_CLEARED": // Novo evento para quando a tabela inteira é limpa
-          // Não precisa verificar 'r' aqui, pois todos os dados foram removidos.
+        case "PAGAMENTOS_TABLE_CLEARED":
           setDados([]);
           break;
         default:
@@ -148,6 +152,26 @@ const Pagamentos = ({ r }) => {
       lastProcessedTimestampRef.current = lastMessage.timestamp;
     }
   }, [lastMessage, r, setDados]);
+
+  const handleDelete = async (itemId) => {
+    // Optional: Add a confirmation dialog
+    // if (!confirm(`Tem certeza que deseja excluir o pagamento ID ${itemId}?`)) {
+    //   return;
+    // }
+    try {
+      await Execute.removePagamentoById(itemId);
+      // Optimistically update UI. WebSocket message will eventually confirm.
+      setDados((prevDados) =>
+        sortDadosByDate(
+          prevDados.filter((item) => String(item.id) !== String(itemId)),
+        ),
+      );
+    } catch (error) {
+      console.error(`Erro ao excluir pagamento ID ${itemId}:`, error);
+      alert(`Falha ao excluir pagamento: ${error.message}`);
+      loadData(); // Re-fetch data on error to ensure consistency
+    }
+  };
 
   const groupedPagamentos = useMemo(() => {
     return dados.reduce((acc, item) => {
@@ -181,8 +205,11 @@ const Pagamentos = ({ r }) => {
                 <tr>
                   <th className="w-24">Hora</th>
                   <th>Nome</th>
-                  <th className="w-28 text-right">Real</th>
-                  <th className="w-28 text-right">Pix</th>
+                  <th className="w-28 text-right">R</th>
+                  <th className="w-28 text-right">P</th>
+                  {user && user.role === "admin" && (
+                    <th className="w-20 text-center">Ações</th>
+                  )}
                 </tr>
               </thead>
               <tbody>
@@ -191,37 +218,24 @@ const Pagamentos = ({ r }) => {
                     <td>{item.horaFormatada}</td>
                     <td>{item.nome}</td>
                     <td className="text-right">
-                      $ {Number(item.real).toFixed(2)}
+                      {Number(item.real).toFixed(2)}
                     </td>
                     <td className="text-right">
-                      $ {Number(item.pix).toFixed(2)}
+                      {Number(item.pix).toFixed(2)}
                     </td>
+                    {user && user.role === "admin" && (
+                      <td className="text-center">
+                        <button
+                          className="btn btn-xs btn-error btn-outline"
+                          onClick={() => handleDelete(item.id)}
+                        >
+                          Excluir
+                        </button>
+                      </td>
+                    )}
                   </tr>
                 ))}
               </tbody>
-              <tfoot>
-                <tr>
-                  <td colSpan="2" className="font-bold text-right">
-                    Total do Dia:
-                  </td>
-                  <td className="font-bold text-right bg-info/10">
-                    {Number(
-                      itemsDoDia.reduce(
-                        (sum, item) => sum + Number(item.real),
-                        0,
-                      ),
-                    ).toFixed(2)}
-                  </td>
-                  <td className="font-bold text-right bg-info/10">
-                    {Number(
-                      itemsDoDia.reduce(
-                        (sum, item) => sum + Number(item.pix),
-                        0,
-                      ),
-                    ).toFixed(2)}
-                  </td>
-                </tr>
-              </tfoot>
             </table>
           </div>
         ))}
