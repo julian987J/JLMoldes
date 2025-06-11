@@ -35,11 +35,13 @@ const NavBar = ({
       label: "R2",
       componentName: "Rcontent",
       props: { r: 2 },
+      allowedRoles: ["admin"],
     },
     {
       label: "R3",
       componentName: "Rcontent",
       props: { r: 3 },
+      allowedRoles: ["admin"],
     },
     {
       label: "M1",
@@ -64,31 +66,37 @@ const NavBar = ({
       label: "C1",
       componentName: "Ccontent",
       props: { r: 1 },
+      allowedRoles: ["admin"],
     },
     {
       label: "C2",
       componentName: "Ccontent",
       props: { r: 2 },
+      allowedRoles: ["admin"],
     },
     {
       label: "C3",
       componentName: "Ccontent",
       props: { r: 3 },
+      allowedRoles: ["admin"],
     },
     {
       label: "T1",
       componentName: "Tcontent",
       props: { r: 1, oficina: "R1" },
+      allowedRoles: ["admin"],
     },
     {
       label: "T2",
       componentName: "Tcontent",
       props: { r: 2, oficina: "R2" },
+      allowedRoles: ["admin"],
     },
     {
       label: "T3",
       componentName: "Tcontent",
       props: { r: 3, oficina: "R3" },
+      allowedRoles: ["admin"],
     },
     // Abas restritas para administradores
     {
@@ -173,7 +181,6 @@ const NavBar = ({
       label: "Cadastros",
       componentName: "Cadastro",
       props: {},
-      allowedRoles: ["admin"],
       hasUpdateComponent: true,
     },
   ];
