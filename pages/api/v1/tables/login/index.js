@@ -58,11 +58,9 @@ async function putHandler(request, response) {
 
     if (id === undefined || !usuario || !senha) {
       // Check for undefined id as well
-      return response
-        .status(400)
-        .json({
-          message: "ID, usuário e senha são obrigatórios para atualização.",
-        });
+      return response.status(400).json({
+        message: "ID, usuário e senha são obrigatórios para atualização.",
+      });
     }
 
     // SECURITY WARNING: Passwords received from the client should be hashed here

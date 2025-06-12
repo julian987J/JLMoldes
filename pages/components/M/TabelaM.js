@@ -258,7 +258,7 @@ const TabelaM = ({
                     key={item.id}
                     className={
                       item.r1
-                        ? "bg-yellow-100 border-b border-gray-700"
+                        ? "bg-warning/20 border-b border-gray-700"
                         : item.r2
                           ? "bg-primary/20 border-b border-gray-700"
                           : item.r3
