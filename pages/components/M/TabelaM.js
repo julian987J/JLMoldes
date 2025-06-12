@@ -441,34 +441,42 @@ const TabelaM = ({
                         className={`btn btn-xs btn-soft btn-success ${
                           editingId === item.id ? "hidden" : ""
                         }`}
-                        onClick={() => {
+                        onClick={async () => {
                           const sis = Number(item.sis || 0);
                           const alt = Number(item.alt || 0);
                           const base = Number(item.base || 0);
+                          try {
+                            await Execute.sendToC({
+                              codigo: item.codigo,
+                              dec: item.dec,
+                              r: r,
+                              data: item.data,
+                              nome: item.nome,
+                              sis: sis,
+                              alt: alt,
+                              base: base,
+                              real: 0,
+                              pix: sis + alt + base,
+                            });
 
-                          Execute.sendToC({
-                            codigo: item.codigo,
-                            dec: item.dec,
-                            r: r,
-                            data: item.data,
-                            nome: item.nome,
-                            sis: sis,
-                            alt: alt,
-                            base: base,
-                            real: 0,
-                            pix: sis + alt + base,
-                          });
+                            await handleUpdateDec({
+                              dec: item.dec,
+                              r: r,
+                              sis: sis,
+                              alt: alt,
+                              base: base,
+                            });
 
-                          handleUpdateDec({
-                            dec: item.dec,
-                            r: r,
-                            sis: sis,
-                            alt: alt,
-                            base: base,
-                          });
-
-                          Execute.removeMandR(item.id);
-                          setDados([]);
+                            // Awaiting this ensures the call is made before the handler exits.
+                            // The UI update itself is still expected via WebSocket.
+                            await Execute.removeMandR(item.id);
+                          } catch (error) {
+                            console.error(
+                              "Error during Pagar operation:",
+                              error,
+                            );
+                            // Optionally, set an error state here to inform the user
+                          }
                         }}
                       >
                         Pagar
@@ -479,7 +487,6 @@ const TabelaM = ({
                         }`}
                         onClick={() => {
                           Execute.removeMandR(item.id);
-                          setDados([]);
                         }}
                       >
                         Excluir
