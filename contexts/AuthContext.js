@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { useRouter } from "next/router";
+import execute from "models/functions"; // Import the execute object
 
 const AuthContext = createContext();
 
@@ -24,18 +25,21 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const login = async (username, password) => {
-    if (username === "admin" && password === "987654321") {
-      const userData = { username: "admin", role: "admin" };
+    setLoading(true);
+    try {
+      const userDataFromApi = await execute.loginUser(username, password);
+      const role = userDataFromApi.usuario === "admin" ? "admin" : "user";
+      const userData = { ...userDataFromApi, role };
+
       localStorage.setItem("currentUser", JSON.stringify(userData));
       setUser(userData);
+      setLoading(false);
       return userData;
-    } else if (username === "user" && password === "123456789") {
-      const userData = { username: "user", role: "user" };
-      localStorage.setItem("currentUser", JSON.stringify(userData));
-      setUser(userData);
-      return userData;
+    } catch (error) {
+      setLoading(false);
+      console.error("Falha no login:", error.message);
+      throw new Error(error.message || "Credenciais inválidas.");
     }
-    throw new Error("Credenciais inválidas");
   };
 
   const logout = () => {

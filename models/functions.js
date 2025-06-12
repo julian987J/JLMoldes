@@ -1144,6 +1144,72 @@ async function deleteAllPagamentos() {
     throw error;
   }
 }
+
+const loginUser = async (username, password) => {
+  try {
+    const response = await fetch("/api/v1/tables/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username, password }),
+    });
+
+    if (!response.ok) {
+      let errorMsg = `Erro ao tentar fazer login (Status: ${response.status})`;
+      try {
+        const errorData = await response.json();
+        errorMsg = errorData.message || errorData.error || errorMsg;
+      } catch (parseError) {
+        // Ignora se o corpo não for JSON válido
+      }
+      throw new Error(errorMsg);
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error(`Erro em loginUser:`, error);
+    throw error;
+  }
+};
+
+async function receiveUsers() {
+  try {
+    const response = await fetch("/api/v1/tables/login"); // GET request by default
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(
+        errorData.message ||
+          `Erro ao carregar usuários (Status: ${response.status})`,
+      );
+    }
+    return await response.json();
+  } catch (error) {
+    console.error("Erro ao buscar usuários:", error);
+    return []; // Return empty array on error to prevent crashes
+  }
+}
+
+async function updateUser(userData) {
+  try {
+    const response = await fetch("/api/v1/tables/login", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(userData), // userData should include id, usuario, senha
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({})); // Try to parse error
+      throw new Error(
+        errorData.message ||
+          `Erro ao atualizar usuário (Status: ${response.status})`,
+      );
+    }
+    return await response.json(); // Expecting the updated user object back
+  } catch (error) {
+    console.error("Erro ao atualizar usuário:", error);
+    throw error; // Re-throw to be handled by the component
+  }
+}
+
 const execute = {
   sendTrueMR,
   sendToR,
@@ -1203,6 +1269,9 @@ const execute = {
   removePagamentoById,
   removeTemp,
   deleteAllPagamentos,
+  loginUser,
+  receiveUsers, // Added
+  updateUser, // Added
 };
 
 export default execute;

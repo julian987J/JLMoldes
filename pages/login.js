@@ -2,10 +2,14 @@ import React, { useState, useEffect } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import { useRouter } from "next/router";
 
+import Password from "./components/Password.js";
+
 const LoginPage = () => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [showChangePasswordButton, setShowChangePasswordButton] =
+    useState(false); // State for button visibility
   const { login, isAuthenticated, loading } = useAuth();
   const router = useRouter();
 
@@ -14,6 +18,26 @@ const LoginPage = () => {
       router.push("/");
     }
   }, [isAuthenticated, loading, router]);
+
+  useEffect(() => {
+    const handleKeyDown = (event) => {
+      if (
+        event.ctrlKey &&
+        event.altKey &&
+        (event.key === "s" || event.key === "S")
+      ) {
+        event.preventDefault(); // Prevent any default browser action for this combo
+        setShowChangePasswordButton((prevState) => !prevState); // Toggle visibility
+      }
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+
+    // Cleanup the event listener when the component unmounts
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, []); // Empty dependency array means this effect runs once on mount and cleans up on unmount
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -63,6 +87,31 @@ const LoginPage = () => {
               </button>
             </div>
           </form>
+          {showChangePasswordButton && (
+            <>
+              <button
+                className="btn btn-secondary mt-4" // Added mt-4 for spacing
+                onClick={() =>
+                  document.getElementById("my_modal_5").showModal()
+                }
+              >
+                Mudar Senhas
+              </button>
+              <dialog
+                id="my_modal_5"
+                className="modal modal-bottom sm:modal-middle"
+              >
+                <div className="modal-box">
+                  <Password />
+                  <div className="modal-action">
+                    <form method="dialog">
+                      <button className="btn">Fechar</button>
+                    </form>
+                  </div>
+                </div>
+              </dialog>
+            </>
+          )}
         </div>
       </div>
     </div>

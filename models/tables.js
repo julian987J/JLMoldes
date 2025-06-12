@@ -1530,6 +1530,50 @@ export async function deletePagamentosByR(rValue) {
   return result;
 }
 
+async function verifyUserCredentials(username, password) {
+  try {
+    const result = await database.query({
+      text: `SELECT id, usuario FROM "users" WHERE usuario = $1 AND senha = $2;`,
+
+      values: [username, password],
+    });
+
+    if (result.rows.length > 0) {
+      return result.rows[0]; // Returns { id, usuario }
+    }
+    return null; // User not found or password incorrect
+  } catch (error) {
+    console.error("Erro ao verificar credenciais do usuário:", error);
+    throw error; // Re-throw to be caught by the API handler
+  }
+}
+
+async function getUsers() {
+  // SECURITY WARNING: Selecting 'senha' (password) and sending it to the client is a security risk.
+  // Passwords should be hashed in the database and ideally not displayed or directly edited.
+  const result = await database.query({
+    text: `SELECT id, usuario, senha FROM "users" ORDER BY id ASC;`,
+  });
+  return result.rows;
+}
+
+async function updateUser(userData) {
+  // SECURITY WARNING: If 'senha' is being updated, it should be hashed here before saving to the database.
+  // Storing plaintext passwords is highly insecure.
+  const result = await database.query({
+    text: `
+      UPDATE "users" 
+      SET usuario = $1, senha = $2 
+      WHERE id = $3 
+      RETURNING id, usuario, senha; 
+    `, // Returning 'senha' is also a risk.
+    values: [userData.usuario, userData.senha, userData.id],
+  });
+  // Optionally, notify via WebSocket if user changes should be real-time across admin panels
+  // await notifyWebSocketServer({ type: "USER_UPDATED_ITEM", payload: result.rows[0] });
+  return result.rows[0]; // Return the updated user
+}
+
 const ordem = {
   createM,
   createPessoal,
@@ -1609,6 +1653,9 @@ const ordem = {
   updateRCalculadora,
   updateBase,
   updateRButton,
+  verifyUserCredentials,
+  getUsers, // Added
+  updateUser, // Added
 };
 
 export default ordem;

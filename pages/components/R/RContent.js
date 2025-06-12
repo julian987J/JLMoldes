@@ -6,6 +6,7 @@ import Deve from "./Deve.js";
 import Devo from "./Devo.js";
 import Pendente from "./Pendente.js";
 import Pagamentos from "./Pagamentos.js";
+import Metragem from "./Metragem.js";
 
 const Rcontent = ({ codigoExterno, r }) => {
   // Referência para o valor de codigoExterno, para garantir que não altere depois de passado
@@ -197,6 +198,9 @@ const Rcontent = ({ codigoExterno, r }) => {
         </div>
         <div>
           <Pagamentos r={r} />
+        </div>
+        <div>
+          <Metragem r={r} />
         </div>
       </div>
     </div>
