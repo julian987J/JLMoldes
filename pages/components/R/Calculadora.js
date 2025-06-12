@@ -1,6 +1,7 @@
 import Execute from "models/functions";
 import { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
+import { useWebSocket } from "../../../contexts/WebSocketContext.js"; // Import WebSocket context
 import Use from "models/utils.js";
 
 let codigoAleatorioGlobal = "";
@@ -52,6 +53,7 @@ const Calculadora = ({
   // const [values, setValues] = useState(Array(28).fill("")); // Removido, agora é prop
   const [pix, setPix] = useState("");
   const [real, setReal] = useState("");
+  const { lastMessage } = useWebSocket(); // Use WebSocket
   const [comentario, setComentario] = useState("");
   const [perdida, setPerdida] = useState("");
   const [comentarioCadastro, setComentarioCadastro] = useState("");
@@ -193,9 +195,27 @@ const Calculadora = ({
       }
     };
     fetchData();
-    const intervalId = setInterval(fetchData, 5000);
-    return () => clearInterval(intervalId);
+    // Polling removed, WebSocket will handle updates
+    // const intervalId = setInterval(fetchData, 5000);
+    // return () => clearInterval(intervalId);
   }, []);
+
+  // useEffect to handle config updates from WebSocket
+  useEffect(() => {
+    if (lastMessage && lastMessage.data) {
+      const { type, payload } = lastMessage.data;
+      if (type === "CONFIG_UPDATED_ITEM" && payload) {
+        // Assuming payload is the new config object { id, m, e, d, ... }
+        // or an array with one config object as in Config.js
+        const configData = Array.isArray(payload) ? payload[0] : payload;
+        if (configData) {
+          setMultiplier(configData.m);
+          setDesperdicio(configData.d);
+          setComissi(configData.e);
+        }
+      }
+    }
+  }, [lastMessage]);
 
   useEffect(() => {
     const fetchComentarioFromCadastro = async () => {
