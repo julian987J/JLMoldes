@@ -453,7 +453,7 @@ const Calculadora = ({
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const trocoValue = Number(totalTroco);
+    const trocoValue = Number(roundedTroco);
 
     try {
       if (dadosR && !valorDeve && trocoValue > 0 && !Number(total)) {

@@ -14,7 +14,6 @@ const Metragem = ({ r }) => {
   // groupedResults será derivado de 'dados' usando useMemo
   const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState(null);
-  const [exists, setExists] = useState([]); // Dados da tabela "Deve"
   const { lastMessage } = useWebSocket();
   const lastProcessedTimestampRef = useRef(null);
 
@@ -98,109 +97,9 @@ const Metragem = ({ r }) => {
         });
       }
 
-      // --- Lida com atualizações na tabela Deve (dados 'exists') ---
-      if (
-        (type === "DEVE_NEW_ITEM" || type === "DEVE_UPDATED_ITEM") &&
-        payload &&
-        String(payload.r) === String(r)
-      ) {
-        setExists((prevExists) => {
-          if (payload) {
-            let newExists = [...prevExists];
-            let itemIndex = -1;
-
-            const pId = payload.id;
-            const pCodigo = payload.codigo;
-
-            // Tenta encontrar o item pelo ID do payload, se existir
-            if (pId !== undefined) {
-              itemIndex = newExists.findIndex(
-                (item) =>
-                  item.id !== undefined && String(item.id) === String(pId),
-              );
-            }
-
-            // Se não encontrado pelo ID (ou se o payload não tinha ID), tenta pelo código, se existir
-            if (itemIndex === -1 && pCodigo !== undefined) {
-              itemIndex = newExists.findIndex(
-                (item) =>
-                  item.codigo !== undefined &&
-                  String(item.codigo) === String(pCodigo),
-              );
-            }
-
-            switch (type) {
-              case "DEVE_NEW_ITEM":
-                if (itemIndex === -1) {
-                  newExists.push(payload); // Adiciona se realmente novo
-                } else {
-                  // Se já existe (ex: mensagem duplicada ou chegou fora de ordem), atualiza
-                  newExists[itemIndex] = {
-                    ...newExists[itemIndex],
-                    ...payload,
-                  };
-                }
-                break;
-              case "DEVE_UPDATED_ITEM":
-                if (itemIndex !== -1) {
-                  newExists[itemIndex] = {
-                    ...newExists[itemIndex],
-                    ...payload,
-                  };
-                } else {
-                  // Item não encontrado para atualização. Isso pode ser a causa do problema.
-                  console.warn(
-                    "DEVE_UPDATED_ITEM: Item não encontrado no estado 'exists' para o payload:",
-                    payload,
-                    "Estado 'exists' atual:",
-                    prevExists,
-                  );
-                }
-                break;
-              // DEVE_DELETED_ITEM é tratado em um bloco 'else if' separado
-            }
-            return newExists.sort(
-              (a, b) => new Date(a.data) - new Date(b.data),
-            ); // Ordena se necessário
-          }
-          return prevExists; // Retorna o estado anterior se o payload for nulo (segurança)
-        });
-      } else if (type === "DEVE_DELETED_ITEM" && payload) {
-        setExists((prevExists) => {
-          let newExists = [...prevExists];
-          const pId = payload.id;
-          const pCodigo = payload.codigo;
-
-          if (pCodigo !== undefined) {
-            newExists = newExists.filter(
-              (item) =>
-                !(
-                  item.codigo !== undefined &&
-                  String(item.codigo) === String(pCodigo)
-                ),
-            );
-          }
-          // Adicionado para robustez, caso o payload de deleção comece a enviar 'id' no futuro
-          if (pId !== undefined) {
-            newExists = newExists.filter(
-              (item) =>
-                !(item.id !== undefined && String(item.id) === String(pId)),
-            );
-          }
-
-          if (pCodigo === undefined && pId === undefined) {
-            console.warn(
-              "DEVE_DELETED_ITEM: Payload sem 'codigo' ou 'id' para identificar o item a ser deletado",
-              payload,
-            );
-          }
-          return newExists.sort((a, b) => new Date(a.data) - new Date(b.data)); // Ordena se necessário
-        });
-      }
-
       lastProcessedTimestampRef.current = lastMessage.timestamp;
     }
-  }, [lastMessage, r, editingId, setDados, setExists]);
+  }, [lastMessage, r, editingId]);
 
   const groupedResults = useMemo(() => {
     return dados.reduce((acc, item) => {
@@ -239,8 +138,7 @@ const Metragem = ({ r }) => {
 
   return (
     <div className="overflow-x-auto rounded-box border border-warning bg-base-100">
-      {/* Display Grand Totals at the top - MOVED HERE */}
-      {Object.keys(groupedResults).length > 0 && ( // Conditionally render if there's data
+      {Object.keys(groupedResults).length > 0 && (
         <div className="text-center text-neutral/70 font-semibold bg-info/40 border-b border-warning">
           {grandTotalUtil + grandTotalPerdida}
         </div>
@@ -269,14 +167,7 @@ const Metragem = ({ r }) => {
               </thead>
               <tbody>
                 {items.map((item) => (
-                  <tr
-                    key={item.id}
-                    className={`border-b border-warning ${
-                      exists.some((e) => e.deveid === item.deveid)
-                        ? "bg-error/70"
-                        : ""
-                    }`}
-                  >
+                  <tr key={item.id} className="border-b border-warning">
                     <td className="hidden">{item.id}</td>
                     <td className="text-center">{item.util}</td>
                     <td className="text-center">{item.perdida}</td>

@@ -236,6 +236,29 @@ const Pagamentos = ({ r }) => {
                   </tr>
                 ))}
               </tbody>
+              <tfoot>
+                <tr>
+                  <td colSpan="2" className="font-bold text-right"></td>
+                  <td className="font-bold text-right bg-info/10">
+                    {Number(
+                      itemsDoDia.reduce(
+                        (sum, item) => sum + Number(item.real),
+                        0,
+                      ),
+                    ).toFixed(2)}
+                  </td>
+                  {user && user.role === "admin" && (
+                    <td className="font-bold text-right bg-info/10">
+                      {Number(
+                        itemsDoDia.reduce(
+                          (sum, item) => sum + Number(item.pix),
+                          0,
+                        ),
+                      ).toFixed(2)}
+                    </td>
+                  )}
+                </tr>
+              </tfoot>
             </table>
           </div>
         ))}
