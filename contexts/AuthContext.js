@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { useRouter } from "next/router";
-import execute from "models/functions"; // Import the execute object
+import Execute from "models/functions"; // Import the Execute object
 
 const AuthContext = createContext();
 
@@ -27,9 +27,14 @@ export const AuthProvider = ({ children }) => {
   const login = async (username, password) => {
     setLoading(true);
     try {
-      const userDataFromApi = await execute.loginUser(username, password);
-      const role = userDataFromApi.usuario === "admin" ? "admin" : "user";
-      const userData = { ...userDataFromApi, role };
+      const userDataFromApi = await Execute.loginUser(username, password);
+      // Verifica se userDataFromApi e userDataFromApi.role existem
+      if (!userDataFromApi || typeof userDataFromApi.role === "undefined") {
+        throw new Error(
+          "Resposta da API de login não contém o papel do usuário.",
+        );
+      }
+      const userData = { ...userDataFromApi, role: userDataFromApi.role }; // Usa o role vindo da API
 
       localStorage.setItem("currentUser", JSON.stringify(userData));
       setUser(userData);

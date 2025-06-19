@@ -30,18 +30,19 @@ const NavBar = ({
       label: "R1",
       componentName: "Rcontent",
       props: { r: 1 },
+      allowedRoles: ["admin", "FuncionarioR1"],
     },
     {
       label: "R2",
       componentName: "Rcontent",
-      props: { r: 2 },
-      allowedRoles: ["admin"],
+      props: { r: 2 }, // Accessible by Admin, FuncionarioR2, FuncionarioR3
+      allowedRoles: ["admin", "FuncionarioR2"],
     },
     {
       label: "R3",
       componentName: "Rcontent",
-      props: { r: 3 },
-      allowedRoles: ["admin"],
+      props: { r: 3 }, // Accessible by Admin, FuncionarioR3
+      allowedRoles: ["admin", "FuncionarioR3"],
     },
     {
       label: "M1",
@@ -98,7 +99,6 @@ const NavBar = ({
       props: { r: 3, oficina: "R3" },
       allowedRoles: ["admin"],
     },
-    // Abas restritas para administradores
     {
       label: "A-Gastos",
       componentName: "Gastos",
@@ -267,8 +267,7 @@ const NavBar = ({
         {user && (
           <div className="ml-auto flex items-center gap-2 p-2">
             <span className="text-sm">
-              Olá, {user.username} (
-              {user.role === "admin" ? "Admin" : "Usuário"})
+              Olá, {user.username} ({user.role})
             </span>
             <button
               onClick={logout}

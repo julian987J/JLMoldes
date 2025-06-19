@@ -1533,7 +1533,7 @@ export async function deletePagamentosByR(rValue) {
 async function verifyUserCredentials(username, password) {
   try {
     const result = await database.query({
-      text: `SELECT id, usuario FROM "users" WHERE usuario = $1 AND senha = $2;`,
+      text: `SELECT * FROM "users" WHERE usuario = $1 AND senha = $2;`,
 
       values: [username, password],
     });
