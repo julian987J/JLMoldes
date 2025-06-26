@@ -39,11 +39,17 @@ const database = {
 export default database;
 
 function getSSLValues() {
+  // Caso você queira usar um certificado (não é o caso no Railway)
   if (process.env.POSTGRES_CA) {
     return {
       ca: process.env.POSTGRES_CA,
+      rejectUnauthorized: true,
     };
   }
 
-  return process.env.NODE_ENV === "production" ? true : false;
+  // SSL apenas em produção e preview (ex: Railway)
+  const env = process.env.NODE_ENV;
+  const isProdOrPreview = env === "production" || env === "preview";
+
+  return isProdOrPreview ? { rejectUnauthorized: false } : false;
 }
