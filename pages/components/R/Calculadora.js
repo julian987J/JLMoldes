@@ -58,6 +58,9 @@ const Calculadora = ({
   const [perdida, setPerdida] = useState("");
   const [comentarioCadastro, setComentarioCadastro] = useState("");
 
+  const [allCadastroNames, setAllCadastroNames] = useState([]);
+  const [filteredSuggestions, setFilteredSuggestions] = useState([]);
+
   // Calcula a soma bruta dos valores (novo cálculo)
   const sumValues = values.reduce((sum, current) => {
     const num = current === "" ? 0 : Number(current);
@@ -248,6 +251,56 @@ const Calculadora = ({
     };
     fetchComentarioFromCadastro();
   }, [codigo, nome]);
+
+  // Fetch all cadastro names on component mount
+  useEffect(() => {
+    let isMounted = true;
+    const fetchAllCadastroNames = async () => {
+      try {
+        const data = await Execute.receiveAllCad();
+        if (isMounted) {
+          setAllCadastroNames(data);
+        }
+      } catch (error) {
+        console.error("Erro ao buscar todos os nomes de cadastro:", error);
+      }
+    };
+    fetchAllCadastroNames();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  // WebSocket for cadastro updates
+  useEffect(() => {
+    if (lastMessage && lastMessage.data) {
+      const { type, payload } = lastMessage.data;
+      switch (type) {
+        case "CADASTRO_NEW_ITEM":
+          if (payload) {
+            setAllCadastroNames((prev) => [...prev, payload]);
+          }
+          break;
+        case "CADASTRO_UPDATED_ITEM":
+          if (payload) {
+            setAllCadastroNames((prev) =>
+              prev.map((item) => (item.id === payload.id ? payload : item)),
+            );
+          }
+          break;
+        case "CADASTRO_DELETED_ITEM":
+          if (payload && payload.id !== undefined) {
+            setAllCadastroNames((prev) =>
+              prev.filter((item) => item.id !== payload.id),
+            );
+          }
+          break;
+        default:
+          break;
+      }
+    }
+  }, [lastMessage]);
 
   const handleSave = async (editedData) => {
     try {
@@ -906,9 +959,32 @@ const Calculadora = ({
             className="input input-warning input-xs w-32 join-item"
             value={nome}
             autoComplete="nope"
-            onChange={(e) => onNomeChange(e.target.value)}
+            list="name-suggestions" // Linked to datalist
+            onChange={(e) => {
+              const novoNome = e.target.value;
+              onNomeChange(novoNome); // Update parent's nome state
+
+              if (novoNome.length > 0) {
+                const suggestions = allCadastroNames
+                  .filter(
+                    (item) =>
+                      item.nome &&
+                      item.nome.toLowerCase().includes(novoNome.toLowerCase()),
+                  )
+                  .map((item) => item.nome);
+                setFilteredSuggestions(suggestions);
+              } else {
+                // Clear suggestions if input is empty
+                setFilteredSuggestions([]);
+              }
+            }}
             required
           />
+          <datalist id="name-suggestions">
+            {filteredSuggestions.map((suggestion, index) => (
+              <option key={index} value={suggestion} />
+            ))}
+          </datalist>
           <input
             type="text"
             placeholder="CODIGO"

@@ -919,6 +919,19 @@ async function receiveFromCad(codigo) {
   }
 }
 
+async function receiveAllCad() {
+  try {
+    const response = await fetch("/api/v1/tables/cadastro");
+    if (!response.ok)
+      throw new Error("Erro ao carregar todos os dados de cadastro");
+    const data = await response.json();
+    return Array.isArray(data.rows) ? data.rows : [];
+  } catch (error) {
+    console.error("Erro ao buscar todos os dados de cadastro:", error);
+    return [];
+  }
+}
+
 async function receiveFromPapelCalculadora(oficina) {
   try {
     const response = await fetch(
@@ -1254,6 +1267,7 @@ const execute = {
   receiveFromPagamentos,
   receiveFromR,
   receiveFromRJustBSA,
+  receiveAllCad, // Added
   receiveFromCad,
   removeC,
   removeNota,
