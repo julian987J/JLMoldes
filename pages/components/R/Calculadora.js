@@ -1,5 +1,5 @@
 import Execute from "models/functions";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useId } from "react";
 import dynamic from "next/dynamic";
 import { useWebSocket } from "../../../contexts/WebSocketContext.js"; // Import WebSocket context
 import Use from "models/utils.js";
@@ -25,6 +25,7 @@ const Calculadora = ({
 }) => {
   const ErrorComponent = dynamic(() => import("../Errors.js"), { ssr: false });
   const [showError, setShowError] = useState(false);
+  const componentId = useId();
 
   useEffect(() => {
     setShowError(false); // Resetar no cliente após a montagem
@@ -208,8 +209,6 @@ const Calculadora = ({
     if (lastMessage && lastMessage.data) {
       const { type, payload } = lastMessage.data;
       if (type === "CONFIG_UPDATED_ITEM" && payload) {
-        // Assuming payload is the new config object { id, m, e, d, ... }
-        // or an array with one config object as in Config.js
         const configData = Array.isArray(payload) ? payload[0] : payload;
         if (configData) {
           setMultiplier(configData.m);
@@ -945,6 +944,8 @@ const Calculadora = ({
     comentario,
   };
 
+  const datalistId = `name-suggestions-${componentId}`;
+
   return (
     <div className="flex flex-col gap-1">
       <div className="badge badge-accent badge-sm w-62 whitespace-normal h-auto text-black">
@@ -959,7 +960,7 @@ const Calculadora = ({
             className="input input-warning input-xs w-32 join-item"
             value={nome}
             autoComplete="nope"
-            list="name-suggestions" // Linked to datalist
+            list={datalistId} // Linked to datalist
             onChange={(e) => {
               const novoNome = e.target.value;
               onNomeChange(novoNome); // Update parent's nome state
@@ -980,7 +981,7 @@ const Calculadora = ({
             }}
             required
           />
-          <datalist id="name-suggestions">
+          <datalist id={datalistId}>
             {filteredSuggestions.map((suggestion, index) => (
               <option key={index} value={suggestion} />
             ))}

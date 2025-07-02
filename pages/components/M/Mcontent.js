@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useId } from "react";
 import TabelaM from "./TabelaM.js";
 import TableDec from "./TableDec.js";
 import CodigoVerifier from "../CodigoVerifier.js";
@@ -10,6 +10,7 @@ import Alerta from "./Alertas.js";
 import { useWebSocket } from "../../../contexts/WebSocketContext.js";
 
 const Mcontent = ({ oficina, r }) => {
+  const componentId = useId();
   const [cadastroItems, setCadastroItems] = useState([]);
   const [observacao, setObservacao] = useState("");
   const [dec, setDec] = useState("");
@@ -19,6 +20,7 @@ const Mcontent = ({ oficina, r }) => {
   const [base, setBase] = useState("");
   const [alt, setAlt] = useState("");
   const [showError, setErrorCode] = useState(false);
+  const [filteredSuggestions, setFilteredSuggestions] = useState([]);
 
   const { lastMessage } = useWebSocket();
 
@@ -252,13 +254,40 @@ const Mcontent = ({ oficina, r }) => {
               }
             }}
           />
-          <input
-            type="text"
-            placeholder="Nome"
-            className="input input-info input-xs"
-            value={nome}
-            onChange={(e) => setNome(e.target.value)}
-          />
+          <div>
+            <input
+              type="text"
+              placeholder="Nome"
+              className="input input-info input-xs"
+              value={nome}
+              autoComplete="off"
+              list={`m-name-suggestions-${componentId}`}
+              onChange={(e) => {
+                const novoNome = e.target.value;
+                setNome(novoNome);
+
+                if (novoNome.length > 0) {
+                  const suggestions = cadastroItems
+                    .filter(
+                      (item) =>
+                        item.nome &&
+                        item.nome
+                          .toLowerCase()
+                          .includes(novoNome.toLowerCase()),
+                    )
+                    .map((item) => item.nome);
+                  setFilteredSuggestions(suggestions);
+                } else {
+                  setFilteredSuggestions([]);
+                }
+              }}
+            />
+            <datalist id={`m-name-suggestions-${componentId}`}>
+              {filteredSuggestions.map((suggestion, index) => (
+                <option key={index} value={suggestion} />
+              ))}
+            </datalist>
+          </div>
           <input
             type="number"
             required
