@@ -173,6 +173,12 @@ const Rcontent = ({ codigoExterno, r }) => {
     <div>
       <div className="grid grid-flow-col auto-cols-auto gap-2">
         <div>
+          <Pagamentos r={r} />
+        </div>
+        <div>
+          <Metragem r={r} />
+        </div>
+        <div>
           <BSTA codigo={codigo} r={r} />
         </div>
         <div>
@@ -195,12 +201,6 @@ const Rcontent = ({ codigoExterno, r }) => {
             data={data}
           />
           <Devo codigo={codigo} r={r} />
-        </div>
-        <div>
-          <Pagamentos r={r} />
-        </div>
-        <div>
-          <Metragem r={r} />
         </div>
       </div>
     </div>

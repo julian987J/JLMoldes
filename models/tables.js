@@ -881,6 +881,32 @@ async function updateBase(updatedData) {
 
   return result;
 }
+async function updateDeveCalculadora(updatedData) {
+  const result = await database.query({
+    text: `
+      UPDATE "Deve"
+      SET avisado = $1
+      WHERE codigo = $2 AND r = $3 AND deveid = $4
+      RETURNING *;
+    `,
+    values: [
+      updatedData.avisado,
+      updatedData.codigo,
+      updatedData.r,
+      updatedData.deveid,
+    ],
+  });
+
+  if (result.rows.length > 0) {
+    await notifyWebSocketServer({
+      type: "DEVE_UPDATED_ITEM",
+      payload: result.rows[0],
+    });
+    return result.rows[0];
+  }
+
+  return null;
+}
 
 async function updateDeve(updatedData) {
   const client = await database.getNewClient();
@@ -1636,6 +1662,7 @@ const ordem = {
   deletePagamentosByR,
   deleteTemp,
   deleteAllPagamentos,
+  updateDeveCalculadora,
   updateDeve,
   updateConfig,
   updateC,
@@ -1654,8 +1681,8 @@ const ordem = {
   updateBase,
   updateRButton,
   verifyUserCredentials,
-  getUsers, // Added
-  updateUser, // Added
+  getUsers,
+  updateUser,
 };
 
 export default ordem;

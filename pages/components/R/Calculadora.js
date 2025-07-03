@@ -858,6 +858,56 @@ const Calculadora = ({
     }
   };
 
+  const handlePendentePapel = async () => {
+    if (!nome || !codigo) {
+      alert("Nome e Código são obrigatórios para marcar como pendente.");
+      return;
+    }
+
+    try {
+      if (Number(total) > 0) {
+        const novoCodigo = gerarEArmazenarCodigoAleatorio();
+        await Execute.removeDevo(codigo);
+        await Execute.sendToDeve({
+          deveid: novoCodigo,
+          nome,
+          r,
+          data: Use.NowData(),
+          codigo,
+          valorpapel: papel,
+          valorcomissao: comitions,
+          valor: Number(total),
+        });
+
+        await Execute.sendToPapelC({
+          ...ObjPapelC,
+          deveid: novoCodigo,
+          data: Use.NowData(),
+          papelpix: 0,
+          papelreal: 0,
+          encaixepix: 0,
+          encaixereal: 0,
+        });
+
+        // Clear form after successful operation
+        setPix("");
+        onPlusChange(0);
+        setReal("");
+        setComentario("");
+        setPerdida("");
+        onNomeChange("");
+        onCodigoChange("");
+        onValuesChange(Array(28).fill(""));
+      } else {
+        setShowError(true);
+      }
+      console.log("Deve Todo o Papel");
+    } catch (error) {
+      console.error("Erro ao salvar como pendente:", error);
+      alert("Erro ao salvar como pendente!");
+    }
+  };
+
   const handleSaveCommentWaste = async () => {
     const activeValuesCount = values.reduce((count, currentValue) => {
       return count + (currentValue !== "" ? 1 : 0);
@@ -997,7 +1047,7 @@ const Calculadora = ({
           />
           <input
             type="number"
-            className="input input-warning text-warning text-left input-xs w-7.5 join-item"
+            className="input input-warning text-warning text-left input-xs w-7 join-item"
             value={plus === null || plus === undefined ? "" : plus}
             placeholder={0}
             autoComplete="nope"
@@ -1078,12 +1128,21 @@ const Calculadora = ({
           />
           <div className="grid grid-cols-2 col-span-3 my-0.5 z-50">
             <button
-              type="button" // Importante para não submeter o formulário
+              type="button"
               className="btn btn-warning w-full"
               onClick={handlePendente}
             >
+              Espera
+            </button>
+            <button
+              type="button"
+              className="btn btn-primary w-full"
+              onClick={handlePendentePapel}
+            >
               Pendente
             </button>
+          </div>
+          <div className="w-62">
             <button type="submit" className="btn btn-secondary w-full">
               Salvar
             </button>

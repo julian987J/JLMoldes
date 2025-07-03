@@ -11,6 +11,29 @@ const Deve = ({ codigo, r }) => {
   const { lastMessage } = useWebSocket();
   const lastProcessedTimestampRef = useRef(null);
 
+  const handleAvisar = async (deveid, codigo, r) => {
+    try {
+      const response = await fetch(`/api/v1/tables/calculadora/deve`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          deveid,
+          codigo,
+          r,
+          avisado: 1, // Marca como avisado
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Falha ao atualizar o status de aviso.");
+      }
+      // A UI será atualizada via WebSocket
+    } catch (error) {
+      console.error("Erro em handleAvisar:", error);
+      alert("Não foi possível marcar como avisado.");
+    }
+  };
+
   const loadData = useCallback(async () => {
     if (typeof r === "undefined" || r === null) {
       setDados([]); // Limpa os dados se 'r' não for válido
@@ -54,7 +77,8 @@ const Deve = ({ codigo, r }) => {
               // Verifica se o item já existe pelo ID (ou outro identificador único)
               if (
                 !prevDados.find(
-                  (item) => String(item.id) === String(payload.id),
+                  // Usa deveid como identificador único
+                  (item) => String(item.deveid) === String(payload.deveid),
                 )
               ) {
                 return sortDadosByDate([...prevDados, payload]);
@@ -85,7 +109,16 @@ const Deve = ({ codigo, r }) => {
             });
           }
           break;
-        // TODO: Adicionar case para "DEVE_UPDATED_ITEM" se o backend notificar
+        case "DEVE_UPDATED_ITEM":
+          if (payload && String(payload.r) === String(r)) {
+            setDados((prevDados) => {
+              const updatedDados = prevDados.map((item) =>
+                item.deveid === payload.deveid ? { ...item, ...payload } : item,
+              );
+              return sortDadosByDate(updatedDados);
+            });
+          }
+          break;
         default:
           break;
       }
@@ -98,32 +131,49 @@ const Deve = ({ codigo, r }) => {
       <table className="table table-xs">
         <thead>
           <tr>
-            <th className="hidden">ID</th>
+            <th className="hidden">DeveID</th>
             <th className="w-36">Data</th>
             <th className="hidden">CODIGO</th>
             <th>Nome</th>
             <th>V. Papel</th>
             <th>Encaixe</th>
             <th className="w-20">Deve</th>
+            <th>Ações</th>
           </tr>
         </thead>
         <tbody>
           {dados.map((item) => (
             <tr
-              key={item.id}
+              key={item.deveid} // Usa deveid como chave única
               className={
-                item.codigo === codigo
-                  ? "bg-green-200"
-                  : "border-b border-secondary"
+                item.codigo == codigo
+                  ? "bg-green-200" // 1. Prioridade: Se o código bate, fica verde.
+                  : Number(item.avisado) === 1
+                    ? "bg-info" // 2. Se não, verifica se foi avisado para ficar azul.
+                    : "border-b border-secondary" // 3. Caso contrário, estilo padrão.
               }
             >
-              <td className="hidden">{item.id}</td>
+              <td className="hidden">{item.deveid}</td>
               <td>{Use.formatarDataHora(item.data)}</td>
               <td className="hidden">{item.codigo}</td>
               <td>{item.nome}</td>
               <td>{Number(item.valorpapel).toFixed(2)}</td>
               <td>{Number(item.valorcomissao).toFixed(2)}</td>
               <td>{Number(item.valor).toFixed(2)}</td>
+              <td className="text-center">
+                {Number(item.avisado) === 1 ? (
+                  <button className="btn btn-xs btn-success" disabled>
+                    Avisado
+                  </button>
+                ) : (
+                  <button
+                    className="btn btn-xs btn-info btn-outline"
+                    onClick={() => handleAvisar(item.deveid, item.codigo, r)}
+                  >
+                    Avisar
+                  </button>
+                )}
+              </td>
             </tr>
           ))}
         </tbody>
