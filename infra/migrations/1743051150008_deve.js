@@ -9,7 +9,6 @@ exports.up = (pgm) => {
     valorpapel: { type: "numeric", notNull: true },
     valorcomissao: { type: "numeric", notNull: true },
     valor: { type: "numeric", notNull: true },
-    avisado: { type: "numeric", notNull: true, default: 0 },
   });
 };
 
