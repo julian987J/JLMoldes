@@ -134,10 +134,11 @@ const Deve = ({ codigo, r }) => {
             <th className="hidden">DeveID</th>
             <th className="w-36">Data</th>
             <th className="hidden">CODIGO</th>
-            <th>Nome</th>
             <th>V. Papel</th>
             <th>Encaixe</th>
             <th className="w-20">Deve</th>
+            <th>Codigo</th>
+            <th>Nome</th>
             <th>Ações</th>
           </tr>
         </thead>
@@ -149,17 +150,18 @@ const Deve = ({ codigo, r }) => {
                 item.codigo == codigo
                   ? "bg-green-200" // 1. Prioridade: Se o código bate, fica verde.
                   : Number(item.avisado) === 1
-                    ? "bg-info" // 2. Se não, verifica se foi avisado para ficar azul.
+                    ? "bg-info/30" // 2. Se não, verifica se foi avisado para ficar azul.
                     : "border-b border-secondary" // 3. Caso contrário, estilo padrão.
               }
             >
               <td className="hidden">{item.deveid}</td>
               <td>{Use.formatarDataHora(item.data)}</td>
               <td className="hidden">{item.codigo}</td>
-              <td>{item.nome}</td>
               <td>{Number(item.valorpapel).toFixed(2)}</td>
               <td>{Number(item.valorcomissao).toFixed(2)}</td>
               <td>{Number(item.valor).toFixed(2)}</td>
+              <td>{item.codigo}</td>
+              <td>{item.nome}</td>
               <td className="text-center">
                 {Number(item.avisado) === 1 ? (
                   <button className="btn btn-xs btn-success" disabled>

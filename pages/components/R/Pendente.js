@@ -102,8 +102,9 @@ const Pendente = ({ r: propR, onSelectItem }) => {
           <tr>
             <th className="hidden">ID</th>
             <th className="w-36">Data</th>
-            <th>Nome</th>
             <th>Valor</th>
+            <th>Codigo</th>
+            <th>Nome</th>
             <th>Ações</th>
           </tr>
         </thead>
@@ -112,7 +113,7 @@ const Pendente = ({ r: propR, onSelectItem }) => {
             <tr key={item.id} className="border-b border-warning bg-warning/50">
               <td className="hidden">{item.id}</td>
               <td>{Use.formatarDataHora(item.data)}</td>
-              <td>{item.nome}</td>
+
               <td>
                 {(() => {
                   let sum = 0;
@@ -125,6 +126,8 @@ const Pendente = ({ r: propR, onSelectItem }) => {
                 })() +
                   (Number(item.comissao) || 0) * 5}
               </td>
+              <td>{item.codigo}</td>
+              <td>{item.nome}</td>
               <td>
                 <button
                   className="btn btn-xs btn-soft btn-primary"

@@ -171,23 +171,23 @@ const Rcontent = ({ codigoExterno, r }) => {
   };
   return (
     <div>
-      <div className="grid grid-flow-col auto-cols-auto gap-2">
-        <div>
+      <div className="grid grid-cols-30">
+        <div className="col-span-6">
           <Pagamentos r={r} />
         </div>
         <div>
           <Metragem r={r} />
         </div>
-        <div>
+        <div div className="col-span-10">
           <BSTA codigo={codigo} r={r} />
         </div>
-        <div>
+        <div className="col-span-10">
           <Pendente r={r} onSelectItem={handlePendenteSelect} />
           <div className="mt-2">
             <Deve codigo={codigo} r={r} />
           </div>
         </div>
-        <div>
+        <div className="col-span-3">
           <Calculadora
             r={r}
             codigo={codigo}

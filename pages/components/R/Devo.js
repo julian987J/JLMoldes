@@ -85,7 +85,7 @@ const Devo = ({ codigo, r }) => {
   }, [lastMessage, r, setDados]);
 
   return (
-    <div className="overflow-x-auto rounded-box border w-62 mt-1 border-error bg-base-100">
+    <div className="overflow-x-auto rounded-box border mt-1 border-error bg-base-100">
       <table className="table table-xs">
         <thead>
           <tr>

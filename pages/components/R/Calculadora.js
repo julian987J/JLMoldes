@@ -997,17 +997,17 @@ const Calculadora = ({
   const datalistId = `name-suggestions-${componentId}`;
 
   return (
-    <div className="flex flex-col gap-1">
-      <div className="badge badge-accent badge-sm w-62 whitespace-normal h-auto text-black">
+    <div>
+      <div className="badge badge-accent w-full badge-sm whitespace-normal h-auto text-black">
         {comentarioCadastro}
       </div>
 
       <form onSubmit={handleSubmit} autoComplete="nope">
-        <div className="join">
+        <div className="grid grid-cols-4">
           <input
             type="text"
             placeholder="Nome"
-            className="input input-warning input-xs w-32 join-item"
+            className="input input-warning input-xs w-full col-span-2"
             value={nome}
             autoComplete="nope"
             list={datalistId} // Linked to datalist
@@ -1039,7 +1039,7 @@ const Calculadora = ({
           <input
             type="text"
             placeholder="CODIGO"
-            className="input input-warning input-xs w-23 join-item"
+            className="input input-warning input-xs w-full"
             value={codigo}
             autoComplete="nope"
             onChange={(e) => onCodigoChange(e.target.value)}
@@ -1047,7 +1047,7 @@ const Calculadora = ({
           />
           <input
             type="number"
-            className="input input-warning text-warning text-left input-xs w-7 join-item"
+            className="input input-warning text-warning text-left input-xs w-full"
             value={plus === null || plus === undefined ? "" : plus}
             placeholder={0}
             autoComplete="nope"
@@ -1056,19 +1056,19 @@ const Calculadora = ({
         </div>
         <input
           type="number"
-          className="input input-warning hidden text-warning input-xs w-7.5"
+          className="input input-warning hidden text-warning input-xs "
           value={multiplier}
           autoComplete="nope"
           onChange={handleMultiplierChange}
         />
-        <div className="grid grid-cols-4 mt-0.5 w-fit">
+        <div className="grid grid-cols-4">
           {Array.from({ length: 28 }).map((_, i) => (
             <div key={i} className="relative">
               <input
                 min="0"
                 step="0.01"
                 type="number"
-                className="input input-info input-xs w-15.5 appearance-none"
+                className="input input-info input-xs appearance-none"
                 value={values[i]}
                 autoComplete="nope"
                 disabled={!codigo} // Adicionado aqui
@@ -1083,7 +1083,7 @@ const Calculadora = ({
             placeholder="Total"
             value={typeof total === "number" ? total.toFixed(2) : ""}
             autoComplete="nope"
-            className="input input-warning input-xs w-62 z-3 text-center text-warning font-bold"
+            className="input input-warning input-xs z-3 text-center text-warning font-bold"
             readOnly
           />
         </div>
@@ -1093,11 +1093,11 @@ const Calculadora = ({
             placeholder="SOMA TOTAL"
             value={displayTotalGeral}
             autoComplete="nope"
-            className="input input-success input-xl w-62 z-3 text-center text-success mt-0.5 font-bold"
+            className="input input-success input-xl z-3 text-center text-success mt-0.5 font-bold"
             readOnly
           />
         </div>
-        <div className="join grid grid-cols-3 mt-0.5 w-62">
+        <div className="join grid grid-cols-3 mt-0.5">
           <input
             min="0"
             step={0.01}
@@ -1129,20 +1129,20 @@ const Calculadora = ({
           <div className="grid grid-cols-2 col-span-3 my-0.5 z-50">
             <button
               type="button"
-              className="btn btn-warning w-full"
+              className="btn btn-warning"
               onClick={handlePendente}
             >
               Espera
             </button>
             <button
               type="button"
-              className="btn btn-primary w-full"
+              className="btn btn-primary"
               onClick={handlePendentePapel}
             >
               Pendente
             </button>
           </div>
-          <div className="w-62">
+          <div className="col-span-3">
             <button type="submit" className="btn btn-secondary w-full">
               Salvar
             </button>
@@ -1152,7 +1152,7 @@ const Calculadora = ({
           <input
             type="text"
             placeholder="Comentário"
-            className="input input-primary w-30 input-xs join-item" // Ajuste de largura
+            className="input input-primary input-xs join-item" // Ajuste de largura
             autoComplete="nope"
             value={comentario}
             onChange={(e) => setComentario(e.target.value)}
@@ -1162,7 +1162,7 @@ const Calculadora = ({
             step={0.01}
             type="number"
             placeholder="Desperdício"
-            className="input input-primary w-20 input-xs join-item"
+            className="input input-primary input-xs join-item"
             autoComplete="nope"
             value={perdida}
             onChange={(e) => setPerdida(e.target.value)}
