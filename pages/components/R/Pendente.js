@@ -99,22 +99,22 @@ const Pendente = ({ r: propR, onSelectItem }) => {
     <div className="overflow-x-auto rounded-box border border-warning bg-base-100">
       <table className="table table-xs">
         <thead>
-          <tr>
-            <th className="hidden">ID</th>
-            <th className="w-36">Data</th>
-            <th>Valor</th>
-            <th>Codigo</th>
-            <th>Nome</th>
-            <th>Ações</th>
+          <tr className="grid grid-cols-12">
+            <th className="col-span-3">Data</th>
+            <th className="col-span-3">Valor</th>
+            <th className="col-span-1">COD</th>
+            <th className="col-span-3">Nome</th>
+            <th className="col-span-2">Ações</th>
           </tr>
         </thead>
         <tbody>
           {dados.map((item) => (
-            <tr key={item.id} className="border-b border-warning bg-warning/50">
-              <td className="hidden">{item.id}</td>
-              <td>{Use.formatarDataHora(item.data)}</td>
-
-              <td>
+            <tr
+              key={item.id}
+              className="grid grid-cols-12 border-b border-warning bg-warning/50"
+            >
+              <td className="col-span-3">{Use.formatarDataHora(item.data)}</td>
+              <td className="col-span-3">
                 {(() => {
                   let sum = 0;
                   for (let i = 1; i <= 28; i++) {
@@ -126,9 +126,9 @@ const Pendente = ({ r: propR, onSelectItem }) => {
                 })() +
                   (Number(item.comissao) || 0) * 5}
               </td>
-              <td>{item.codigo}</td>
-              <td>{item.nome}</td>
-              <td>
+              <td className="col-span-1">{item.codigo}</td>
+              <td className="col-span-3">{item.nome}</td>
+              <td className="col-span-2">
                 <button
                   className="btn btn-xs btn-soft btn-primary"
                   onClick={() => {

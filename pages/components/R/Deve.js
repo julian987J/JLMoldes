@@ -130,39 +130,39 @@ const Deve = ({ codigo, r }) => {
     <div className="overflow-x-auto rounded-box border border-secondary bg-base-100">
       <table className="table table-xs">
         <thead>
-          <tr>
-            <th className="hidden">DeveID</th>
-            <th className="w-36">Data</th>
-            <th className="hidden">CODIGO</th>
-            <th>V. Papel</th>
-            <th>Encaixe</th>
-            <th className="w-20">Deve</th>
-            <th>Codigo</th>
-            <th>Nome</th>
-            <th>Ações</th>
+          <tr className="grid grid-cols-12">
+            <th className="col-span-3">Data</th>
+            <th className="col-span-1">Valor</th>
+            <th className="col-span-1">Enc</th>
+            <th className="col-span-1">Deve</th>
+            <th className="col-span-1">COD</th>
+            <th className="col-span-3">Nome</th>
+            <th className="col-span-2">Ações</th>
           </tr>
         </thead>
         <tbody>
           {dados.map((item) => (
             <tr
-              key={item.deveid} // Usa deveid como chave única
-              className={
+              key={item.deveid}
+              className={`grid grid-cols-12 ${
                 item.codigo == codigo
-                  ? "bg-green-200" // 1. Prioridade: Se o código bate, fica verde.
+                  ? "bg-green-200"
                   : Number(item.avisado) === 1
-                    ? "bg-info/30" // 2. Se não, verifica se foi avisado para ficar azul.
-                    : "border-b border-secondary" // 3. Caso contrário, estilo padrão.
-              }
+                    ? "bg-info/30"
+                    : "border-b border-secondary"
+              }`}
             >
-              <td className="hidden">{item.deveid}</td>
-              <td>{Use.formatarDataHora(item.data)}</td>
-              <td className="hidden">{item.codigo}</td>
-              <td>{Number(item.valorpapel).toFixed(2)}</td>
-              <td>{Number(item.valorcomissao).toFixed(2)}</td>
-              <td>{Number(item.valor).toFixed(2)}</td>
-              <td>{item.codigo}</td>
-              <td>{item.nome}</td>
-              <td className="text-center">
+              <td className="col-span-3">{Use.formatarDataHora(item.data)}</td>
+              <td className="col-span-1">
+                {Number(item.valorpapel).toFixed(2)}
+              </td>
+              <td className="col-span-1">
+                {Number(item.valorcomissao).toFixed(2)}
+              </td>
+              <td className="col-span-1">{Number(item.valor).toFixed(2)}</td>
+              <td className="col-span-1">{item.codigo}</td>
+              <td className="col-span-3">{item.nome}</td>
+              <td className="col-span-2">
                 {Number(item.avisado) === 1 ? (
                   <button className="btn btn-xs btn-success" disabled>
                     Avisado
