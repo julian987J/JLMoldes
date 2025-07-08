@@ -1006,8 +1006,27 @@ const Calculadora = ({
         <div className="grid grid-cols-4">
           <input
             type="text"
+            placeholder="CODIGO"
+            className="input input-warning input-xs w-full col-span-3"
+            value={codigo}
+            autoComplete="nope"
+            onChange={(e) => onCodigoChange(e.target.value)}
+            required
+          />
+          <input
+            type="number"
+            className="input input-warning text-warning text-left input-xs w-full"
+            value={plus === null || plus === undefined ? "" : plus}
+            placeholder={0}
+            autoComplete="nope"
+            onChange={handlePlusChange}
+          />
+        </div>
+        <div className="grid grid-cols-1">
+          <input
+            type="text"
             placeholder="Nome"
-            className="input input-warning input-xs w-full col-span-2"
+            className="input input-warning input-xs w-full"
             value={nome}
             autoComplete="nope"
             list={datalistId} // Linked to datalist
@@ -1036,23 +1055,6 @@ const Calculadora = ({
               <option key={index} value={suggestion} />
             ))}
           </datalist>
-          <input
-            type="text"
-            placeholder="CODIGO"
-            className="input input-warning input-xs w-full"
-            value={codigo}
-            autoComplete="nope"
-            onChange={(e) => onCodigoChange(e.target.value)}
-            required
-          />
-          <input
-            type="number"
-            className="input input-warning text-warning text-left input-xs w-full"
-            value={plus === null || plus === undefined ? "" : plus}
-            placeholder={0}
-            autoComplete="nope"
-            onChange={handlePlusChange}
-          />
         </div>
         <input
           type="number"

@@ -178,7 +178,7 @@ const Rcontent = ({ codigoExterno, r }) => {
         <div>
           <Metragem r={r} />
         </div>
-        <div div className="col-span-10">
+        <div div className="col-span-9">
           <BSTA codigo={codigo} r={r} />
         </div>
         <div className="col-span-10">
@@ -187,7 +187,7 @@ const Rcontent = ({ codigoExterno, r }) => {
             <Deve codigo={codigo} r={r} />
           </div>
         </div>
-        <div className="col-span-3">
+        <div className="col-span-4">
           <Calculadora
             r={r}
             codigo={codigo}
