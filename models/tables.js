@@ -501,7 +501,7 @@ async function updateDec(updatedData) {
     console.error("Error in updateDec:", error);
     throw error; // Re-throw the error to be handled by the caller
   } finally {
-    await client.end();
+    await client.release();
   }
 }
 
