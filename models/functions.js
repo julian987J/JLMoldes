@@ -100,6 +100,35 @@ async function sendToDeve(itemData) {
   }
 }
 
+async function sendToAviso(itemData) {
+  try {
+    const response = await fetch("/api/v1/tables/aviso", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        avisoid: itemData.avisoid,
+        data: itemData.data,
+        codigo: itemData.codigo,
+        r: itemData.r,
+        nome: itemData.nome,
+        valorpapel: itemData.valorpapel,
+        valorcomissao: itemData.valorcomissao,
+        valor: itemData.valor,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || "Erro ao criar registro em Aviso");
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error("Erro no createAviso:", error);
+    throw error;
+  }
+}
+
 async function sendToDeveUpdate(codigo, valor, r, deveIdsArray, pix, real) {
   try {
     const response = await fetch(`/api/v1/tables/deve`, {
@@ -523,6 +552,18 @@ async function receiveFromDeve(r) {
     return Array.isArray(data.rows) ? data.rows : [];
   } catch (error) {
     console.error("Erro ao buscar dados deve:", error);
+    return [];
+  }
+}
+
+async function receiveFromAviso(r) {
+  try {
+    const response = await fetch(`/api/v1/tables/aviso?r=${r}`);
+    if (!response.ok) throw new Error("Erro ao carregar os dados");
+    const data = await response.json();
+    return Array.isArray(data.rows) ? data.rows : [];
+  } catch (error) {
+    console.error("Erro ao buscar dados aviso:", error);
     return [];
   }
 }
@@ -1068,6 +1109,17 @@ async function removeDeve(codigo) {
   console.log(result);
 }
 
+async function removeAviso(avisoid) {
+  const response = await fetch("/api/v1/tables/aviso", {
+    method: "DELETE",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ avisoid }),
+  });
+
+  const result = await response.json();
+  console.log(result);
+}
+
 async function removeDevo(codigo) {
   const response = await fetch("/api/v1/tables/devo", {
     method: "DELETE",
@@ -1227,6 +1279,7 @@ const execute = {
   sendTrueMR,
   sendToR,
   sendToDeve,
+  sendToAviso,
   sendToDeveUpdate,
   sendToDevo,
   sendToC,
@@ -1259,6 +1312,7 @@ const execute = {
   receiveFromPapelCData,
   receiveFromRDeveDevo,
   receiveFromDeve,
+  receiveFromAviso,
   receiveFromDec,
   receiveFromDeveJustValor,
   receiveFromDevo,
@@ -1279,6 +1333,7 @@ const execute = {
   removeOficina,
   removeMandR,
   removeDeve,
+  removeAviso,
   removeDevo,
   removePagamentoById,
   removeTemp,

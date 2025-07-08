@@ -95,7 +95,7 @@ const Calculadora = ({
         const num = current === "" ? 0 : Number(current);
         return sum + num * multiplier;
       }, 0)
-    : "";
+    : 0;
 
   const total = papel + comitions;
 
@@ -609,33 +609,20 @@ const Calculadora = ({
           Number(pix),
           Number(real),
         );
-        await Execute.removeDeve(codigo);
         await Execute.removeDevo(codigo);
 
         console.log("Caiu em Foi pago todo o papel.");
 
         //
       } else if (valorDeve && trocoValue && !dadosR) {
-        const novoCodigo = gerarEArmazenarCodigoAleatorio();
-        await Execute.sendToDeve({
-          deveid: novoCodigo,
-          nome,
-          r,
-          data: Use.NowData(),
+        await Execute.sendToDeveUpdate(
           codigo,
-          valorpapel: papel,
-          valorcomissao: comitions,
-          valor: trocoValue,
-        });
-        await Execute.sendToPapelC({
-          ...ObjPapelC,
-          deveid: novoCodigo,
-          data: Use.NowData(),
-          papelpix: 0,
-          papelreal: 0,
-          encaixepix: 0,
-          encaixereal: 0,
-        });
+          trocoValue,
+          r,
+          deveIdsArray,
+          Number(pix),
+          Number(real),
+        );
         await Execute.removeDevo(codigo);
         console.log("Caiu em Foi pago Parte do Valor do Papel.");
         //

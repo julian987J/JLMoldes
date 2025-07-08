@@ -7,6 +7,7 @@ import Devo from "./Devo.js";
 import Pendente from "./Pendente.js";
 import Pagamentos from "./Pagamentos.js";
 import Metragem from "./Metragem.js";
+import Aviso from "./Aviso.js";
 
 const Rcontent = ({ codigoExterno, r }) => {
   // Referência para o valor de codigoExterno, para garantir que não altere depois de passado
@@ -185,6 +186,9 @@ const Rcontent = ({ codigoExterno, r }) => {
           <Pendente r={r} onSelectItem={handlePendenteSelect} />
           <div className="mt-2">
             <Deve codigo={codigo} r={r} />
+          </div>
+          <div className="mt-2">
+            <Aviso codigo={codigo} r={r} />
           </div>
         </div>
         <div className="col-span-4">

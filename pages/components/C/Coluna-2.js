@@ -27,15 +27,38 @@ const Coluna = ({ r }) => {
   const lastProcessedTimestampRef = useRef(null);
 
   const handleSave = async (editedData) => {
+    const originalItem = dados.find((i) => i.id === editingId);
+
+    if (!originalItem) {
+      console.error("Item original não encontrado para salvar.");
+      setEditingId(null);
+      return;
+    }
+
+    const dataToSend = {
+      ...editedData,
+      papelreal_pago:
+        (parseFloat(originalItem.papelreal) || 0) -
+        (parseFloat(editedData.papelreal) || 0),
+      papelpix_pago:
+        (parseFloat(originalItem.papelpix) || 0) -
+        (parseFloat(editedData.papelpix) || 0),
+      encaixereal_pago:
+        (parseFloat(originalItem.encaixereal) || 0) -
+        (parseFloat(editedData.encaixereal) || 0),
+      encaixepix_pago:
+        (parseFloat(originalItem.encaixepix) || 0) -
+        (parseFloat(editedData.encaixepix) || 0),
+    };
+
     try {
       const response = await fetch("/api/v1/tables/c/papel", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(editedData),
+        body: JSON.stringify(dataToSend),
       });
 
       if (!response.ok) throw new Error("Erro ao atualizar");
-      // A atualização do estado 'dados' (PapelC) virá via mensagem WebSocket (PAPELC_UPDATED_ITEM)
       setEditingId(null);
     } catch (error) {
       console.error("Erro ao salvar:", error);
@@ -81,6 +104,7 @@ const Coluna = ({ r }) => {
       }
 
       const { type, payload } = lastMessage.data;
+      console.log("WebSocket message received:", type, payload);
 
       // --- Lida com atualizações na tabela PapelC (dados principais) ---
       if (
@@ -102,20 +126,27 @@ const Coluna = ({ r }) => {
 
           switch (type) {
             case "PAPELC_NEW_ITEM":
+              console.log("PAPELC_NEW_ITEM: Adding new item", payload);
               if (itemIndex === -1) newDadosPapelC.push(payload);
               break;
             case "PAPELC_UPDATED_ITEM":
+              console.log("PAPELC_UPDATED_ITEM: Updating item", payload);
               if (itemIndex !== -1) {
                 newDadosPapelC[itemIndex] = {
                   ...newDadosPapelC[itemIndex],
                   ...payload,
                 };
               } else {
+                console.warn(
+                  "PAPELC_UPDATED_ITEM: Item not found for update, adding as new.",
+                  payload,
+                );
                 newDadosPapelC.push(payload);
               }
               if (editingId === payload.id) setEditingId(null);
               break;
             case "PAPELC_DELETED_ITEM":
+              console.log("PAPELC_DELETED_ITEM: Deleting item", payload);
               newDadosPapelC = newDadosPapelC.filter(
                 (item) => String(item.id) !== String(payload.id),
               );
@@ -134,9 +165,6 @@ const Coluna = ({ r }) => {
         payload &&
         String(payload.r) === String(r)
       ) {
-        // Processa DEVE_NEW_ITEM e DEVE_UPDATED_ITEM apenas se 'r' do payload corresponder ao 'r' do componente.
-        // ATENÇÃO: O backend em /api/v1/tables/deve/index.js atualmente não envia DEVE_UPDATED_ITEM.
-        // Essa parte da lógica só funcionará completamente quando o backend for atualizado para enviar essa mensagem.
         setExists((prevExists) => {
           if (payload) {
             let newExists = [...prevExists];
@@ -144,17 +172,23 @@ const Coluna = ({ r }) => {
 
             const pId = payload.id;
             const pCodigo = payload.codigo;
+            const pDeveId = payload.deveid; // Use deveid for Deve table
 
-            // Tenta encontrar o item pelo ID do payload, se existir
-            if (pId !== undefined) {
+            // Try to find the item by deveid first
+            if (pDeveId !== undefined) {
+              itemIndex = newExists.findIndex(
+                (item) =>
+                  item.deveid !== undefined &&
+                  String(item.deveid) === String(pDeveId),
+              );
+            } else if (pId !== undefined) {
+              // Fallback to id if deveid is not present (less reliable for Deve)
               itemIndex = newExists.findIndex(
                 (item) =>
                   item.id !== undefined && String(item.id) === String(pId),
               );
-            }
-
-            // Se não encontrado pelo ID (ou se o payload não tinha ID), tenta pelo código, se existir
-            if (itemIndex === -1 && pCodigo !== undefined) {
+            } else if (pCodigo !== undefined) {
+              // Fallback to codigo if neither id nor deveid is present
               itemIndex = newExists.findIndex(
                 (item) =>
                   item.codigo !== undefined &&
@@ -164,10 +198,15 @@ const Coluna = ({ r }) => {
 
             switch (type) {
               case "DEVE_NEW_ITEM":
+                console.log("DEVE_NEW_ITEM: Adding new item", payload);
                 if (itemIndex === -1) {
                   newExists.push(payload); // Adiciona se realmente novo
                 } else {
                   // Se já existe (ex: mensagem duplicada ou chegou fora de ordem), atualiza
+                  console.warn(
+                    "DEVE_NEW_ITEM: Item already exists, updating instead of adding.",
+                    payload,
+                  );
                   newExists[itemIndex] = {
                     ...newExists[itemIndex],
                     ...payload,
@@ -175,25 +214,30 @@ const Coluna = ({ r }) => {
                 }
                 break;
               case "DEVE_UPDATED_ITEM":
-                if (itemIndex !== -1) {
+                console.log("DEVE_UPDATED_ITEM: Updating item", payload);
+                if (parseFloat(payload.valor) <= 0) {
+                  console.log(
+                    "DEVE_UPDATED_ITEM: Removing item from exists (valor <= 0)",
+                    payload,
+                  );
+                  newExists = newExists.filter(
+                    (item) => String(item.deveid) !== String(payload.deveid),
+                  );
+                } else if (itemIndex !== -1) {
                   newExists[itemIndex] = {
                     ...newExists[itemIndex],
                     ...payload,
                   };
                 } else {
-                  // Item não encontrado para atualização. Isso pode ser a causa do problema.
                   console.warn(
-                    "DEVE_UPDATED_ITEM: Item não encontrado no estado 'exists' para o payload:",
+                    "DEVE_UPDATED_ITEM: Item not found in 'exists' state for payload, adding as new:",
                     payload,
-                    "Estado 'exists' atual:",
+                    "Current exists state:",
                     prevExists,
                   );
-                  // Opcionalmente, adicionar como novo se essa for a política,
-                  // mas é importante investigar por que não foi encontrado.
-                  // newExists.push(payload);
+                  newExists.push(payload);
                 }
                 break;
-              // DEVE_DELETED_ITEM é tratado em um bloco 'else if' separado
             }
             return newExists.sort(
               (a, b) => new Date(a.data) - new Date(b.data),
@@ -202,14 +246,22 @@ const Coluna = ({ r }) => {
           return prevExists; // Retorna o estado anterior se o payload for nulo (segurança)
         });
       } else if (type === "DEVE_DELETED_ITEM" && payload) {
-        // Processa DEVE_DELETED_ITEM independentemente de payload.r.
-        // A remoção é baseada no ID/código do item no array 'exists' atual.
+        console.log("DEVE_DELETED_ITEM: Deleting item", payload);
         setExists((prevExists) => {
           let newExists = [...prevExists];
           const pId = payload.id; // Payload de DEVE_DELETED_ITEM pode não ter 'id' vindo do backend atual
           const pCodigo = payload.codigo; // Backend envia 'codigo'
+          const pDeveId = payload.deveid; // Use deveid for Deve table
 
-          if (pCodigo !== undefined) {
+          if (pDeveId !== undefined) {
+            newExists = newExists.filter(
+              (item) =>
+                !(
+                  item.deveid !== undefined &&
+                  String(item.deveid) === String(pDeveId)
+                ),
+            );
+          } else if (pCodigo !== undefined) {
             newExists = newExists.filter(
               (item) =>
                 !(
@@ -219,16 +271,20 @@ const Coluna = ({ r }) => {
             );
           }
           // Adicionado para robustez, caso o payload de deleção comece a enviar 'id' no futuro
-          if (pId !== undefined) {
+          else if (pId !== undefined) {
             newExists = newExists.filter(
               (item) =>
                 !(item.id !== undefined && String(item.id) === String(pId)),
             );
           }
 
-          if (pCodigo === undefined && pId === undefined) {
+          if (
+            pCodigo === undefined &&
+            pId === undefined &&
+            pDeveId === undefined
+          ) {
             console.warn(
-              "DEVE_DELETED_ITEM: Payload sem 'codigo' ou 'id' para identificar o item a ser deletado",
+              "DEVE_DELETED_ITEM: Payload without 'codigo', 'id' or 'deveid' to identify item to be deleted",
               payload,
             );
           }

@@ -68,7 +68,34 @@ async function deleteHandler(request, response) {
 }
 
 async function updateHandler(request, response) {
-  const updatedData = request.body;
-  const result = await ordem.updateDeve(updatedData);
-  return response.status(200).json(result);
+  try {
+    const updatedData = request.body;
+    const { updatedDeves, updatedPapelCs, deletedDevesIds } =
+      await ordem.updateDeve(updatedData);
+
+    for (const deve of updatedDeves) {
+      await notifyWebSocketServer({ type: "DEVE_UPDATED_ITEM", payload: deve });
+    }
+
+    for (const papelc of updatedPapelCs) {
+      await notifyWebSocketServer({
+        type: "PAPELC_UPDATED_ITEM",
+        payload: papelc,
+      });
+    }
+
+    for (const deveid of deletedDevesIds) {
+      await notifyWebSocketServer({
+        type: "DEVE_DELETED_ITEM",
+        payload: { deveid: deveid },
+      });
+    }
+
+    response
+      .status(200)
+      .json({ success: true, updatedDeves, updatedPapelCs, deletedDevesIds });
+  } catch (error) {
+    console.error("Erro no updateHandler de Deve:", error);
+    response.status(500).json({ success: false, message: error.message });
+  }
 }

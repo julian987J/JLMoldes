@@ -300,6 +300,28 @@ async function createDeve(ordemInputValues) {
   return result;
 }
 
+async function createAviso(ordemInputValues) {
+  const result = await database.query({
+    text: `
+      INSERT INTO "Aviso" (avisoid, data, codigo, r, nome, valorpapel, valorcomissao, valor) 
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+      RETURNING *;
+    `,
+    values: [
+      ordemInputValues.avisoid,
+      ordemInputValues.data,
+      ordemInputValues.codigo,
+      ordemInputValues.r,
+      ordemInputValues.nome,
+      ordemInputValues.valorpapel,
+      ordemInputValues.valorcomissao,
+      ordemInputValues.valor,
+    ],
+  });
+
+  return result;
+}
+
 async function createTemp(tempData) {
   const valuesPlaceholders = Array.from(
     { length: 28 },
@@ -910,233 +932,127 @@ async function updateDeveCalculadora(updatedData) {
 
 async function updateDeve(updatedData) {
   const client = await database.getNewClient();
-  const papelCNotifications = []; // To store PapelC items for notification
+  const { codigo, r, pix, real } = updatedData;
+  let totalPayment = (parseFloat(pix) || 0) + (parseFloat(real) || 0);
 
   try {
     await client.query("BEGIN");
 
-    const originalDeveValuesRes = await client.query({
-      text: `SELECT deveid, valorpapel, valorcomissao FROM "Deve" WHERE codigo = $1 AND r = $2`,
-      values: [updatedData.codigo, updatedData.r],
+    const { rows: deves } = await client.query({
+      text: `SELECT * FROM "Deve" WHERE codigo = $1 AND r = $2 AND valor > 0 ORDER BY data ASC`,
+      values: [codigo, r],
     });
-    const originalDeveMap = new Map(
-      originalDeveValuesRes.rows.map((row) => [
-        row.deveid,
-        {
-          valorpapel: parseFloat(row.valorpapel) || 0,
-          valorcomissao: parseFloat(row.valorcomissao) || 0,
-        },
-      ]),
-    );
 
-    // Passo 2: Executar a atualização principal na tabela "Deve"
-    // Esta é a query complexa que você já tinha, que atualiza 'valor', 'valorpapel' e 'valorcomissao'
-    const updateDeveResult = await client.query({
-      text: `
-      -- Passo 1: Calcula a soma total dos valores
-      WITH total_sum AS (
-        SELECT SUM(valor) AS total FROM "Deve" WHERE codigo = $2 AND r = $3
-      ),
-      -- Passo 2: Ordena as linhas por data (para identificar a última linha)
-      ordered_rows AS (
-        SELECT 
-          deveid, -- Adicionado para referência
-          data, 
-          valor,
-          valorpapel, -- Adicionado para referência
-          valorcomissao, -- Adicionado para referência
-          ROW_NUMBER() OVER (ORDER BY data DESC) AS row_num
-        FROM "Deve"
-        WHERE codigo = $2 AND r = $3
-      ),
-      -- Passo 3: Atualiza as linhas
-      updated_rows AS (
-        UPDATE "Deve" d
-        SET 
-          valor = ( 
-            CASE
-            WHEN (SELECT total FROM total_sum) >= $1 THEN
-              (SELECT subtract_amount FROM (
-                SELECT 
-                  data,
-                  CASE
-                    WHEN (SUM(valor) OVER (ORDER BY data) - valor) <= $1 THEN
-                      CASE
-                        WHEN SUM(valor) OVER (ORDER BY data) <= $1 THEN valor
-                        ELSE $1 - (SUM(valor) OVER (ORDER BY data) - valor)
-                      END
-                    ELSE 0
-                  END AS subtract_amount
-                FROM "Deve"
-                WHERE codigo = $2 AND r = $3
-              ) s WHERE s.data = d.data)
-            ELSE
-              CASE
-                WHEN (SELECT row_num FROM ordered_rows o WHERE o.deveid = d.deveid AND o.data = d.data) = 1 THEN -- Ajustado para usar deveid se data não for única
-                  ABS((SELECT total FROM total_sum) - $1)
-                ELSE 0
-              END
-            END
-          ),
+    const updatedDeves = [];
+    const updatedPapelCs = [];
+    const deletedDevesIds = [];
 
-          valorpapel =
-            CASE
-              WHEN ((CASE 
-                    WHEN (SELECT total FROM total_sum) >= $1 THEN
-                      (SELECT subtract_amount FROM (SELECT data, CASE WHEN (SUM(valor) OVER (ORDER BY data) - valor) <= $1 THEN CASE WHEN SUM(valor) OVER (ORDER BY data) <= $1 THEN valor ELSE $1 - (SUM(valor) OVER (ORDER BY data) - valor) END ELSE 0 END AS subtract_amount FROM "Deve" WHERE codigo = $2 AND r = $3) s WHERE s.data = d.data)
-                    ELSE CASE WHEN (SELECT row_num FROM ordered_rows o WHERE o.deveid = d.deveid AND o.data = d.data) = 1 THEN ABS((SELECT total FROM total_sum) - $1) ELSE 0 END
-                  END)) <= 0 THEN 0 
-              ELSE 
-                CASE
-                  WHEN (d.valorpapel + d.valorcomissao) > 0 THEN 
-                    ((CASE WHEN (SELECT total FROM total_sum) >= $1 THEN (SELECT subtract_amount FROM (SELECT data, CASE WHEN (SUM(valor) OVER (ORDER BY data) - valor) <= $1 THEN CASE WHEN SUM(valor) OVER (ORDER BY data) <= $1 THEN valor ELSE $1 - (SUM(valor) OVER (ORDER BY data) - valor) END ELSE 0 END AS subtract_amount FROM "Deve" WHERE codigo = $2 AND r = $3) s WHERE s.data = d.data) ELSE CASE WHEN (SELECT row_num FROM ordered_rows o WHERE o.deveid = d.deveid AND o.data = d.data) = 1 THEN ABS((SELECT total FROM total_sum) - $1) ELSE 0 END END)) * (d.valorpapel / (d.valorpapel + d.valorcomissao))
-                  ELSE 
-                    ((CASE WHEN (SELECT total FROM total_sum) >= $1 THEN (SELECT subtract_amount FROM (SELECT data, CASE WHEN (SUM(valor) OVER (ORDER BY data) - valor) <= $1 THEN CASE WHEN SUM(valor) OVER (ORDER BY data) <= $1 THEN valor ELSE $1 - (SUM(valor) OVER (ORDER BY data) - valor) END ELSE 0 END AS subtract_amount FROM "Deve" WHERE codigo = $2 AND r = $3) s WHERE s.data = d.data) ELSE CASE WHEN (SELECT row_num FROM ordered_rows o WHERE o.deveid = d.deveid AND o.data = d.data) = 1 THEN ABS((SELECT total FROM total_sum) - $1) ELSE 0 END END)) / 2.0
-                END
-            END,
+    for (const deve of deves) {
+      if (totalPayment <= 0) break;
 
-          valorcomissao =
-            CASE
-              WHEN ((CASE 
-                    WHEN (SELECT total FROM total_sum) >= $1 THEN
-                      (SELECT subtract_amount FROM (SELECT data, CASE WHEN (SUM(valor) OVER (ORDER BY data) - valor) <= $1 THEN CASE WHEN SUM(valor) OVER (ORDER BY data) <= $1 THEN valor ELSE $1 - (SUM(valor) OVER (ORDER BY data) - valor) END ELSE 0 END AS subtract_amount FROM "Deve" WHERE codigo = $2 AND r = $3) s WHERE s.data = d.data)
-                    ELSE CASE WHEN (SELECT row_num FROM ordered_rows o WHERE o.deveid = d.deveid AND o.data = d.data) = 1 THEN ABS((SELECT total FROM total_sum) - $1) ELSE 0 END
-                  END)) <= 0 THEN 0 
-              ELSE 
-                CASE
-                  WHEN (d.valorpapel + d.valorcomissao) > 0 THEN 
-                    ((CASE WHEN (SELECT total FROM total_sum) >= $1 THEN (SELECT subtract_amount FROM (SELECT data, CASE WHEN (SUM(valor) OVER (ORDER BY data) - valor) <= $1 THEN CASE WHEN SUM(valor) OVER (ORDER BY data) <= $1 THEN valor ELSE $1 - (SUM(valor) OVER (ORDER BY data) - valor) END ELSE 0 END AS subtract_amount FROM "Deve" WHERE codigo = $2 AND r = $3) s WHERE s.data = d.data) ELSE CASE WHEN (SELECT row_num FROM ordered_rows o WHERE o.deveid = d.deveid AND o.data = d.data) = 1 THEN ABS((SELECT total FROM total_sum) - $1) ELSE 0 END END)) * (d.valorcomissao / (d.valorpapel + d.valorcomissao))
-                  ELSE 
-                    ((CASE WHEN (SELECT total FROM total_sum) >= $1 THEN (SELECT subtract_amount FROM (SELECT data, CASE WHEN (SUM(valor) OVER (ORDER BY data) - valor) <= $1 THEN CASE WHEN SUM(valor) OVER (ORDER BY data) <= $1 THEN valor ELSE $1 - (SUM(valor) OVER (ORDER BY data) - valor) END ELSE 0 END AS subtract_amount FROM "Deve" WHERE codigo = $2 AND r = $3) s WHERE s.data = d.data) ELSE CASE WHEN (SELECT row_num FROM ordered_rows o WHERE o.deveid = d.deveid AND o.data = d.data) = 1 THEN ABS((SELECT total FROM total_sum) - $1) ELSE 0 END END)) / 2.0
-                END
-            END
-        WHERE codigo = $2 AND r = $3
-        RETURNING deveid, valor, valorpapel, valorcomissao -- Retornar os valores atualizados
-      )
-      SELECT * FROM updated_rows;
-    `,
-      values: [updatedData.valor, updatedData.codigo, updatedData.r], // $1, $2, $3
-    });
-    const updatedDeveRows = updateDeveResult.rows;
+      const paymentForThisDeve = Math.min(totalPayment, parseFloat(deve.valor));
+      const remainingDeveValor = parseFloat(deve.valor) - paymentForThisDeve;
 
-    // Passo 3: Calcular diferenças e atualizar "PapelC" para cada deveid relevante
-    const pixPaymentAmount = parseFloat(updatedData.pix) || 0;
-    const realPaymentAmount = parseFloat(updatedData.real) || 0;
-    const totalPixRealPayment = pixPaymentAmount + realPaymentAmount;
+      const valorPapelOriginal = parseFloat(deve.valorpapel) || 0;
+      const valorComissaoOriginal = parseFloat(deve.valorcomissao) || 0;
+      const valorTotalOriginal = valorPapelOriginal + valorComissaoOriginal;
 
-    for (const updatedRow of updatedDeveRows) {
-      // Verificar se este deveid está na lista para atualizar PapelC
-      if (
-        updatedData.deveIdsArray &&
-        updatedData.deveIdsArray.includes(updatedRow.deveid)
-      ) {
-        const originalRow = originalDeveMap.get(updatedRow.deveid);
+      let paidPapel = 0;
+      let paidComissao = 0;
 
-        if (originalRow) {
-          const currentValorpapel = parseFloat(updatedRow.valorpapel) || 0;
-          const currentValorcomissao =
-            parseFloat(updatedRow.valorcomissao) || 0;
+      if (valorTotalOriginal > 0) {
+        paidPapel =
+          paymentForThisDeve * (valorPapelOriginal / valorTotalOriginal);
+        paidComissao =
+          paymentForThisDeve * (valorComissaoOriginal / valorTotalOriginal);
+      } else {
+        paidPapel = paymentForThisDeve / 2;
+        paidComissao = paymentForThisDeve / 2;
+      }
 
-          const valorpapelDiff = originalRow.valorpapel - currentValorpapel;
-          const valorcomissaoDiff =
-            originalRow.valorcomissao - currentValorcomissao;
+      const remainingValorPapel = valorPapelOriginal - paidPapel;
+      const remainingValorComissao = valorComissaoOriginal - paidComissao;
 
-          let addPapelpix = 0;
-          let addPapelreal = 0;
-          let addEncaixepix = 0;
-          let addEncaixereal = 0;
+      if (remainingDeveValor <= 0) {
+        // Delete the Deve row if its value becomes 0 or less
+        await client.query({
+          text: `DELETE FROM "Deve" WHERE deveid = $1;`,
+          values: [deve.deveid],
+        });
+        deletedDevesIds.push(deve.deveid);
+      } else {
+        // Update the Deve row if its value is still positive
+        const { rows: updatedDeveRows } = await client.query({
+          text: `
+            UPDATE "Deve"
+            SET 
+              valor = $1,
+              valorpapel = $2,
+              valorcomissao = $3
+            WHERE deveid = $4
+            RETURNING *;
+          `,
+          values: [
+            remainingDeveValor,
+            remainingValorPapel,
+            remainingValorComissao,
+            deve.deveid,
+          ],
+        });
+        updatedDeves.push(updatedDeveRows[0]);
+      }
 
-          if (valorpapelDiff > 0) {
-            if (totalPixRealPayment > 0) {
-              addPapelpix =
-                valorpapelDiff * (pixPaymentAmount / totalPixRealPayment);
-              addPapelreal =
-                valorpapelDiff * (realPaymentAmount / totalPixRealPayment);
-            } else if (pixPaymentAmount > 0) {
-              // Fallback se só PIX foi informado como pagamento
-              addPapelpix = valorpapelDiff;
-            } else if (realPaymentAmount > 0) {
-              // Fallback se só REAL foi informado
-              addPapelreal = valorpapelDiff;
-            }
-            // Se totalPixRealPayment é 0, não há base para distribuir em papelpix/real
-          }
+      if (deve.deveid) {
+        let paidPapelPix = 0;
+        let paidPapelReal = 0;
+        if (paidPapel > 0) {
+          paidPapelPix = paidPapel * ((parseFloat(pix) || 0) / totalPayment);
+          paidPapelReal = paidPapel * ((parseFloat(real) || 0) / totalPayment);
+        }
 
-          if (valorcomissaoDiff > 0) {
-            if (totalPixRealPayment > 0) {
-              addEncaixepix =
-                valorcomissaoDiff * (pixPaymentAmount / totalPixRealPayment);
-              addEncaixereal =
-                valorcomissaoDiff * (realPaymentAmount / totalPixRealPayment);
-            } else if (pixPaymentAmount > 0) {
-              addEncaixepix = valorcomissaoDiff;
-            } else if (realPaymentAmount > 0) {
-              addEncaixereal = valorcomissaoDiff;
-            }
-          }
+        let paidEncaixePix = 0;
+        let paidEncaixeReal = 0;
+        if (paidComissao > 0) {
+          paidEncaixePix =
+            paidComissao * ((parseFloat(pix) || 0) / totalPayment);
+          paidEncaixeReal =
+            paidComissao * ((parseFloat(real) || 0) / totalPayment);
+        }
 
-          // Arredondar para 2 casas decimais
-          addPapelpix = parseFloat(addPapelpix.toFixed(2));
-          addPapelreal = parseFloat(addPapelreal.toFixed(2));
-          addEncaixepix = parseFloat(addEncaixepix.toFixed(2));
-          addEncaixereal = parseFloat(addEncaixereal.toFixed(2));
-
-          if (
-            addPapelpix > 0 ||
-            addPapelreal > 0 ||
-            addEncaixepix > 0 ||
-            addEncaixereal > 0
-          ) {
-            const updatePapelCResult = await client.query({
-              text: `
-                UPDATE "PapelC"
-                SET 
-                  papelpix = papelpix + $1,
-                  papelreal = papelreal + $2,
-                  encaixepix = encaixepix + $3,
-                  encaixereal = encaixereal + $4
-                WHERE deveid = $5
-                RETURNING * -- Added RETURNING * to get the updated row
-              `,
-              values: [
-                addPapelpix,
-                addPapelreal,
-                addEncaixepix,
-                addEncaixereal,
-                updatedRow.deveid,
-              ],
-            });
-
-            if (updatePapelCResult.rows.length > 0) {
-              // Add the fully updated PapelC item to our notification list
-              papelCNotifications.push(updatePapelCResult.rows[0]);
-            }
-          }
+        const { rows: updatedPapelCRows } = await client.query({
+          text: `
+            UPDATE "PapelC"
+            SET
+              papelpix = papelpix + $1,
+              papelreal = papelreal + $2,
+              encaixepix = encaixepix + $3,
+              encaixereal = encaixereal + $4
+            WHERE deveid = $5
+            RETURNING *;
+          `,
+          values: [
+            paidPapelPix,
+            paidPapelReal,
+            paidEncaixePix,
+            paidEncaixeReal,
+            deve.deveid,
+          ],
+        });
+        if (updatedPapelCRows.length > 0) {
+          updatedPapelCs.push(updatedPapelCRows[0]);
         }
       }
+      totalPayment -= paymentForThisDeve;
     }
 
-    await client.query("COMMIT"); // Confirmar transação
-
-    // After successful commit, send all collected PapelC update notifications
-    for (const papelCRow of papelCNotifications) {
-      await notifyWebSocketServer({
-        type: "PAPELC_UPDATED_ITEM",
-        payload: papelCRow,
-      });
-    }
-
-    return updateDeveResult; // Retornar o resultado da atualização em "Deve"
+    await client.query("COMMIT");
+    return { updatedDeves, updatedPapelCs, deletedDevesIds };
   } catch (error) {
-    if (client) {
-      await client.query("ROLLBACK"); // Desfazer transação em caso de erro
-    }
+    await client.query("ROLLBACK");
     console.error("Erro na transação updateDeve:", error);
-    throw error; // Propagar o erro para o handler da API
+    throw error;
   } finally {
-    if (client) {
-      await client.end(); // Liberar cliente
-    }
+    client.release();
   }
 }
 
@@ -1345,6 +1261,15 @@ async function getDeve(r) {
   });
   return result;
 }
+
+async function getAviso(r) {
+  const result = await database.query({
+    text: `SELECT * FROM "Aviso" WHERE r = $1`,
+    values: [r],
+  });
+  return result;
+}
+
 async function getDevo(r) {
   const result = await database.query({
     text: `SELECT * FROM "Devo" WHERE r = $1`,
@@ -1521,6 +1446,14 @@ export async function deleteDeve(codigo) {
   return result.rows;
 }
 
+export async function deleteAviso(avisoid) {
+  const result = await database.query({
+    text: `DELETE FROM "Aviso" WHERE avisoid = $1 RETURNING *`,
+    values: [avisoid],
+  });
+  return result.rows;
+}
+
 export async function deleteTemp(id) {
   const result = await database.query({
     text: `DELETE FROM "Temp" WHERE id = $1 RETURNING id;`,
@@ -1609,6 +1542,7 @@ const ordem = {
   createRBSA,
   createDevo,
   createDeve,
+  createAviso,
   createC,
   createNota,
   createPapel,
@@ -1642,6 +1576,7 @@ const ordem = {
   getMTableBase,
   getVerificador,
   getDeve,
+  getAviso,
   getDeveJustValor,
   getDevo,
   getDevoJustValor,
@@ -1657,6 +1592,7 @@ const ordem = {
   deleteM,
   deleteR,
   deleteDeve,
+  deleteAviso,
   deleteDevo,
   deletePagamentoById,
   deletePagamentosByR,
