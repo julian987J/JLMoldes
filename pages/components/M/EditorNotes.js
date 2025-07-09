@@ -218,8 +218,46 @@ const EditorNotes = ({ r, colum }) => {
 
   return (
     <>
+      {/* Lista de Notas */}
+      <ul className="space-y-2">
+        {notes.length === 0 && (
+          <li className="text-center text-base-content/50">
+            Nenhuma nota salva.
+          </li>
+        )}
+        {[...notes] // Cria uma cópia para não modificar o array original
+          .sort((a, b) => b.id - a.id) // Ordena do maior ID (mais recente) para o menor
+          .map((note) => (
+            <li
+              key={note.id}
+              className="p-4 bg-base-200 rounded-lg shadow break-all"
+            >
+              <div className="flex justify-between items-start">
+                <div
+                  className="prose max-w-full break-words whitespace-pre-wrap text-pretty"
+                  dangerouslySetInnerHTML={{ __html: note.html }}
+                />
+                <div className="flex gap-2 flex-shrink-0 ml-4">
+                  <button
+                    className="btn btn-xs btn-soft btn-primary"
+                    onClick={() => handleEdit(note)}
+                  >
+                    Editar
+                  </button>
+                  <button
+                    className="btn btn-xs btn-soft btn-error"
+                    onClick={() => handleDelete(note.id)}
+                  >
+                    Excluir
+                  </button>
+                </div>
+              </div>
+            </li>
+          ))}
+      </ul>
+
       {/* Toolbar de Criação */}
-      <div className="flex items-center gap-4 mb-2">
+      <div className="flex items-center gap-4 mt-2">
         <div
           onMouseDown={() => saveSelection()}
           onClick={() => applyFormat("bold")}
@@ -300,7 +338,7 @@ const EditorNotes = ({ r, colum }) => {
       <div
         ref={editorRef}
         contentEditable
-        className="p-2 border border-base-300 rounded-lg h-32 overflow-auto mb-2 whitespace-pre-wrap break-words"
+        className="py-1 px-5 border border-base-300 rounded-lg h-32 overflow-auto mb-2 whitespace-pre-wrap break-words"
         onInput={handleInput}
         suppressContentEditableWarning
       />
@@ -318,44 +356,6 @@ const EditorNotes = ({ r, colum }) => {
           Cancelar
         </button>
       )}
-
-      {/* Lista de Notas */}
-      <ul className="space-y-4">
-        {notes.length === 0 && (
-          <li className="text-center text-base-content/50">
-            Nenhuma nota salva.
-          </li>
-        )}
-        {[...notes] // Cria uma cópia para não modificar o array original
-          .sort((a, b) => b.id - a.id) // Ordena do maior ID (mais recente) para o menor
-          .map((note) => (
-            <li
-              key={note.id}
-              className="p-4 bg-base-200 rounded-lg shadow break-all"
-            >
-              <div className="flex justify-between items-start">
-                <div
-                  className="prose max-w-full break-words whitespace-pre-wrap text-pretty"
-                  dangerouslySetInnerHTML={{ __html: note.html }}
-                />
-                <div className="flex gap-2 flex-shrink-0 ml-4">
-                  <button
-                    className="btn btn-xs btn-soft btn-primary"
-                    onClick={() => handleEdit(note)}
-                  >
-                    Editar
-                  </button>
-                  <button
-                    className="btn btn-xs btn-soft btn-error"
-                    onClick={() => handleDelete(note.id)}
-                  >
-                    Excluir
-                  </button>
-                </div>
-              </div>
-            </li>
-          ))}
-      </ul>
     </>
   );
 };
