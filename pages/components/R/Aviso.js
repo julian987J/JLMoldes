@@ -92,7 +92,7 @@ const Aviso = ({ codigo, r }) => {
   }, [lastMessage, r, setDados]);
 
   return (
-    <div className="overflow-x-auto rounded-box border border-info bg-base-100">
+    <div className="overflow-x-auto rounded-box border border-secondary bg-base-100">
       <table className="table table-xs">
         <thead>
           <tr className="grid grid-cols-12">
@@ -109,7 +109,7 @@ const Aviso = ({ codigo, r }) => {
           {dados.map((item) => (
             <tr
               key={item.avisoid}
-              className="grid grid-cols-12 border-b border-info"
+              className="grid grid-cols-12 border-b border-secondary bg-secondary-content"
             >
               <td className="col-span-3">{Use.formatarDataHora(item.data)}</td>
               <td className="col-span-1">

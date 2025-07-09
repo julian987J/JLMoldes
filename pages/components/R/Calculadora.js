@@ -614,6 +614,19 @@ const Calculadora = ({
         console.log("Caiu em Foi pago todo o papel.");
 
         //
+      } else if (!trocoValue && !valorDeve) {
+        const novoAvisoId = gerarEArmazenarCodigoAleatorio();
+        await Execute.sendToAviso({
+          avisoid: novoAvisoId,
+          data: Use.NowData(),
+          codigo,
+          r,
+          nome,
+          valorpapel: papel,
+          valorcomissao: comitions,
+          valor: total,
+        });
+        console.log("Caiu em Nova condição: !trocoValue e criou aviso.");
       } else if (valorDeve && trocoValue && !dadosR) {
         await Execute.sendToDeveUpdate(
           codigo,
@@ -760,9 +773,6 @@ const Calculadora = ({
         await Execute.sendToPapelC(ObjPapelC);
 
         console.log("Caiu em DEVO e Pagou tudo o Papel");
-      } else if (Number(total) && !dadosR && !valorDeve && !trocoValue) {
-        await Execute.sendToPapelC(ObjPapelC);
-        console.log("Caiu em tem Serviço e papel e foi Pago todo o papel");
       } else if (Number(total) && !dadosR && !valorDeve && trocoValue) {
         const novoCodigo = gerarEArmazenarCodigoAleatorio();
         await Execute.sendToDeve({

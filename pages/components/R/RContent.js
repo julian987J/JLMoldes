@@ -172,7 +172,7 @@ const Rcontent = ({ codigoExterno, r }) => {
   };
   return (
     <div>
-      <div className="grid grid-cols-30">
+      <div className="grid grid-cols-30 gap-1">
         <div className="col-span-6">
           <Pagamentos r={r} />
         </div>
@@ -184,10 +184,10 @@ const Rcontent = ({ codigoExterno, r }) => {
         </div>
         <div className="col-span-10">
           <Pendente r={r} onSelectItem={handlePendenteSelect} />
-          <div className="mt-2">
+          <div className="mt-1">
             <Deve codigo={codigo} r={r} />
           </div>
-          <div className="mt-2">
+          <div className="mt-1">
             <Aviso codigo={codigo} r={r} />
           </div>
         </div>

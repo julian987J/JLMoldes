@@ -127,7 +127,7 @@ const Deve = ({ codigo, r }) => {
   }, [lastMessage, r, setDados]); // Depende de lastMessage, r, e setDados
 
   return (
-    <div className="overflow-x-auto rounded-box border border-secondary bg-base-100">
+    <div className="overflow-x-auto rounded-box border border-neutral-content bg-base-100">
       <table className="table table-xs">
         <thead>
           <tr className="grid grid-cols-12">
@@ -149,7 +149,7 @@ const Deve = ({ codigo, r }) => {
                   ? "bg-green-200"
                   : Number(item.avisado) === 1
                     ? "bg-info/30"
-                    : "border-b border-secondary"
+                    : "border-b border-neutral-content"
               }`}
             >
               <td className="col-span-3">{Use.formatarDataHora(item.data)}</td>
