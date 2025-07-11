@@ -203,6 +203,7 @@ const Rcontent = ({ codigoExterno, r }) => {
             onPlusChange={handlePlusChange}
             onValuesChange={handleValuesChange}
             data={data}
+            isPendente={!!selectedPendenteItem}
           />
           <Devo codigo={codigo} r={r} />
         </div>

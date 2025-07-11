@@ -22,6 +22,7 @@ const Calculadora = ({
   onValuesChange, // Recebido como prop
   data,
   r,
+  isPendente,
 }) => {
   const ErrorComponent = dynamic(() => import("../Errors.js"), { ssr: false });
   const [showError, setShowError] = useState(false);
@@ -614,7 +615,7 @@ const Calculadora = ({
         console.log("Caiu em Foi pago todo o papel.");
 
         //
-      } else if (!trocoValue && !valorDeve && pix && !real) {
+      } else if (isPendente && !trocoValue && !valorDeve) {
         const novoAvisoId = gerarEArmazenarCodigoAleatorio();
         await Execute.sendToAviso({
           avisoid: novoAvisoId,
@@ -631,22 +632,9 @@ const Calculadora = ({
           ...ObjPapelC,
           deveid: novoAvisoId,
           data: Use.NowData(),
-          papelreal: 0,
-          encaixereal: 0,
         });
 
         console.log("Caiu em Nova condição: !trocoValue e criou aviso.");
-      } else if (!trocoValue && !valorDeve && !pix && real) {
-        const novoAvisoId = gerarEArmazenarCodigoAleatorio();
-        await Execute.sendToPapelC({
-          ...ObjPapelC,
-          deveid: novoAvisoId,
-          data: Use.NowData(),
-          papelpix: 0,
-          encaixepix: 0,
-        });
-
-        console.log("Caiu em Nova condição: !pix");
       } else if (valorDeve && trocoValue && !dadosR) {
         await Execute.sendToDeveUpdate(
           codigo,
