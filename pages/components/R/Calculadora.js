@@ -63,6 +63,10 @@ const Calculadora = ({
   const [allCadastroNames, setAllCadastroNames] = useState([]);
   const [filteredSuggestions, setFilteredSuggestions] = useState([]);
 
+  const [isSalvarDisabled, setIsSalvarDisabled] = useState(false);
+  const [isPendenteDisabled, setIsPendenteDisabled] = useState(false);
+  const [isEsperaDisabled, setIsEsperaDisabled] = useState(false);
+
   // Calcula a soma bruta dos valores (novo cálculo)
   const sumValues = values.reduce((sum, current) => {
     const num = current === "" ? 0 : Number(current);
@@ -526,6 +530,9 @@ const Calculadora = ({
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (isSalvarDisabled) return;
+    setIsSalvarDisabled(true);
+
     const trocoValue = Number(roundedTroco);
 
     try {
@@ -827,10 +834,18 @@ const Calculadora = ({
     } catch (error) {
       console.error("Erro ao salvar:", error);
       alert("Erro ao salvar os dados!");
+    } finally {
+      setTimeout(() => setIsSalvarDisabled(false), 1000);
     }
   };
 
   const handlePendente = async () => {
+    if (isEsperaDisabled) return;
+    setIsEsperaDisabled(true);
+    setTimeout(() => {
+      setIsEsperaDisabled(false);
+    }, 1000);
+
     if (!nome || !codigo) {
       alert("Nome e Código são obrigatórios para salvar como pendente.");
       return;
@@ -866,6 +881,13 @@ const Calculadora = ({
   };
 
   const handlePendentePapel = async () => {
+    if (isPendenteDisabled) return;
+    setIsPendenteDisabled(true);
+
+    setTimeout(() => {
+      setIsPendenteDisabled(false);
+    }, 1000);
+
     if (!nome || !codigo) {
       alert("Nome e Código são obrigatórios para marcar como pendente.");
       return;
@@ -1140,6 +1162,7 @@ const Calculadora = ({
               type="button"
               className="btn btn-warning"
               onClick={handlePendente}
+              disabled={isEsperaDisabled}
             >
               Espera
             </button>
@@ -1147,12 +1170,17 @@ const Calculadora = ({
               type="button"
               className="btn btn-primary"
               onClick={handlePendentePapel}
+              disabled={isPendenteDisabled}
             >
               Pendente
             </button>
           </div>
           <div className="col-span-3">
-            <button type="submit" className="btn btn-secondary w-full">
+            <button
+              type="submit"
+              className="btn btn-secondary w-full"
+              disabled={isSalvarDisabled}
+            >
               Salvar
             </button>
           </div>
