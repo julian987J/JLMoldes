@@ -611,6 +611,7 @@ const Calculadora = ({
           Number(real),
         );
         await Execute.removeDevo(codigo);
+        await Execute.sendToPapelC(ObjPapelC);
 
         console.log("Caiu em Foi pago todo o papel.");
 
@@ -800,6 +801,7 @@ const Calculadora = ({
         console.log("Caiu em tem Serviço e papel e foi Pago parte o papel");
       } else {
         console.log("Caiu em sem condições");
+        await Execute.sendToPapelC(ObjPapelC);
       }
 
       hadleUpdatePapel(
