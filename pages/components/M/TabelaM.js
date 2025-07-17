@@ -256,15 +256,13 @@ const TabelaM = ({
                 {filteredGroupedData[decKey].map((item) => (
                   <tr
                     key={item.id}
-                    className={
-                      item.r1
-                        ? "bg-warning/20 border-b border-gray-700"
-                        : item.r2
-                          ? "bg-primary/20 border-b border-gray-700"
-                          : item.r3
-                            ? "bg-info/20 border-b border-gray-700"
-                            : "border-b border-gray-700"
-                    }
+                    className={(() => {
+                      let bgColor = "";
+                      if (item.r1) bgColor = "bg-warning/20";
+                      else if (item.r2) bgColor = "bg-primary/20";
+                      else if (item.r3) bgColor = "bg-info/20";
+                      return `${bgColor} border-b border-gray-700`;
+                    })()}
                   >
                     <td className="hidden">{item.id}</td>
                     <td>{Use.formatarData(item.data)}</td>
