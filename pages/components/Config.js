@@ -21,6 +21,13 @@ const Config = () => {
 
   useEffect(() => {
     if (lastMessage && lastMessage.data && lastMessage.timestamp) {
+      const { type, payload } = lastMessage.data;
+
+      // Ignora mensagens que não são para este componente
+      if (type !== "CONFIG_UPDATED_ITEM") {
+        return;
+      }
+
       if (
         lastProcessedTimestampRef.current &&
         lastMessage.timestamp <= lastProcessedTimestampRef.current
@@ -32,7 +39,6 @@ const Config = () => {
         return;
       }
 
-      const { type, payload } = lastMessage.data;
       console.log(
         "Config.js: Mensagem WebSocket recebida:",
         type,
@@ -51,6 +57,7 @@ const Config = () => {
           }
           break;
         default:
+          // Este caso agora é redundante devido à verificação inicial, mas pode ser mantido por segurança
           console.log("Tipo de mensagem desconhecido:", type);
       }
 

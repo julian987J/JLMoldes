@@ -98,15 +98,11 @@ const TabelaM = ({
         lastProcessedTimestampRef.current &&
         lastMessage.timestamp <= lastProcessedTimestampRef.current
       ) {
-        // console.log("TabelaM.js: Ignorando mensagem WebSocket já processada:", lastMessage.timestamp);
         return;
       }
 
       const { type, payload } = lastMessage.data;
-      // console.log("TabelaM.js: Mensagem WebSocket recebida:", type, payload, "Oficina atual:", oficina, "Timestamp:", lastMessage.timestamp);
 
-      // Verificar se a mensagem é relevante para esta instância da tabela
-      // (mesma oficina e talvez mainEndpoint se necessário)
       if (payload && payload.oficina === oficina) {
         // Garante que a mensagem é para a oficina correta
         const itemMatchesFilter = filterCondition(payload);
@@ -261,6 +257,7 @@ const TabelaM = ({
                       if (item.r1) bgColor = "bg-warning/20";
                       else if (item.r2) bgColor = "bg-primary/20";
                       else if (item.r3) bgColor = "bg-info/20";
+                      else if (item.r4) bgColor = "bg-success/20";
                       return `${bgColor} border-b border-gray-700`;
                     })()}
                   >

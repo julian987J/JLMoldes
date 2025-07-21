@@ -543,7 +543,7 @@ const Calculadora = ({
         //
       } else if (dadosR && !trocoValue && !Number(total) && !valorDeve) {
         await sendToCAndUpdateR(trocoValue);
-        await Execute.removeMandR(idsArray);
+        await Execute.PayAllMandR(idsArray);
         console.log("caiu em Pago todo R");
         //
       } else if (trocoValue < 0) {
@@ -554,7 +554,7 @@ const Calculadora = ({
           codigo,
           valor: Math.abs(trocoValue),
         });
-        await Execute.removeMandR(idsArray);
+        await Execute.PayAllMandR(idsArray);
         console.log("Caiu em Troco Menor que Zero.");
       } else if (
         trocoValue === totalGeral &&
@@ -598,13 +598,13 @@ const Calculadora = ({
           await sendToCAndUpdateR(values);
           await Execute.removeDeve(codigo);
           await Execute.removeDevo(codigo);
-          await Execute.removeMandR(idsArray);
+          await Execute.PayAllMandR(idsArray);
           console.log("Existe no C");
         } else {
           await sendToCAndUpdateR(trocoValue);
           await Execute.removeDeve(codigo);
           await Execute.removeDevo(codigo);
-          await Execute.removeMandR(idsArray);
+          await Execute.PayAllMandR(idsArray);
         }
         console.log("Caiu em foi tudo pago Papel e R.");
         //
@@ -657,19 +657,19 @@ const Calculadora = ({
         //
       } else if (dadosR > 0 && !trocoValue && !Number(total)) {
         await sendToCAndUpdateR(trocoValue);
-        await Execute.removeMandR(idsArray);
+        await Execute.PayAllMandR(idsArray);
         console.log("Caiu em foi pago todo o R.");
         //
       } else if (dadosR > 0 && !trocoValue && Number(total)) {
         await sendToCAndUpdateR(trocoValue);
         await Execute.sendToPapelC(ObjPapelC);
-        await Execute.removeMandR(idsArray);
+        await Execute.PayAllMandR(idsArray);
         console.log("Caiu em foi pago todo o R e Papel.");
         //
       } else if (dadosR > 0 && trocoValue && Number(total)) {
         if (dadosR === pixMaisReal) {
           await Execute.sendToC(ObjC1);
-          await Execute.removeMandR(idsArray);
+          await Execute.PayAllMandR(idsArray);
           if (total > 0) {
             const novoCodigo = gerarEArmazenarCodigoAleatorio();
             await Execute.removeDevo(codigo);
@@ -734,7 +734,7 @@ const Calculadora = ({
           //
         } else if (pixMaisReal > dadosR && Number(total)) {
           await sendToCAndUpdateR(0);
-          await Execute.removeMandR(idsArray);
+          await Execute.PayAllMandR(idsArray);
           if (total > 0) {
             const value = Math.abs(totalGeral - pixMaisReal);
             await Execute.removeDevo(codigo);
@@ -770,7 +770,7 @@ const Calculadora = ({
         if (dadosR === pixMaisReal) {
           await sendToCAndUpdateR(0);
           await Execute.removeDevo(codigo);
-          await Execute.removeMandR(idsArray);
+          await Execute.PayAllMandR(idsArray);
 
           console.log("Caiu em foi pago todo R deve o Papel.");
           //
@@ -780,7 +780,7 @@ const Calculadora = ({
         } else if (pixMaisReal > dadosR) {
           await Execute.sendToDeveUpdate(codigo, trocoValue, r);
           await Execute.sendToCAndUpdateR(0);
-          await Execute.removeMandR(idsArray);
+          await Execute.PayAllMandR(idsArray);
           console.log("Caiu em foi Todo R e Parte Papel.");
         }
         console.log("Caiu em Tem R e Tem DEVE");

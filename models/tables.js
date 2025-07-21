@@ -372,29 +372,62 @@ async function createPagamento(pagamentoData) {
 }
 
 async function updateAltSis(updatedData) {
-  const result = await database.query({
-    text: `
-      UPDATE "Mtable"
-      SET 
-        observacao = $1,
-        dec = $2,
-        nome = $3,
-        sis = $4,
-        alt = $5
-      WHERE id = $6
-      RETURNING *;
-    `,
-    values: [
-      updatedData.observacao,
-      updatedData.dec,
-      updatedData.nome,
-      updatedData.sis,
-      updatedData.alt,
-      updatedData.id,
-    ],
-  });
+  const { id, r1, r2, r3, r4, ...otherFields } = updatedData; // Desestruture r1, r2, r3
 
-  return result;
+  const updatableFields = ["observacao", "dec", "nome", "sis", "alt"].filter(
+    (field) => otherFields[field] !== undefined,
+  );
+
+  const queryValues = updatableFields.map((field) => otherFields[field]);
+  let placeholderIndex = 1;
+
+  const setClauses = updatableFields.map(
+    (field) => `"${field}" = $${placeholderIndex++}`,
+  );
+
+  // Adicione r1, r2, r3 e r4 com cast explícito para BOOLEAN
+  if (r1 !== undefined) {
+    setClauses.push(`"r1" = $${placeholderIndex++}::BOOLEAN`);
+    queryValues.push(r1);
+  }
+  if (r2 !== undefined) {
+    setClauses.push(`"r2" = $${placeholderIndex++}::BOOLEAN`);
+    queryValues.push(r2);
+  }
+  if (r3 !== undefined) {
+    setClauses.push(`"r3" = $${placeholderIndex++}::BOOLEAN`);
+    queryValues.push(r3);
+  }
+  if (r4 !== undefined) {
+    setClauses.push(`"r4" = $${placeholderIndex++}::BOOLEAN`);
+    queryValues.push(r4);
+  }
+
+  if (setClauses.length === 0) {
+    return { rows: [] };
+  }
+
+  let whereClause;
+  if (Array.isArray(id)) {
+    const idPlaceholders = id.map(() => `$${placeholderIndex++}`).join(", ");
+    whereClause = `id IN (${idPlaceholders})`;
+    queryValues.push(...id);
+  } else {
+    whereClause = `id = $${placeholderIndex++}`;
+    queryValues.push(id);
+  }
+
+  const queryText = `
+    UPDATE "Mtable"
+    SET ${setClauses.join(", ")}
+    WHERE ${whereClause}
+    RETURNING *;
+  `;
+
+  return database.query({
+    text: queryText,
+    values: queryValues,
+  });
 }
 
 async function updateC(updatedData) {

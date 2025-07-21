@@ -1011,6 +1011,26 @@ async function removeMandR(id) {
   console.log(result2);
 }
 
+async function PayAllMandR(id) {
+  const response = await fetch("/api/v1/tables", {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ id, r1: false, r2: false, r3: false, r4: true }), // Envia o `id` e define r4 como true
+  });
+
+  const response2 = await fetch("/api/v1/tables/R", {
+    method: "DELETE",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ id }), // Envia o `id` no corpo da requisição
+  });
+
+  const result = await response.json();
+  console.log(result);
+
+  const result2 = await response2.json();
+  console.log(result2);
+}
+
 async function removeC(id) {
   const response = await fetch("/api/v1/tables/c", {
     method: "DELETE",
@@ -1332,6 +1352,7 @@ const execute = {
   removeSaidaO,
   removeOficina,
   removeMandR,
+  PayAllMandR,
   removeDeve,
   removeAviso,
   removeDevo,

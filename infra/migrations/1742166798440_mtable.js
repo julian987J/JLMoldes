@@ -13,6 +13,7 @@ exports.up = (pgm) => {
     r1: { type: "boolean", notNull: true, default: false },
     r2: { type: "boolean", notNull: true, default: false },
     r3: { type: "boolean", notNull: true, default: false },
+    r4: { type: "boolean", notNull: true, default: false },
   });
 };
 
