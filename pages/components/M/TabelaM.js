@@ -254,7 +254,10 @@ const TabelaM = ({
                     key={item.id}
                     className={(() => {
                       let bgColor = "";
-                      if (item.r1) bgColor = "bg-warning/20";
+                      if (item.r1 && item.r4) bgColor = "bg-success/20";
+                      else if (item.r2 && item.r4) bgColor = "bg-success/20";
+                      else if (item.r3 && item.r4) bgColor = "bg-success/20";
+                      else if (item.r1) bgColor = "bg-warning/20";
                       else if (item.r2) bgColor = "bg-primary/20";
                       else if (item.r3) bgColor = "bg-info/20";
                       else if (item.r4) bgColor = "bg-success/20";

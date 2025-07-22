@@ -42,9 +42,6 @@ async function sendToR(itemData) {
       (item) => Number(item.id) === itemDataNumber,
     );
 
-    // Adicionando logs para depuração
-    console.log("Verificando IDs...");
-
     if (idExistsNumber) {
       throw new Error("RID"); // Erro específico para ID duplicado
     }
@@ -1011,24 +1008,36 @@ async function removeMandR(id) {
   console.log(result2);
 }
 
-async function PayAllMandR(id) {
-  const response = await fetch("/api/v1/tables", {
-    method: "PUT",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ id, r1: false, r2: false, r3: false, r4: true }), // Envia o `id` e define r4 como true
-  });
+async function PayAllMandR(ids) {
+  if (!Array.isArray(ids)) {
+    console.error("PayAllMandR expects an array of IDs.");
+    return;
+  }
 
-  const response2 = await fetch("/api/v1/tables/R", {
-    method: "DELETE",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ id }), // Envia o `id` no corpo da requisição
-  });
+  for (const id of ids) {
+    try {
+      // Atualiza Mtable, definindo r4 = true
+      const response = await fetch("/api/v1/tables", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, r4: true }),
+      });
 
-  const result = await response.json();
-  console.log(result);
+      // Deleta de RBSA
+      const response2 = await fetch("/api/v1/tables/R", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id }),
+      });
 
-  const result2 = await response2.json();
-  console.log(result2);
+      if (!response.ok || !response2.ok) {
+        console.error(`Falha ao processar o ID ${id}.`);
+        // Continuar para o próximo ID
+      }
+    } catch (error) {
+      console.error(`Erro ao processar o ID ${id}:`, error);
+    }
+  }
 }
 
 async function removeC(id) {

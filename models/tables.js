@@ -1251,7 +1251,7 @@ async function getNotas(r, colum) {
 
 async function getMTableAltSis(oficina) {
   const result = await database.query({
-    text: `SELECT id, data, observacao, codigo, dec, nome, sis, alt, r1, r2, r3 
+    text: `SELECT id, data, observacao, codigo, dec, nome, sis, alt, r1, r2, r3, r4 
            FROM "Mtable" 
            WHERE oficina = $1 
            AND (sis > 0 OR alt > 0) 
@@ -1263,7 +1263,7 @@ async function getMTableAltSis(oficina) {
 
 async function getMTableBase(oficina) {
   const result = await database.query({
-    text: `SELECT id, data, observacao, codigo, dec, nome, base, r1, r2, r3 
+    text: `SELECT id, data, observacao, codigo, dec, nome, base, r1, r2, r3, r4 
            FROM "Mtable" 
            WHERE oficina = $1 
            AND base > 0 ORDER BY data DESC;`,
