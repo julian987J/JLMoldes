@@ -554,6 +554,7 @@ const Calculadora = ({
           codigo,
           valor: Math.abs(trocoValue),
         });
+        await Execute.sendToPapelC(ObjPapelC);
         await Execute.PayAllMandR(idsArray);
         console.log("Caiu em Troco Menor que Zero.");
       } else if (
@@ -815,13 +816,33 @@ const Calculadora = ({
         Number(sumValues) + Number(desperdicio) + Number(perdida),
       );
 
-      await Execute.sendToPagamentos({
-        nome,
-        r,
-        data: Use.NowData(),
-        pix,
-        real,
-      });
+      const numPix = Number(pix) || 0;
+      const numReal = Number(real) || 0;
+
+      if (numPix > 0 || numReal > 0) {
+        let finalPix = numPix;
+        let finalReal = numReal;
+
+        if (trocoValue < 0) {
+          const change = -trocoValue;
+          const realAfterChange = finalReal - change;
+          finalReal = Math.max(0, realAfterChange);
+
+          if (realAfterChange < 0) {
+            finalPix = Math.max(0, finalPix + realAfterChange);
+          }
+        }
+
+        if (finalPix > 0 || finalReal > 0) {
+          await Execute.sendToPagamentos({
+            nome,
+            r,
+            data: Use.NowData(),
+            pix: finalPix,
+            real: finalReal,
+          });
+        }
+      }
 
       setPix("");
       onPlusChange(0);
