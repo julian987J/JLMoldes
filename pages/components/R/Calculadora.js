@@ -619,7 +619,7 @@ const Calculadora = ({
           Number(real),
         );
         await Execute.removeDevo(codigo);
-        await Execute.sendToPapelC(ObjPapelC);
+        //await Execute.sendToPapelC(ObjPapelC);
 
         console.log("Caiu em Foi pago todo o papel.");
 
@@ -915,6 +915,7 @@ const Calculadora = ({
     }
 
     try {
+      const trocoValue = Number(roundedTroco);
       if (Number(total) > 0) {
         const novoCodigo = gerarEArmazenarCodigoAleatorio();
         await Execute.removeDevo(codigo);
@@ -926,7 +927,7 @@ const Calculadora = ({
           codigo,
           valorpapel: papel,
           valorcomissao: comitions,
-          valor: Number(total),
+          valor: trocoValue,
         });
 
         await Execute.sendToPapelC({
