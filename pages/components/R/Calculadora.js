@@ -653,6 +653,37 @@ const Calculadora = ({
           Number(pix),
           Number(real),
         );
+
+        if (total > 0) {
+          const novoCodigo = gerarEArmazenarCodigoAleatorio();
+          await Execute.sendToDeve({
+            deveid: novoCodigo,
+            nome,
+            r,
+            data: Use.NowData(),
+            codigo,
+            valorpapel: papel,
+            valorcomissao: comitions,
+            valor: trocoValue,
+          });
+          await Execute.sendToPapelC({
+            ...ObjPapelC,
+            deveid: novoCodigo,
+            papelpix:
+              Number(pix) > 0 ? Math.min(Number(pix), papel) - trocoValue : 0,
+            papelreal:
+              Number(real) > 0
+                ? Math.min(
+                    Number(real),
+                    papel -
+                      (Number(pix) > 0 ? Math.min(Number(pix), papel) : 0) -
+                      trocoValue,
+                  )
+                : 0,
+          });
+          console.log("caiu no valor novo pago e parte");
+        }
+
         await Execute.removeDevo(codigo);
         console.log("Caiu em Foi pago Parte do Valor do Papel.");
         //
