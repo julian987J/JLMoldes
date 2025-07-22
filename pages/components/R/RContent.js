@@ -179,7 +179,7 @@ const Rcontent = ({ codigoExterno, r }) => {
         <div>
           <Metragem r={r} />
         </div>
-        <div div className="col-span-9">
+        <div className="col-span-9">
           <BSTA codigo={codigo} r={r} />
         </div>
         <div className="col-span-10">

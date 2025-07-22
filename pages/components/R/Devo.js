@@ -97,9 +97,9 @@ const Devo = ({ codigo, r }) => {
           </tr>
         </thead>
         <tbody>
-          {dados.map((item) => (
+          {dados.map((item, index) => (
             <tr
-              key={item.id}
+              key={`${item.id}-${index}`}
               className={
                 item.codigo === codigo ? "bg-red-200" : "border-b border-error"
               }

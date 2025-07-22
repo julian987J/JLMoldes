@@ -1146,6 +1146,7 @@ const Calculadora = ({
             value={roundedTroco.toFixed(2)}
             autoComplete="nope"
             className="input input-defaut input-lg join-item font-bold"
+            readOnly
           />
           <input
             min="0"

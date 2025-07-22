@@ -59,13 +59,6 @@ const Pessoal = ({ letras }) => {
       }
 
       const { type, payload } = lastMessage.data;
-      console.log(
-        "Pessoal.js: Mensagem WebSocket recebida:",
-        type,
-        payload,
-        "Timestamp:",
-        lastMessage.timestamp,
-      ); // Adicionar log para depuração
 
       // Verifica se o payload existe e se a mensagem é relevante para este componente
       if (payload) {
@@ -93,9 +86,6 @@ const Pessoal = ({ letras }) => {
             );
 
             if (editingId == payload.id) {
-              console.log(
-                `Oficina.js: WebSocket está fechando a edição para ID: ${payload.id}. Current editingId: ${editingId}`,
-              );
               setEditingId(null); // Fecha o formulário de edição se o item editado foi atualizado
             }
             break;
@@ -119,10 +109,6 @@ const Pessoal = ({ letras }) => {
       }
       // Após processar a mensagem, atualize o timestamp da última mensagem processada.
       lastProcessedTimestampRef.current = lastMessage.timestamp;
-      console.log(
-        "Pessoal.js: Timestamp da última mensagem processada atualizado para:",
-        lastMessage.timestamp,
-      );
     }
   }, [lastMessage, letras, editingId]);
 

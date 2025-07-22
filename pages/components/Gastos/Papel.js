@@ -58,13 +58,6 @@ const Papel = ({ letras }) => {
       }
 
       const { type, payload } = lastMessage.data;
-      console.log(
-        "Papel.js: Mensagem WebSocket recebida:",
-        type,
-        payload,
-        "Timestamp:",
-        lastMessage.timestamp,
-      );
 
       // Verifica se o payload existe e se a mensagem é relevante para este componente (mesmo 'letras', que parece ser 'dec' no payload)
       if (payload) {
@@ -91,14 +84,10 @@ const Papel = ({ letras }) => {
             );
 
             if (editingId == payload.id) {
-              console.log(
-                `Papel.js: WebSocket está fechando a edição para ID: ${payload.id}. Current editingId: ${editingId}`,
-              );
               setEditingId(null); // Fecha o formulário de edição se o item editado foi atualizado
             }
             break;
           case "PAPEL_DELETED_ITEM":
-            console.log("Payload recebido para exclusão:", payload);
             if (payload && payload.id !== undefined) {
               const idToRemove = String(payload.id);
               setData((prevData) =>
@@ -117,10 +106,6 @@ const Papel = ({ letras }) => {
       }
       // Após processar a mensagem, atualize o timestamp da última mensagem processada.
       lastProcessedTimestampRef.current = lastMessage.timestamp;
-      console.log(
-        "Papel.js: Timestamp da última mensagem processada atualizado para:",
-        lastMessage.timestamp,
-      );
     }
   }, [lastMessage, letras, editingId]);
 
