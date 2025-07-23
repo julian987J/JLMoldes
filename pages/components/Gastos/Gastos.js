@@ -76,7 +76,7 @@ const Gastos = ({ letras }) => {
 
   // Process data when raw data changes
   useEffect(() => {
-    setVariosData(processarDados(rawVariosData, "data", ["real", "pix"]));
+    setVariosData(processarDados(rawVariosData, "date", ["real", "pix"]));
   }, [rawVariosData]);
 
   useEffect(() => {
