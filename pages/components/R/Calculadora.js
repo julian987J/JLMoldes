@@ -256,6 +256,68 @@ const Calculadora = ({
     fetchComentarioFromCadastro();
   }, [codigo, nome]);
 
+  // WebSocket listeners for real-time updates
+  useEffect(() => {
+    if (lastMessage && lastMessage.data) {
+      const { type, payload } = lastMessage.data;
+
+      // Listener for R updates
+      if (type.startsWith("BSA_")) {
+        const buscarDadosR = async () => {
+          try {
+            const resultado = await Execute.receiveFromRJustBSA(codigo, r);
+            const groups = resultado.map((group) => ({
+              dec: group.dec,
+              base: Number(group.total_base) || 0,
+              sis: Number(group.total_sis) || 0,
+              alt: Number(group.total_alt) || 0,
+              ids: group.ids || [],
+            }));
+            setDecGroups(groups);
+            setDadosR(
+              groups.reduce((sum, g) => sum + g.base + g.sis + g.alt, 0),
+            );
+            setIdsArray(groups.flatMap((g) => g.ids));
+          } catch (error) {
+            console.error("Erro ao recarregar dados de R:", error);
+          }
+        };
+        buscarDadosR();
+      }
+
+      // Listener for Deve updates
+      if (type.startsWith("DEVE_")) {
+        const buscarDadosDeve = async () => {
+          if (!codigo || !r) return;
+          try {
+            const resultado = await Execute.receiveFromDeveJustValor(codigo, r);
+            const somaTotal = Number(resultado.total_valor || 0);
+            const ids = resultado.deveids || [];
+            setValorDeve(somaTotal);
+            setDeveIdsArray(ids);
+          } catch (error) {
+            console.error("Erro ao recarregar dados de Deve:", error);
+          }
+        };
+        buscarDadosDeve();
+      }
+
+      // Listener for Devo updates
+      if (type.startsWith("DEVO_")) {
+        const buscarDadosDevo = async () => {
+          try {
+            const resultado = await Execute.receiveFromDevoJustValor(codigo);
+            const somaTotal = Number(resultado.total_valor || 0);
+            setValorDevo(somaTotal);
+          } catch (error) {
+            console.error("Erro ao recarregar dados de Devo:", error);
+          }
+        };
+        buscarDadosDevo();
+      }
+    }
+  }, [lastMessage, codigo, r]);
+
   // Fetch all cadastro names on component mount
   useEffect(() => {
     let isMounted = true;
