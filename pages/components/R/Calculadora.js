@@ -626,7 +626,7 @@ const Calculadora = ({
       ) {
         if (Number(total) > 0) {
           const novoCodigo = gerarEArmazenarCodigoAleatorio();
-          await Execute.removeDevo(codigo);
+          //await Execute.removeDevo(codigo);
           await Execute.sendToDeve({
             deveid: novoCodigo,
             nome,
@@ -672,16 +672,48 @@ const Calculadora = ({
         console.log("Caiu em foi tudo pago Papel e R.");
         //
       } else if (valorDeve && !trocoValue) {
-        await Execute.sendToDeveUpdate(
-          codigo,
-          trocoValue,
-          r,
-          deveIdsArray,
-          Number(pix),
-          Number(real),
-        );
+        const numPix = Number(pix) || 0;
+        const numReal = Number(real) || 0;
+
+        if (numPix > 0 || numReal > 0) {
+          let finalPix = numPix;
+          let finalReal = numReal;
+
+          if (trocoValue < 0) {
+            const change = -trocoValue;
+            const realAfterChange = finalReal - change;
+            finalReal = Math.max(0, realAfterChange);
+
+            if (realAfterChange < 0) {
+              finalPix = Math.max(0, finalPix + realAfterChange);
+            }
+          }
+
+          if (finalPix > 0 || finalReal > 0) {
+            let pixParaPagamento = finalPix;
+            let realParaPagamento = finalReal;
+
+            if (valorDevo > 0) {
+              if (pixParaPagamento > 0) {
+                pixParaPagamento += valorDevo;
+              } else if (realParaPagamento > 0) {
+                realParaPagamento += valorDevo;
+              }
+            }
+
+            await Execute.sendToDeveUpdate(
+              codigo,
+              trocoValue,
+              r,
+              deveIdsArray,
+              pixParaPagamento,
+              realParaPagamento,
+            );
+          }
+        }
+
         await Execute.removeDevo(codigo);
-        if (papel > 0) {
+        if (trocoValue > 0) {
           await Execute.sendToPapelC(ObjPapelC);
         }
 
@@ -1032,10 +1064,9 @@ const Calculadora = ({
     }
 
     try {
-      const trocoValue = Number(roundedTroco);
       if (Number(total) > 0) {
         const novoCodigo = gerarEArmazenarCodigoAleatorio();
-        await Execute.removeDevo(codigo);
+        //await Execute.removeDevo(codigo);
         await Execute.sendToDeve({
           deveid: novoCodigo,
           nome,
@@ -1044,7 +1075,7 @@ const Calculadora = ({
           codigo,
           valorpapel: papel,
           valorcomissao: comitions,
-          valor: trocoValue,
+          valor: total,
         });
 
         await Execute.sendToPapelC({
