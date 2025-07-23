@@ -81,7 +81,7 @@ const Pagamentos = ({ r }) => {
 
   useEffect(() => {
     loadData();
-  }, [loadData]);
+  }, [loadData, r]);
 
   useEffect(() => {
     if (lastMessage && lastMessage.data && lastMessage.timestamp) {

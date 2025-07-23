@@ -31,7 +31,7 @@ const Pendente = ({ r: propR, onSelectItem }) => {
   // useEffect for initial load remains the same
   useEffect(() => {
     loadData();
-  }, [loadData]);
+  }, [loadData, propR]);
 
   // useEffect for WebSocket remains the same, but ensure it uses propR
   useEffect(() => {

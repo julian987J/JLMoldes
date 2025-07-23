@@ -35,7 +35,7 @@ const Aviso = ({ codigo, r }) => {
 
   useEffect(() => {
     loadData();
-  }, [loadData, codigo]);
+  }, [loadData, codigo, r]);
 
   useEffect(() => {
     if (lastMessage && lastMessage.data && lastMessage.timestamp) {

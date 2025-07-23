@@ -53,7 +53,7 @@ const Deve = ({ codigo, r }) => {
 
   useEffect(() => {
     loadData(); // Busca inicial
-  }, [loadData, codigo]); // Depende de loadData e codigo
+  }, [loadData, codigo, r]); // Depende de loadData e codigo
 
   // Efeito para lidar com mensagens WebSocket
   useEffect(() => {

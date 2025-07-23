@@ -32,7 +32,7 @@ const BSA = ({ codigo, r }) => {
 
   useEffect(() => {
     loadData(); // Busca inicial e quando 'r' (via loadData) ou 'codigo' muda
-  }, [loadData, codigo]);
+  }, [loadData, codigo, r]);
 
   // Efeito para lidar com mensagens WebSocket
   useEffect(() => {
@@ -68,34 +68,20 @@ const BSA = ({ codigo, r }) => {
             );
           }
           break;
-        case "BSA_DELETED_ITEM": // Payload é { id: "some-id" }
-          console.log(
-            "BSATable.js: Tentando deletar item com ID:",
-            payload?.id,
-            "Tipo do ID do Payload:",
-            typeof payload?.id,
-            "Dados atuais (IDs e Tipos):",
-            dados.map((item) => ({
-              id: item.id,
-              type: typeof item.id,
-              r: item.r,
-            })), // Log IDs, types, and r of current items
-          );
-          setDados((prevDados) => {
-            const itemExistsInTable = prevDados.some(
-              // Compara como números, assumindo que payload.id é number
-              // e item.id pode ser string numérica ou number.
-              (item) => Number(item.id) === payload.id,
+        case "BSA_DELETED_ITEM":
+          if (
+            payload &&
+            payload.id !== undefined &&
+            String(payload.r) === String(r)
+          ) {
+            setDados((prevDados) =>
+              sortDadosByDate(
+                prevDados.filter(
+                  (item) => String(item.id) !== String(payload.id),
+                ),
+              ),
             );
-            if (itemExistsInTable) {
-              return sortDadosByDate(
-                prevDados.filter((item) => Number(item.id) !== payload.id),
-              );
-            }
-            // Se o item não existe (talvez já removido ou nunca esteve lá),
-            // ou se payload.id é inválido, retorna os dados anteriores.
-            return prevDados;
-          });
+          }
           break;
         default:
           break;

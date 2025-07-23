@@ -31,7 +31,7 @@ const Devo = ({ codigo, r }) => {
 
   useEffect(() => {
     loadData(); // Busca inicial
-  }, [loadData, codigo]);
+  }, [loadData, codigo, r]);
 
   // Efeito para lidar com mensagens WebSocket
   useEffect(() => {
