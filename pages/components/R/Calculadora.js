@@ -619,7 +619,9 @@ const Calculadora = ({
           Number(real),
         );
         await Execute.removeDevo(codigo);
-        //await Execute.sendToPapelC(ObjPapelC);
+        if (papel > 0) {
+          await Execute.sendToPapelC(ObjPapelC);
+        }
 
         console.log("Caiu em Foi pago todo o papel.");
 
