@@ -259,7 +259,7 @@ const Calculadora = ({
   // WebSocket listeners for real-time updates
   useEffect(() => {
     if (lastMessage && lastMessage.data) {
-      const { type, payload } = lastMessage.data;
+      const { type } = lastMessage.data;
 
       // Listener for R updates
       if (type.startsWith("BSA_")) {
