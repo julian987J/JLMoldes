@@ -818,7 +818,18 @@ const Calculadora = ({
         console.log("Caiu em Tem R e Tem DEVE");
       } else if (valorDevo && totalGeral === pixMaisReal) {
         await Execute.removeDevo(codigo);
-        await Execute.sendToPapelC(ObjPapelC);
+        await Execute.sendToPapelC({
+          ...ObjPapelC,
+          papelpix:
+            Number(pix) > 0 ? Math.min(Number(pix), papel) + valorDevo : 0,
+          papelreal:
+            Number(real) > 0
+              ? Math.min(
+                  Number(real),
+                  papel - (Number(pix) > 0 ? Math.min(Number(pix), papel) : 0),
+                ) + valorDevo
+              : 0,
+        });
 
         console.log("Caiu em DEVO e Pagou tudo o Papel");
       } else if (Number(total) && !dadosR && !valorDeve && trocoValue) {
@@ -865,12 +876,23 @@ const Calculadora = ({
         }
 
         if (finalPix > 0 || finalReal > 0) {
+          let pixParaPagamento = finalPix;
+          let realParaPagamento = finalReal;
+
+          if (valorDevo > 0) {
+            if (pixParaPagamento > 0) {
+              pixParaPagamento += valorDevo;
+            } else if (realParaPagamento > 0) {
+              realParaPagamento += valorDevo;
+            }
+          }
+
           await Execute.sendToPagamentos({
             nome,
             r,
             data: Use.NowData(),
-            pix: finalPix,
-            real: finalReal,
+            pix: pixParaPagamento,
+            real: realParaPagamento,
           });
         }
       }
