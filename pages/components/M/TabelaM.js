@@ -483,8 +483,11 @@ const TabelaM = ({
                         className={`btn btn-xs btn-soft btn-error ${
                           editingId === item.id ? "hidden" : ""
                         }`}
-                        onClick={() => {
-                          Execute.removeMandR(item.id);
+                        onClick={async () => {
+                          await Execute.removeMandR(item.id);
+                          setDados((prevDados) =>
+                            prevDados.filter((d) => d.id !== item.id),
+                          );
                         }}
                       >
                         Excluir
