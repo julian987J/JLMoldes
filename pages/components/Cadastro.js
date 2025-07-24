@@ -13,6 +13,7 @@ function Cadastro() {
   const [grupo, setGrupo] = useState("");
   const [observacao, setObservacao] = useState("");
   const [comentario, setComentario] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -143,8 +144,17 @@ function Cadastro() {
           </button>
         </form>
       </div>
+      <div className="bg-base-100 border-base-300 pb-2">
+        <input
+          type="text"
+          placeholder="Buscar..."
+          className="input input-info input-xs w-full"
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+        />
+      </div>
       <div>
-        <TableCad />
+        <TableCad searchTerm={searchTerm} />
       </div>
     </div>
   );

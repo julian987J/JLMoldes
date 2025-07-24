@@ -209,10 +209,8 @@ const Pagamentos = ({ r }) => {
     }, {});
   }, [dados]);
 
-  const totalReal = dados.reduce(
-    (sum, item) => sum + Number(item.real),
-    0,
-  ) + Number(devoTotal);
+  const totalReal =
+    dados.reduce((sum, item) => sum + Number(item.real), 0) + Number(devoTotal);
 
   if (loading) {
     return <div className="text-center p-4">Carregando pagamentos...</div>;

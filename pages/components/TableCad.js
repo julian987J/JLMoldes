@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import EditM from "./Edit";
 import { useWebSocket } from "../../contexts/WebSocketContext";
 
-const TableCad = () => {
+const TableCad = ({ searchTerm }) => {
   const [cadastroData, setCadastroData] = useState([]);
   const [editingId, setEditingId] = useState(null);
   const [editedData, setEditedData] = useState({});
@@ -141,6 +141,29 @@ const TableCad = () => {
     }
   };
 
+  const filteredData = cadastroData.filter((item) => {
+    const searchTermLower = searchTerm.toLowerCase();
+    return (
+      (item.regiao && item.regiao.toLowerCase().includes(searchTermLower)) ||
+      (item.codigo && item.codigo.toLowerCase().includes(searchTermLower)) ||
+      (item.facebook &&
+        item.facebook.toLowerCase().includes(searchTermLower)) ||
+      (item.instagram &&
+        item.instagram.toLowerCase().includes(searchTermLower)) ||
+      (item.email && item.email.toLowerCase().includes(searchTermLower)) ||
+      (item.whatsapp1 &&
+        item.whatsapp1.toLowerCase().includes(searchTermLower)) ||
+      (item.whatsapp2 &&
+        item.whatsapp2.toLowerCase().includes(searchTermLower)) ||
+      (item.nome && item.nome.toLowerCase().includes(searchTermLower)) ||
+      (item.grupo && item.grupo.toLowerCase().includes(searchTermLower)) ||
+      (item.observacao &&
+        item.observacao.toLowerCase().includes(searchTermLower)) ||
+      (item.comentario &&
+        item.comentario.toLowerCase().includes(searchTermLower))
+    );
+  });
+
   return (
     <div className="overflow-x-auto rounded-box border border-base-content/5 bg-base-100">
       <table className="table table-xs">
@@ -162,7 +185,7 @@ const TableCad = () => {
           </tr>
         </thead>
         <tbody>
-          {cadastroData.map((item) => (
+          {filteredData.map((item) => (
             <tr key={item.id} className="">
               <td className="hidden">{item.id}</td>
               {/* Região/País */}
