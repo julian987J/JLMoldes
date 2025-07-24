@@ -94,7 +94,7 @@ const Aviso = ({ codigo, r }) => {
   return (
     <div className="overflow-x-auto rounded-box border border-secondary bg-base-100">
       <table className="table table-xs">
-        <thead>
+        {/* <thead>
           <tr className="grid grid-cols-12">
             <th className="col-span-3">Data</th>
             <th className="col-span-1">Valor</th>
@@ -104,7 +104,7 @@ const Aviso = ({ codigo, r }) => {
             <th className="col-span-3">Nome</th>
             <th className="col-span-2">Ações</th>
           </tr>
-        </thead>
+        </thead> */}
         <tbody>
           {dados.map((item) => (
             <tr

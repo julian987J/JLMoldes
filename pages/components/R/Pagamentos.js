@@ -15,11 +15,27 @@ const sortDadosByDate = (dataArray) =>
 
 const Pagamentos = ({ r }) => {
   const [dados, setDados] = useState([]);
+  const [devoTotal, setDevoTotal] = useState(0);
   const { user } = useAuth(); // Get user from AuthContext
   const [loading, setLoading] = useState(true);
   const { lastMessage } = useWebSocket();
   const [deleteAttemptedThisSlot, setDeleteAttemptedThisSlot] = useState(false);
   const lastProcessedTimestampRef = useRef(null);
+
+  const loadDevoData = useCallback(async () => {
+    if (typeof r === "undefined" || r === null) {
+      setDevoTotal(0);
+      return;
+    }
+    try {
+      const devoData = await Execute.receiveFromDevo(r);
+      const total = devoData.reduce((sum, item) => sum + Number(item.valor), 0);
+      setDevoTotal(total);
+    } catch (error) {
+      console.error("Erro ao carregar dados de 'devo':", error);
+      setDevoTotal(0);
+    }
+  }, [r]);
 
   useEffect(() => {
     const checkTimeAndExecute = async () => {
@@ -81,7 +97,8 @@ const Pagamentos = ({ r }) => {
 
   useEffect(() => {
     loadData();
-  }, [loadData, r]);
+    loadDevoData();
+  }, [loadData, loadDevoData, r]);
 
   useEffect(() => {
     if (lastMessage && lastMessage.data && lastMessage.timestamp) {
@@ -146,12 +163,17 @@ const Pagamentos = ({ r }) => {
         case "PAGAMENTOS_TABLE_CLEARED":
           setDados([]);
           break;
+        case "DEVO_NEW_ITEM":
+        case "DEVO_UPDATED_ITEM":
+        case "DEVO_DELETED_ITEM":
+          loadDevoData();
+          break;
         default:
           break;
       }
       lastProcessedTimestampRef.current = lastMessage.timestamp;
     }
-  }, [lastMessage, r, setDados]);
+  }, [lastMessage, r, setDados, loadDevoData]);
 
   const handleDelete = async (itemId) => {
     // Optional: Add a confirmation dialog
@@ -186,6 +208,11 @@ const Pagamentos = ({ r }) => {
       return acc;
     }, {});
   }, [dados]);
+
+  const totalReal = dados.reduce(
+    (sum, item) => sum + Number(item.real),
+    0,
+  ) + Number(devoTotal);
 
   if (loading) {
     return <div className="text-center p-4">Carregando pagamentos...</div>;
@@ -238,7 +265,10 @@ const Pagamentos = ({ r }) => {
               </tbody>
               <tfoot>
                 <tr>
-                  <td colSpan="2" className="font-bold text-right"></td>
+                  <td colSpan="1" className="font-bold text-right"></td>
+                  <td className="font-bold text-left bg-error/30 w-28">
+                    {totalReal.toFixed(2)}
+                  </td>
                   <td className="font-bold text-right bg-info/10">
                     {Number(
                       itemsDoDia.reduce(
