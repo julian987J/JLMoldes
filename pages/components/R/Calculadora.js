@@ -715,6 +715,8 @@ const Calculadora = ({
         await Execute.removeDevo(codigo);
         if (trocoValue > 0) {
           await Execute.sendToPapelC(ObjPapelC);
+        } else if (total > 0 && trocoValue === 0) {
+          await Execute.sendToPapelC(ObjPapelC);
         }
 
         console.log("Caiu em Foi pago todo o papel.");
