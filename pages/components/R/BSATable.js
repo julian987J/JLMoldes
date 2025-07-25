@@ -5,7 +5,7 @@ import Use from "models/utils";
 import { useWebSocket } from "../../../contexts/WebSocketContext.js"; // Ajuste o caminho se necessário
 
 const sortDadosByDate = (dataArray) =>
-  [...dataArray].sort((a, b) => new Date(a.data) - new Date(b.data));
+  [...dataArray].sort((a, b) => new Date(b.data) - new Date(a.data));
 
 const BSA = ({ codigo, r }) => {
   const [dados, setDados] = useState([]);

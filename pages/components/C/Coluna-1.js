@@ -48,7 +48,7 @@ const Coluna = ({ r }) => {
       const existsData = await Execute.receiveFromR(r);
       setDados(
         Array.isArray(results)
-          ? results.sort((a, b) => new Date(a.date) - new Date(b.date))
+          ? results.sort((a, b) => new Date(b.date) - new Date(a.date))
           : [],
       );
       setExists(Array.isArray(existsData) ? existsData : []);
@@ -127,7 +127,7 @@ const Coluna = ({ r }) => {
           const sortedDados = newDadosC.sort((a, b) => {
             const dateA = new Date(a.date).getTime();
             const dateB = new Date(b.date).getTime();
-            return dateA - dateB;
+            return dateB - dateA;
           });
           console.log(`Coluna-1: Novo estado de dados (sorted):`, sortedDados);
           return sortedDados;
@@ -176,14 +176,14 @@ const Coluna = ({ r }) => {
 
   const groupedResults = useMemo(() => {
     return dados.reduce((acc, item) => {
-      const rawDate = Use.formatarData(item.date);
+      const dateKey = item.date.substring(0, 10); // YYYY-MM-DD
       const dateObj = new Date(item.date);
       const horas = String(dateObj.getHours()).padStart(2, "0");
       const minutos = String(dateObj.getMinutes()).padStart(2, "0");
       const horaFormatada = `${horas}:${minutos}`;
 
-      acc[rawDate] = acc[rawDate] || [];
-      acc[rawDate].push({
+      acc[dateKey] = acc[dateKey] || [];
+      acc[dateKey].push({
         ...item,
         horaSeparada: horaFormatada,
         // Garante que os valores numéricos sejam tratados corretamente
@@ -226,206 +226,211 @@ const Coluna = ({ r }) => {
 
   return (
     <div className="overflow-x-auto rounded-box border border-base-content/5 bg-base-100">
-      {Object.entries(groupedResults).map(([date, items]) => {
-        // Calcula os totais para cada dia
-        const totalReal = items.reduce(
-          (sum, item) => sum + (parseFloat(item.real) || 0),
-          0,
-        );
-        const totalPix = items.reduce(
-          (sum, item) => sum + (parseFloat(item.pix) || 0),
-          0,
-        );
-        const totalDia = totalReal + totalPix;
+      {Object.entries(groupedResults)
+        .sort(([dateA], [dateB]) => new Date(dateB) - new Date(dateA))
+        .map(([date, items]) => {
+          // Calcula os totais para cada dia
+          const totalReal = items.reduce(
+            (sum, item) => sum + (parseFloat(item.real) || 0),
+            0,
+          );
+          const totalPix = items.reduce(
+            (sum, item) => sum + (parseFloat(item.pix) || 0),
+            0,
+          );
+          const totalDia = totalReal + totalPix;
 
-        return (
-          <div key={date} className="mb-2">
-            {/* Cabeçalho com a data */}
-            <div className="font-bold text-sm bg-gray-200 text-center p-1">
-              {date}
-            </div>
+          return (
+            <div key={date} className="mb-2">
+              {/* Cabeçalho com a data */}
+              <div className="font-bold text-sm bg-gray-200 text-center p-1">
+                {Use.formatarData(date)}
+              </div>
 
-            {/* Tabela para os itens da data */}
-            <table className="table table-xs w-full">
-              <thead>
-                {/* Linha para o total geral do dia */}
-                <tr>
-                  <th colSpan={6}></th>
-                  <th colSpan={2} className="text-center text-xs bg-success/30">
-                    {formatCurrency(totalDia)}
-                  </th>
-                  <th></th>
-                </tr>
-
-                {/* Linha para os totais individuais */}
-                <tr>
-                  <th className="hidden"></th>
-                  <th className="hidden"></th>
-                  <th colSpan={6}></th>
-                  <th className="text-center text-xs bg-success/30 ">
-                    {formatCurrency(totalReal)}
-                  </th>
-                  <th className="text-center text-xs bg-success/30">
-                    {formatCurrency(totalPix)}
-                  </th>
-                  <th></th>
-                </tr>
-
-                {/* Linha com os nomes das colunas */}
-                <tr>
-                  <th className="hidden">ID</th>
-                  <th className="hidden">Codigo</th>
-                  <th>Hora</th>
-                  <th>Dec</th>
-                  <th>Nome</th>
-                  <th>Base</th>
-                  <th>Sis</th>
-                  <th>Alt</th>
-                  <th className="bg-accent">R$</th>
-                  <th className="bg-accent">PIX</th>
-                  <th>Ações</th>
-                </tr>
-              </thead>
-              <tbody>
-                {items.map((item) => (
-                  <tr
-                    key={item.id}
-                    className={`border-b border-base-content/5 ${
-                      exists.some(
-                        (e) =>
-                          String(e.codigo) === String(item.codigo) && // Comparar como string
-                          Use.formatarData(e.data) ===
-                            Use.formatarData(item.date), // Comparar datas formatadas
-                      )
-                        ? "bg-error/70"
-                        : ""
-                    }`}
-                  >
-                    <td className="hidden">{item.id}</td>
-                    <td className="hidden">{item.codigo}</td>
-                    <td>{item.horaSeparada}</td>
-                    <td>{item.dec}</td>
-                    <td>
-                      {editingId === item.id ? (
-                        <input
-                          type="text"
-                          value={editedData.nome}
-                          onChange={(e) =>
-                            handleInputChange("nome", e.target.value)
-                          }
-                          className="input input-xs p-0 m-0 text-center"
-                        />
-                      ) : (
-                        item.nome
-                      )}
-                    </td>
-                    <td>
-                      {editingId === item.id ? (
-                        <input
-                          type="number"
-                          min="0"
-                          value={editedData.base}
-                          onChange={(e) =>
-                            handleInputChange("base", e.target.value)
-                          }
-                          className="input input-xs p-0 m-0 text-center"
-                        />
-                      ) : (
-                        item.base
-                      )}
-                    </td>
-                    <td>
-                      {editingId === item.id ? (
-                        <input
-                          type="number"
-                          min="0"
-                          value={editedData.sis}
-                          onChange={(e) =>
-                            handleInputChange("sis", e.target.value)
-                          }
-                          className="input input-xs p-0 m-0 text-center"
-                        />
-                      ) : (
-                        item.sis
-                      )}
-                    </td>
-                    <td>
-                      {editingId === item.id ? (
-                        <input
-                          type="number"
-                          min="0"
-                          value={editedData.alt}
-                          onChange={(e) =>
-                            handleInputChange("alt", e.target.value)
-                          }
-                          className="input input-xs p-0 m-0 text-center"
-                        />
-                      ) : (
-                        item.alt
-                      )}
-                    </td>
-                    <td className="bg-accent/20">
-                      {editingId === item.id ? (
-                        <input
-                          type="number"
-                          min="0"
-                          value={editedData.real} // Usar o valor string diretamente de editedData
-                          onChange={(e) =>
-                            handleInputChange("real", e.target.value)
-                          }
-                          className="input input-xs p-0 m-0 text-center"
-                        />
-                      ) : (
-                        formatCurrency(item.real)
-                      )}
-                    </td>
-                    <td className="bg-accent/20">
-                      {editingId === item.id ? (
-                        <input
-                          type="number"
-                          min="0"
-                          value={editedData.pix} // Usar o valor string diretamente de editedData
-                          onChange={(e) =>
-                            handleInputChange("pix", e.target.value)
-                          }
-                          className="input input-xs p-0 m-0 text-center"
-                        />
-                      ) : (
-                        formatCurrency(item.pix)
-                      )}
-                    </td>
-                    <td>
-                      <Edit
-                        isEditing={editingId === item.id}
-                        onEdit={() => startEditing(item)}
-                        onSave={() => handleSave(editedData)}
-                        onCancel={() => setEditingId(null)}
-                      />
-                      <button
-                        className={`btn btn-xs btn-soft btn-error ${
-                          editingId === item.id ? "hidden" : ""
-                        }`}
-                        onClick={async () => {
-                          // Adiciona a chamada para o backend
-                          try {
-                            await Execute.removeC(item.id);
-                            // A UI será atualizada via WebSocket (C_DELETED_ITEM)
-                          } catch (error) {
-                            console.error("Erro ao excluir item C:", error);
-                            // Adicionar tratamento de erro para o usuário se necessário
-                          }
-                        }}
-                      >
-                        Excluir
-                      </button>
-                    </td>
+              {/* Tabela para os itens da data */}
+              <table className="table table-xs w-full">
+                <thead>
+                  {/* Linha para o total geral do dia */}
+                  <tr>
+                    <th colSpan={6}></th>
+                    <th
+                      colSpan={2}
+                      className="text-center text-xs bg-success/30"
+                    >
+                      {formatCurrency(totalDia)}
+                    </th>
+                    <th></th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        );
-      })}
+
+                  {/* Linha para os totais individuais */}
+                  <tr>
+                    <th className="hidden"></th>
+                    <th className="hidden"></th>
+                    <th colSpan={6}></th>
+                    <th className="text-center text-xs bg-success/30 ">
+                      {formatCurrency(totalReal)}
+                    </th>
+                    <th className="text-center text-xs bg-success/30">
+                      {formatCurrency(totalPix)}
+                    </th>
+                    <th></th>
+                  </tr>
+
+                  {/* Linha com os nomes das colunas */}
+                  <tr>
+                    <th className="hidden">ID</th>
+                    <th className="hidden">Codigo</th>
+                    <th>Hora</th>
+                    <th>Dec</th>
+                    <th>Nome</th>
+                    <th>Base</th>
+                    <th>Sis</th>
+                    <th>Alt</th>
+                    <th className="bg-accent">R$</th>
+                    <th className="bg-accent">PIX</th>
+                    <th>Ações</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {items.map((item) => (
+                    <tr
+                      key={item.id}
+                      className={`border-b border-base-content/5 ${
+                        exists.some(
+                          (e) =>
+                            String(e.codigo) === String(item.codigo) && // Comparar como string
+                            Use.formatarData(e.data) ===
+                              Use.formatarData(item.date), // Comparar datas formatadas
+                        )
+                          ? "bg-error/70"
+                          : ""
+                      }`}
+                    >
+                      <td className="hidden">{item.id}</td>
+                      <td className="hidden">{item.codigo}</td>
+                      <td>{item.horaSeparada}</td>
+                      <td>{item.dec}</td>
+                      <td>
+                        {editingId === item.id ? (
+                          <input
+                            type="text"
+                            value={editedData.nome}
+                            onChange={(e) =>
+                              handleInputChange("nome", e.target.value)
+                            }
+                            className="input input-xs p-0 m-0 text-center"
+                          />
+                        ) : (
+                          item.nome
+                        )}
+                      </td>
+                      <td>
+                        {editingId === item.id ? (
+                          <input
+                            type="number"
+                            min="0"
+                            value={editedData.base}
+                            onChange={(e) =>
+                              handleInputChange("base", e.target.value)
+                            }
+                            className="input input-xs p-0 m-0 text-center"
+                          />
+                        ) : (
+                          item.base
+                        )}
+                      </td>
+                      <td>
+                        {editingId === item.id ? (
+                          <input
+                            type="number"
+                            min="0"
+                            value={editedData.sis}
+                            onChange={(e) =>
+                              handleInputChange("sis", e.target.value)
+                            }
+                            className="input input-xs p-0 m-0 text-center"
+                          />
+                        ) : (
+                          item.sis
+                        )}
+                      </td>
+                      <td>
+                        {editingId === item.id ? (
+                          <input
+                            type="number"
+                            min="0"
+                            value={editedData.alt}
+                            onChange={(e) =>
+                              handleInputChange("alt", e.target.value)
+                            }
+                            className="input input-xs p-0 m-0 text-center"
+                          />
+                        ) : (
+                          item.alt
+                        )}
+                      </td>
+                      <td className="bg-accent/20">
+                        {editingId === item.id ? (
+                          <input
+                            type="number"
+                            min="0"
+                            value={editedData.real} // Usar o valor string diretamente de editedData
+                            onChange={(e) =>
+                              handleInputChange("real", e.target.value)
+                            }
+                            className="input input-xs p-0 m-0 text-center"
+                          />
+                        ) : (
+                          formatCurrency(item.real)
+                        )}
+                      </td>
+                      <td className="bg-accent/20">
+                        {editingId === item.id ? (
+                          <input
+                            type="number"
+                            min="0"
+                            value={editedData.pix} // Usar o valor string diretamente de editedData
+                            onChange={(e) =>
+                              handleInputChange("pix", e.target.value)
+                            }
+                            className="input input-xs p-0 m-0 text-center"
+                          />
+                        ) : (
+                          formatCurrency(item.pix)
+                        )}
+                      </td>
+                      <td>
+                        <Edit
+                          isEditing={editingId === item.id}
+                          onEdit={() => startEditing(item)}
+                          onSave={() => handleSave(editedData)}
+                          onCancel={() => setEditingId(null)}
+                        />
+                        <button
+                          className={`btn btn-xs btn-soft btn-error ${
+                            editingId === item.id ? "hidden" : ""
+                          }`}
+                          onClick={async () => {
+                            // Adiciona a chamada para o backend
+                            try {
+                              await Execute.removeC(item.id);
+                              // A UI será atualizada via WebSocket (C_DELETED_ITEM)
+                            } catch (error) {
+                              console.error("Erro ao excluir item C:", error);
+                              // Adicionar tratamento de erro para o usuário se necessário
+                            }
+                          }}
+                        >
+                          Excluir
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          );
+        })}
     </div>
   );
 };

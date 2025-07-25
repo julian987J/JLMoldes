@@ -5,7 +5,7 @@ import Use from "models/utils"; // Descomentado para usar Use.formatarDataHora
 import { useWebSocket } from "../../../contexts/WebSocketContext.js";
 
 const sortDadosByDate = (dataArray) =>
-  [...dataArray].sort((a, b) => new Date(a.data) - new Date(b.data));
+  [...dataArray].sort((a, b) => new Date(b.data) - new Date(a.data));
 
 const Devo = ({ codigo, r }) => {
   const [dados, setDados] = useState([]);

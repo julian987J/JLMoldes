@@ -11,7 +11,7 @@ import { useWebSocket } from "../../../contexts/WebSocketContext.js"; // Adjust 
 import { useAuth } from "../../../contexts/AuthContext.js"; // Import useAuth
 
 const sortDadosByDate = (dataArray) =>
-  [...dataArray].sort((a, b) => new Date(a.data) - new Date(b.data));
+  [...dataArray].sort((a, b) => new Date(b.data) - new Date(a.data));
 
 const Pagamentos = ({ r }) => {
   const [dados, setDados] = useState([]);
@@ -197,7 +197,7 @@ const Pagamentos = ({ r }) => {
 
   const groupedPagamentos = useMemo(() => {
     return dados.reduce((acc, item) => {
-      const dateKey = Use.formatarData(item.data); // e.g., "YYYY-MM-DD" or "DD/MM/YYYY"
+      const dateKey = item.data.substring(0, 10); // YYYY-MM-DD
       if (!acc[dateKey]) {
         acc[dateKey] = [];
       }
@@ -223,8 +223,11 @@ const Pagamentos = ({ r }) => {
         .map(([dateKey, itemsDoDia]) => (
           <div
             key={dateKey}
-            className="overflow-x-auto rounded-box border border-info bg-base-100"
+            className="overflow-x-auto rounded-box border border-info bg-base-100 mb-2"
           >
+            <div className="font-bold text-sm bg-info/20 text-center p-1">
+              {Use.formatarData(dateKey)}
+            </div>
             <table className="table table-xs w-full">
               <thead>
                 <tr>

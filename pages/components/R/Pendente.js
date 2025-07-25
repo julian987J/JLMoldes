@@ -5,7 +5,7 @@ import { useWebSocket } from "../../../contexts/WebSocketContext.js";
 
 const sortDadosByDate = (
   dataArray, // Keep this helper function
-) => [...dataArray].sort((a, b) => new Date(a.data) - new Date(b.data));
+) => [...dataArray].sort((a, b) => new Date(b.data) - new Date(a.data));
 const Pendente = ({ r: propR, onSelectItem }) => {
   const [dados, setDados] = useState([]);
   const { lastMessage } = useWebSocket();

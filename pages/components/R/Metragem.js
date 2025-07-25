@@ -24,7 +24,7 @@ const Metragem = ({ r }) => {
 
       setDados(
         Array.isArray(results)
-          ? results.sort((a, b) => new Date(a.data) - new Date(b.data))
+          ? results.sort((a, b) => new Date(b.data) - new Date(a.data))
           : [],
       );
     } catch (error) {
@@ -92,7 +92,7 @@ const Metragem = ({ r }) => {
               break;
           }
           return newDadosPapelC.sort(
-            (a, b) => new Date(a.data) - new Date(b.data),
+            (a, b) => new Date(b.data) - new Date(a.data),
           );
         });
       }
@@ -103,10 +103,10 @@ const Metragem = ({ r }) => {
 
   const groupedResults = useMemo(() => {
     return dados.reduce((acc, item) => {
-      const rawDate = Use.formatarData(item.data);
+      const dateKey = item.data.substring(0, 10); // YYYY-MM-DD
 
-      acc[rawDate] = acc[rawDate] || [];
-      acc[rawDate].push({
+      acc[dateKey] = acc[dateKey] || [];
+      acc[dateKey].push({
         ...item,
         papelreal: parseFloat(item.papelreal) || 0,
         papelpix: parseFloat(item.papelpix) || 0,
@@ -143,41 +143,46 @@ const Metragem = ({ r }) => {
           {grandTotalUtil + grandTotalPerdida}
         </div>
       )}
-      {Object.entries(groupedResults).map(([date, items]) => {
-        // Cálculo da contagem de itens com valor > 0 para cada coluna
-        const countUtilGreaterThanZero = items.filter(
-          (item) => item.util > 0,
-        ).length;
-        const countPerdidaGreaterThanZero = items.filter(
-          (item) => item.perdida > 0, // This was missing .length
-        ).length;
+      {Object.entries(groupedResults)
+        .sort(([dateA], [dateB]) => new Date(dateB) - new Date(dateA))
+        .map(([date, items]) => {
+          // Cálculo da contagem de itens com valor > 0 para cada coluna
+          const countUtilGreaterThanZero = items.filter(
+            (item) => item.util > 0,
+          ).length;
+          const countPerdidaGreaterThanZero = items.filter(
+            (item) => item.perdida > 0, // This was missing .length
+          ).length;
 
-        return (
-          <div key={date} className="mb-2">
-            <table className="table table-xs">
-              <thead>
-                <tr>
-                  <th className="text-center text-xs bg-warning-content/30">
-                    {countUtilGreaterThanZero}
-                  </th>
-                  <th className="text-center text-xs bg-warning-content/30">
-                    {countPerdidaGreaterThanZero}
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {items.map((item) => (
-                  <tr key={item.id} className="border-b border-warning">
-                    <td className="hidden">{item.id}</td>
-                    <td className="text-center">{item.util}</td>
-                    <td className="text-center">{item.perdida}</td>
+          return (
+            <div key={date} className="mb-2">
+              <div className="font-bold text-sm bg-warning/20 text-center p-1">
+                {Use.formatarData(date).split(" - ")[1]}
+              </div>
+              <table className="table table-xs">
+                <thead>
+                  <tr>
+                    <th className="text-center text-xs bg-warning-content/30">
+                      {countUtilGreaterThanZero}
+                    </th>
+                    <th className="text-center text-xs bg-warning-content/30">
+                      {countPerdidaGreaterThanZero}
+                    </th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        );
-      })}
+                </thead>
+                <tbody>
+                  {items.map((item) => (
+                    <tr key={item.id} className="border-b border-warning">
+                      <td className="hidden">{item.id}</td>
+                      <td className="text-center">{item.util}</td>
+                      <td className="text-center">{item.perdida}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          );
+        })}
     </div>
   );
 };

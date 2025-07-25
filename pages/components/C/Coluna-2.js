@@ -74,7 +74,7 @@ const Coluna = ({ r }) => {
 
       setDados(
         Array.isArray(results)
-          ? results.sort((a, b) => new Date(a.data) - new Date(b.data))
+          ? results.sort((a, b) => new Date(b.data) - new Date(a.data))
           : [],
       );
       setExists(Array.isArray(existsData) ? existsData : []);
@@ -154,7 +154,7 @@ const Coluna = ({ r }) => {
               break;
           }
           return newDadosPapelC.sort(
-            (a, b) => new Date(a.data) - new Date(b.data),
+            (a, b) => new Date(b.data) - new Date(a.data),
           );
         });
       }
@@ -240,7 +240,7 @@ const Coluna = ({ r }) => {
                 break;
             }
             return newExists.sort(
-              (a, b) => new Date(a.data) - new Date(b.data),
+              (a, b) => new Date(b.data) - new Date(a.data),
             ); // Ordena se necessário
           }
           return prevExists; // Retorna o estado anterior se o payload for nulo (segurança)
@@ -288,7 +288,7 @@ const Coluna = ({ r }) => {
               payload,
             );
           }
-          return newExists.sort((a, b) => new Date(a.data) - new Date(b.data)); // Ordena se necessário
+          return newExists.sort((a, b) => new Date(b.data) - new Date(a.data)); // Ordena se necessário
         });
       }
 
@@ -298,10 +298,10 @@ const Coluna = ({ r }) => {
 
   const groupedResults = useMemo(() => {
     return dados.reduce((acc, item) => {
-      const rawDate = Use.formatarData(item.data);
+      const dateKey = item.data.substring(0, 10); // YYYY-MM-DD
 
-      acc[rawDate] = acc[rawDate] || [];
-      acc[rawDate].push({
+      acc[dateKey] = acc[dateKey] || [];
+      acc[dateKey].push({
         ...item,
         papelreal: parseFloat(item.papelreal) || 0,
         papelpix: parseFloat(item.papelpix) || 0,
@@ -354,365 +354,376 @@ const Coluna = ({ r }) => {
 
   return (
     <div className=" overflow-x-auto rounded-box border border-success bg-base-100">
-      {Object.entries(groupedResults).map(([date, items]) => {
-        // Cálculo dos totais para cada coluna
-        const totalPapelReal = items.reduce(
-          (sum, item) => sum + (parseFloat(item.papelreal) || 0),
-          0,
-        );
-        const totalPapel = items.reduce(
-          (sum, item) => sum + (parseFloat(item.papel) || 0),
-          0,
-        );
-        const totalPapelPix = items.reduce(
-          (sum, item) => sum + (parseFloat(item.papelpix) || 0),
-          0,
-        );
-        const totalEncaixeReal = items.reduce(
-          (sum, item) => sum + (parseFloat(item.encaixereal) || 0),
-          0,
-        );
-        const totalEncaixePix = items.reduce(
-          (sum, item) => sum + (parseFloat(item.encaixepix) || 0),
-          0,
-        );
-        const totalDesperdicio = items.reduce(
-          (sum, item) => sum + (parseFloat(item.desperdicio) || 0),
-          0,
-        );
-        const totalUtil = items.reduce(
-          (sum, item) => sum + (parseFloat(item.util) || 0),
-          0,
-        );
-        const totalPerdida = items.reduce(
-          (sum, item) => sum + (parseFloat(item.perdida) || 0),
-          0,
-        );
+      {Object.entries(groupedResults)
+        .sort(([dateA], [dateB]) => new Date(dateB) - new Date(dateA))
+        .map(([date, items]) => {
+          // Cálculo dos totais para cada coluna
+          const totalPapelReal = items.reduce(
+            (sum, item) => sum + (parseFloat(item.papelreal) || 0),
+            0,
+          );
+          const totalPapel = items.reduce(
+            (sum, item) => sum + (parseFloat(item.papel) || 0),
+            0,
+          );
+          const totalPapelPix = items.reduce(
+            (sum, item) => sum + (parseFloat(item.papelpix) || 0),
+            0,
+          );
+          const totalEncaixeReal = items.reduce(
+            (sum, item) => sum + (parseFloat(item.encaixereal) || 0),
+            0,
+          );
+          const totalEncaixePix = items.reduce(
+            (sum, item) => sum + (parseFloat(item.encaixepix) || 0),
+            0,
+          );
+          const totalDesperdicio = items.reduce(
+            (sum, item) => sum + (parseFloat(item.desperdicio) || 0),
+            0,
+          );
+          const totalUtil = items.reduce(
+            (sum, item) => sum + (parseFloat(item.util) || 0),
+            0,
+          );
+          const totalPerdida = items.reduce(
+            (sum, item) => sum + (parseFloat(item.perdida) || 0),
+            0,
+          );
 
-        const totalRP = totalPapelReal + totalPapelPix;
-        const totalEnc = totalEncaixeReal + totalEncaixePix;
+          const totalRP = totalPapelReal + totalPapelPix;
+          const totalEnc = totalEncaixeReal + totalEncaixePix;
 
-        const totaldeReais = totalPapelReal + totalEncaixeReal;
-        const totalDePixes = totalPapelPix + totalEncaixePix;
+          const totaldeReais = totalPapelReal + totalEncaixeReal;
+          const totalDePixes = totalPapelPix + totalEncaixePix;
 
-        return (
-          <div key={date} className="mb-2">
-            {/* Cabeçalho da data */}
-            <div className="font-bold text-sm bg-success/20 text-center p-1">
-              {date}
-            </div>
+          return (
+            <div key={date} className="mb-2">
+              {/* Cabeçalho da data */}
+              <div className="font-bold text-sm bg-success/20 text-center p-1">
+                {Use.formatarData(date)}
+              </div>
 
-            {/* Tabela para os itens da data */}
-            <table className="table table-xs">
-              <thead>
-                <tr>
-                  <th colSpan={3}></th>
-                  <th className="text-center text-xs bg-warning/30">
-                    {formatCurrency(totalPapel / (config.m || 1))}
-                  </th>
-                  <th className="text-center text-xs bg-warning/30">
-                    {formatCurrency(
-                      (totalDesperdicio + totalPerdida) * (config.m || 1),
-                    )}
-                  </th>
-                  <th colSpan={2} className="text-center text-xs bg-accent/30">
-                    {formatCurrency(totalRP)}
-                  </th>
-                  <th colSpan={2} className="text-center text-xs bg-success/30">
-                    {formatCurrency(totalEnc)}
-                  </th>
-                  <th colSpan={4}></th>
-                  <th className="text-center text-xs bg-info/30">
-                    {formatCurrency(totaldeReais)}
-                  </th>
-                </tr>
-                {/* Linha com os totais de cada coluna */}
-                <tr>
-                  <th colSpan={2}></th>
-                  <th className="text-center text-xs bg-warning/30">
-                    Metragem
-                  </th>
-                  <th className="text-center text-xs bg-warning/30">
-                    {formatCurrency(totalPapel)}
-                  </th>
-                  <th className="text-center text-xs bg-warning/30">
-                    {formatCurrency(totalDesperdicio + totalPerdida)}
-                  </th>
-                  <th className="text-center text-xs bg-accent/30">
-                    {formatCurrency(totalPapelReal)}
-                  </th>
-                  <th className="text-center text-xs bg-accent/30">
-                    {formatCurrency(totalPapelPix)}
-                  </th>
-                  <th className="text-center text-xs bg-success/30">
-                    {formatCurrency(totalEncaixeReal)}
-                  </th>
-                  <th className="text-center text-xs bg-success/30">
-                    {formatCurrency(totalEncaixePix)}
-                  </th>
-                  <th className="text-center text-xs bg-warning-content/30">
-                    {formatCurrency(totalDesperdicio)}
-                  </th>
-                  <th className="text-center text-xs bg-warning-content/30">
-                    {formatCurrency(totalUtil)}
-                  </th>
-                  <th className="text-center text-xs bg-warning-content/30">
-                    {formatCurrency(totalPerdida)}
-                  </th>
-                  {/* Últimas 2 colunas vazias (Comentários e Ações) */}
-                  <th colSpan={1}></th>
-
-                  <th className="text-center text-xs bg-info/30">
-                    {formatCurrency(totalDePixes)}
-                  </th>
-                </tr>
-
-                {/* Linha com os nomes das colunas */}
-                <tr>
-                  <th className="hidden">ID</th>
-                  <th className="hidden">Codigo</th>
-                  <th>Hora</th>
-                  <th>Nome</th>
-                  <th>M</th>
-                  <th>C</th>
-                  <th>Papel</th>
-                  <th className="bg-accent">R$</th>
-                  <th className="bg-accent">PIX</th>
-                  <th className="bg-success">E R$</th>
-                  <th className="bg-success">E PIX</th>
-                  <th className="bg-warning-content/50">Des</th>
-                  <th className="bg-warning-content/50">Util</th>
-                  <th className="bg-warning-content/50">Perda</th>
-                  <th>Comentarios</th>
-                  <th>Ações</th>
-                </tr>
-              </thead>
-              <tbody>
-                {items.map((item) => (
-                  <tr
-                    key={item.id}
-                    className={`border-b border-success ${
-                      exists.some((e) => e.deveid === item.deveid)
-                        ? "bg-error/70"
-                        : ""
-                    }`}
-                  >
-                    <td className="hidden">{item.id}</td>
-                    <td className="hidden">{item.codigo}</td>
-                    <td>{Use.formatarDataHoraSegundo(item.data)}</td>
-                    <td>
-                      {editingId === item.id ? (
-                        <input
-                          type="text"
-                          value={editedData.nome}
-                          onChange={(e) =>
-                            handleInputChange("nome", e.target.value)
-                          }
-                          className="input input-xs p-0 m-0 text-center"
-                        />
-                      ) : (
-                        item.nome
+              {/* Tabela para os itens da data */}
+              <table className="table table-xs">
+                <thead>
+                  <tr>
+                    <th colSpan={3}></th>
+                    <th className="text-center text-xs bg-warning/30">
+                      {formatCurrency(totalPapel / (config.m || 1))}
+                    </th>
+                    <th className="text-center text-xs bg-warning/30">
+                      {formatCurrency(
+                        (totalDesperdicio + totalPerdida) * (config.m || 1),
                       )}
-                    </td>
-                    <td>
-                      {editingId === item.id ? (
-                        <input
-                          type="number"
-                          value={editedData.multi}
-                          onChange={(e) =>
-                            handleInputChange("multi", e.target.value)
-                          }
-                          className="input input-xs p-0 m-0 text-center"
+                    </th>
+                    <th
+                      colSpan={2}
+                      className="text-center text-xs bg-accent/30"
+                    >
+                      {formatCurrency(totalRP)}
+                    </th>
+                    <th
+                      colSpan={2}
+                      className="text-center text-xs bg-success/30"
+                    >
+                      {formatCurrency(totalEnc)}
+                    </th>
+                    <th colSpan={4}></th>
+                    <th className="text-center text-xs bg-info/30">
+                      {formatCurrency(totaldeReais)}
+                    </th>
+                  </tr>
+                  {/* Linha com os totais de cada coluna */}
+                  <tr>
+                    <th colSpan={2}></th>
+                    <th className="text-center text-xs bg-warning/30">
+                      Metragem
+                    </th>
+                    <th className="text-center text-xs bg-warning/30">
+                      {formatCurrency(totalPapel)}
+                    </th>
+                    <th className="text-center text-xs bg-warning/30">
+                      {formatCurrency(totalDesperdicio + totalPerdida)}
+                    </th>
+                    <th className="text-center text-xs bg-accent/30">
+                      {formatCurrency(totalPapelReal)}
+                    </th>
+                    <th className="text-center text-xs bg-accent/30">
+                      {formatCurrency(totalPapelPix)}
+                    </th>
+                    <th className="text-center text-xs bg-success/30">
+                      {formatCurrency(totalEncaixeReal)}
+                    </th>
+                    <th className="text-center text-xs bg-success/30">
+                      {formatCurrency(totalEncaixePix)}
+                    </th>
+                    <th className="text-center text-xs bg-warning-content/30">
+                      {formatCurrency(totalDesperdicio)}
+                    </th>
+                    <th className="text-center text-xs bg-warning-content/30">
+                      {formatCurrency(totalUtil)}
+                    </th>
+                    <th className="text-center text-xs bg-warning-content/30">
+                      {formatCurrency(totalPerdida)}
+                    </th>
+                    {/* Últimas 2 colunas vazias (Comentários e Ações) */}
+                    <th colSpan={1}></th>
+
+                    <th className="text-center text-xs bg-info/30">
+                      {formatCurrency(totalDePixes)}
+                    </th>
+                  </tr>
+
+                  {/* Linha com os nomes das colunas */}
+                  <tr>
+                    <th className="hidden">ID</th>
+                    <th className="hidden">Codigo</th>
+                    <th>Hora</th>
+                    <th>Nome</th>
+                    <th>M</th>
+                    <th>C</th>
+                    <th>Papel</th>
+                    <th className="bg-accent">R$</th>
+                    <th className="bg-accent">PIX</th>
+                    <th className="bg-success">E R$</th>
+                    <th className="bg-success">E PIX</th>
+                    <th className="bg-warning-content/50">Des</th>
+                    <th className="bg-warning-content/50">Util</th>
+                    <th className="bg-warning-content/50">Perda</th>
+                    <th>Comentarios</th>
+                    <th>Ações</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {items.map((item) => (
+                    <tr
+                      key={item.id}
+                      className={`border-b border-success ${
+                        exists.some((e) => e.deveid === item.deveid)
+                          ? "bg-error/70"
+                          : ""
+                      }`}
+                    >
+                      <td className="hidden">{item.id}</td>
+                      <td className="hidden">{item.codigo}</td>
+                      <td>{Use.formatarDataHoraSegundo(item.data)}</td>
+                      <td>
+                        {editingId === item.id ? (
+                          <input
+                            type="text"
+                            value={editedData.nome}
+                            onChange={(e) =>
+                              handleInputChange("nome", e.target.value)
+                            }
+                            className="input input-xs p-0 m-0 text-center"
+                          />
+                        ) : (
+                          item.nome
+                        )}
+                      </td>
+                      <td>
+                        {editingId === item.id ? (
+                          <input
+                            type="number"
+                            value={editedData.multi}
+                            onChange={(e) =>
+                              handleInputChange("multi", e.target.value)
+                            }
+                            className="input input-xs p-0 m-0 text-center"
+                          />
+                        ) : (
+                          item.multi
+                        )}
+                      </td>
+                      <td>
+                        {editingId === item.id ? (
+                          <input
+                            type="number"
+                            value={editedData.comissao}
+                            onChange={(e) =>
+                              handleInputChange("comissao", e.target.value)
+                            }
+                            className="input input-xs p-0 m-0 text-center"
+                          />
+                        ) : (
+                          item.comissao
+                        )}
+                      </td>
+                      <td>
+                        {editingId === item.id ? (
+                          <input
+                            type="number"
+                            min="1"
+                            value={editedData.papel}
+                            onChange={(e) => {
+                              if (
+                                isNaN(e.target.value) ||
+                                e.target.value <= 0
+                              ) {
+                                handleInputChange("papel", 1);
+                              } else {
+                                handleInputChange("papel", e.target.value);
+                              }
+                            }}
+                            className="input input-xs p-0 m-0 text-center"
+                          />
+                        ) : (
+                          item.papel
+                        )}
+                      </td>
+                      <td>
+                        {editingId === item.id ? (
+                          <input
+                            type="number"
+                            min="1"
+                            value={editedData.papelreal} // Usar string diretamente
+                            onChange={(e) =>
+                              handleInputChange("papelreal", e.target.value)
+                            }
+                            className="input input-xs p-0 m-0 text-center"
+                          />
+                        ) : (
+                          formatCurrency(item.papelreal)
+                        )}
+                      </td>
+                      <td>
+                        {editingId === item.id ? (
+                          <input
+                            type="number"
+                            min="1"
+                            value={editedData.papelpix} // Usar string diretamente
+                            onChange={(e) =>
+                              handleInputChange("papelpix", e.target.value)
+                            }
+                            className="input input-xs p-0 m-0 text-center"
+                          />
+                        ) : (
+                          formatCurrency(item.papelpix)
+                        )}
+                      </td>
+                      <td>
+                        {editingId === item.id ? (
+                          <input
+                            type="number"
+                            min="1"
+                            value={editedData.encaixereal} // Usar string diretamente
+                            onChange={(e) =>
+                              handleInputChange("encaixereal", e.target.value)
+                            }
+                            className="input input-xs p-0 m-0 text-center"
+                          />
+                        ) : (
+                          formatCurrency(item.encaixereal)
+                        )}
+                      </td>
+                      <td>
+                        {editingId === item.id ? (
+                          <input
+                            type="number"
+                            min="1"
+                            value={editedData.encaixepix} // Usar string diretamente
+                            onChange={(e) =>
+                              handleInputChange("encaixepix", e.target.value)
+                            }
+                            className="input input-xs p-0 m-0 text-center"
+                          />
+                        ) : (
+                          formatCurrency(item.encaixepix)
+                        )}
+                      </td>
+                      <td>
+                        {editingId === item.id ? (
+                          <input
+                            type="number"
+                            min="1"
+                            value={editedData.desperdicio} // Usar string diretamente
+                            onChange={(e) =>
+                              handleInputChange("desperdicio", e.target.value)
+                            }
+                            className="input input-xs p-0 m-0 text-center"
+                          />
+                        ) : (
+                          formatCurrency(item.desperdicio)
+                        )}
+                      </td>
+                      <td>
+                        {editingId === item.id ? (
+                          <input
+                            type="number"
+                            min="1"
+                            value={editedData.util}
+                            onChange={(e) =>
+                              handleInputChange("util", e.target.value)
+                            }
+                            className="input input-xs p-0 m-0 text-center"
+                          />
+                        ) : (
+                          item.util
+                        )}
+                      </td>
+                      <td>
+                        {editingId === item.id ? (
+                          <input
+                            type="number"
+                            min="1"
+                            value={editedData.perdida}
+                            onChange={(e) =>
+                              handleInputChange("perdida", e.target.value)
+                            }
+                            className="input input-xs p-0 m-0 text-center"
+                          />
+                        ) : (
+                          item.perdida
+                        )}
+                      </td>
+                      <td>
+                        {editingId === item.id ? (
+                          <input
+                            type="text"
+                            value={editedData.comentarios}
+                            onChange={(e) =>
+                              handleInputChange("comentarios", e.target.value)
+                            }
+                            className="input input-xs p-0 m-0 text-center"
+                          />
+                        ) : (
+                          item.comentarios
+                        )}
+                      </td>
+                      <td>
+                        <Edit
+                          isEditing={editingId === item.id}
+                          onEdit={() => startEditing(item)}
+                          onSave={() => handleSave(editedData)}
+                          onCancel={() => setEditingId(null)}
                         />
-                      ) : (
-                        item.multi
-                      )}
-                    </td>
-                    <td>
-                      {editingId === item.id ? (
-                        <input
-                          type="number"
-                          value={editedData.comissao}
-                          onChange={(e) =>
-                            handleInputChange("comissao", e.target.value)
-                          }
-                          className="input input-xs p-0 m-0 text-center"
-                        />
-                      ) : (
-                        item.comissao
-                      )}
-                    </td>
-                    <td>
-                      {editingId === item.id ? (
-                        <input
-                          type="number"
-                          min="1"
-                          value={editedData.papel}
-                          onChange={(e) => {
-                            if (isNaN(e.target.value) || e.target.value <= 0) {
-                              handleInputChange("papel", 1);
-                            } else {
-                              handleInputChange("papel", e.target.value);
+                        <button
+                          className={`btn btn-xs btn-soft btn-error ${
+                            editingId === item.id ? "hidden" : ""
+                          }`}
+                          onClick={async () => {
+                            try {
+                              await Execute.removePapelC(item.id);
+                              // A UI será atualizada via WebSocket (PAPELC_DELETED_ITEM)
+                            } catch (error) {
+                              console.error(
+                                "Erro ao excluir item PapelC:",
+                                error,
+                              );
                             }
                           }}
-                          className="input input-xs p-0 m-0 text-center"
-                        />
-                      ) : (
-                        item.papel
-                      )}
-                    </td>
-                    <td>
-                      {editingId === item.id ? (
-                        <input
-                          type="number"
-                          min="1"
-                          value={editedData.papelreal} // Usar string diretamente
-                          onChange={(e) =>
-                            handleInputChange("papelreal", e.target.value)
-                          }
-                          className="input input-xs p-0 m-0 text-center"
-                        />
-                      ) : (
-                        formatCurrency(item.papelreal)
-                      )}
-                    </td>
-                    <td>
-                      {editingId === item.id ? (
-                        <input
-                          type="number"
-                          min="1"
-                          value={editedData.papelpix} // Usar string diretamente
-                          onChange={(e) =>
-                            handleInputChange("papelpix", e.target.value)
-                          }
-                          className="input input-xs p-0 m-0 text-center"
-                        />
-                      ) : (
-                        formatCurrency(item.papelpix)
-                      )}
-                    </td>
-                    <td>
-                      {editingId === item.id ? (
-                        <input
-                          type="number"
-                          min="1"
-                          value={editedData.encaixereal} // Usar string diretamente
-                          onChange={(e) =>
-                            handleInputChange("encaixereal", e.target.value)
-                          }
-                          className="input input-xs p-0 m-0 text-center"
-                        />
-                      ) : (
-                        formatCurrency(item.encaixereal)
-                      )}
-                    </td>
-                    <td>
-                      {editingId === item.id ? (
-                        <input
-                          type="number"
-                          min="1"
-                          value={editedData.encaixepix} // Usar string diretamente
-                          onChange={(e) =>
-                            handleInputChange("encaixepix", e.target.value)
-                          }
-                          className="input input-xs p-0 m-0 text-center"
-                        />
-                      ) : (
-                        formatCurrency(item.encaixepix)
-                      )}
-                    </td>
-                    <td>
-                      {editingId === item.id ? (
-                        <input
-                          type="number"
-                          min="1"
-                          value={editedData.desperdicio} // Usar string diretamente
-                          onChange={(e) =>
-                            handleInputChange("desperdicio", e.target.value)
-                          }
-                          className="input input-xs p-0 m-0 text-center"
-                        />
-                      ) : (
-                        formatCurrency(item.desperdicio)
-                      )}
-                    </td>
-                    <td>
-                      {editingId === item.id ? (
-                        <input
-                          type="number"
-                          min="1"
-                          value={editedData.util}
-                          onChange={(e) =>
-                            handleInputChange("util", e.target.value)
-                          }
-                          className="input input-xs p-0 m-0 text-center"
-                        />
-                      ) : (
-                        item.util
-                      )}
-                    </td>
-                    <td>
-                      {editingId === item.id ? (
-                        <input
-                          type="number"
-                          min="1"
-                          value={editedData.perdida}
-                          onChange={(e) =>
-                            handleInputChange("perdida", e.target.value)
-                          }
-                          className="input input-xs p-0 m-0 text-center"
-                        />
-                      ) : (
-                        item.perdida
-                      )}
-                    </td>
-                    <td>
-                      {editingId === item.id ? (
-                        <input
-                          type="text"
-                          value={editedData.comentarios}
-                          onChange={(e) =>
-                            handleInputChange("comentarios", e.target.value)
-                          }
-                          className="input input-xs p-0 m-0 text-center"
-                        />
-                      ) : (
-                        item.comentarios
-                      )}
-                    </td>
-                    <td>
-                      <Edit
-                        isEditing={editingId === item.id}
-                        onEdit={() => startEditing(item)}
-                        onSave={() => handleSave(editedData)}
-                        onCancel={() => setEditingId(null)}
-                      />
-                      <button
-                        className={`btn btn-xs btn-soft btn-error ${
-                          editingId === item.id ? "hidden" : ""
-                        }`}
-                        onClick={async () => {
-                          try {
-                            await Execute.removePapelC(item.id);
-                            // A UI será atualizada via WebSocket (PAPELC_DELETED_ITEM)
-                          } catch (error) {
-                            console.error(
-                              "Erro ao excluir item PapelC:",
-                              error,
-                            );
-                          }
-                        }}
-                      >
-                        Excluir
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        );
-      })}
+                        >
+                          Excluir
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          );
+        })}
     </div>
   );
 };
