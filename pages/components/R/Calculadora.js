@@ -654,14 +654,66 @@ const Calculadora = ({
         console.log("Deve Todo o Papel");
         //
       } else if (!trocoValue && valorDeve && dadosR) {
-        const exists = await Execute.receiveFromCData(codigo, data);
+        const existsMap = new Map();
+        for (const group of decGroups) {
+          const exists = await Execute.receiveFromCData(
+            codigo,
+            data,
+            r,
+            group.dec,
+          );
+          existsMap.set(group.dec, exists);
+        }
 
-        if (exists) {
+        if (existsMap) {
           const values = totalGeral - Number(total) - pixMaisReal;
           await sendToCAndUpdateR(values);
+          const numPix = Number(pix) || 0;
+          const numReal = Number(real) || 0;
+
+          if (numPix > 0 || numReal > 0) {
+            let finalPix = numPix;
+            let finalReal = numReal;
+
+            if (trocoValue < 0) {
+              const change = -trocoValue;
+              const realAfterChange = finalReal - change;
+              finalReal = Math.max(0, realAfterChange);
+
+              if (realAfterChange < 0) {
+                finalPix = Math.max(0, finalPix + realAfterChange);
+              }
+            }
+
+            if (finalPix > 0 || finalReal > 0) {
+              let pixParaPagamento = finalPix;
+              let realParaPagamento = finalReal;
+
+              if (valorDevo > 0) {
+                if (pixParaPagamento > 0) {
+                  pixParaPagamento += valorDevo;
+                } else if (realParaPagamento > 0) {
+                  realParaPagamento += valorDevo;
+                }
+              }
+
+              await Execute.sendToDeveUpdate(
+                codigo,
+                trocoValue,
+                r,
+                deveIdsArray,
+                pixParaPagamento,
+                realParaPagamento,
+              );
+            }
+          }
           await Execute.removeDeve(codigo);
           await Execute.removeDevo(codigo);
           await Execute.PayAllMandR(idsArray);
+          if (total > 0 && trocoValue === 0) {
+            await Execute.sendToPapelC(ObjPapelC);
+          }
+
           console.log("Existe no C");
         } else {
           await sendToCAndUpdateR(trocoValue);
