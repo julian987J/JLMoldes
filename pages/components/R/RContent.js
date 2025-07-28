@@ -5,8 +5,7 @@ import BSTA from "./BSATable.js";
 import Deve from "./Deve.js";
 import Devo from "./Devo.js";
 import Pendente from "./Pendente.js";
-import Pagamentos from "./Pagamentos.js";
-import Metragem from "./Metragem.js";
+import PlanilhaDiaria from "./PlanilhaDiaria.js";
 import Aviso from "./Aviso.js";
 
 const Rcontent = ({ codigoExterno, r }) => {
@@ -173,12 +172,7 @@ const Rcontent = ({ codigoExterno, r }) => {
   return (
     <div>
       <div className="grid grid-cols-30 gap-1">
-        <div className="col-span-6">
-          <Pagamentos r={r} />
-        </div>
-        <div>
-          <Metragem r={r} />
-        </div>
+        <PlanilhaDiaria r={r} />
         <div className="col-span-9">
           <BSTA codigo={codigo} r={r} />
         </div>
