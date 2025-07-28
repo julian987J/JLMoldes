@@ -44,7 +44,7 @@ function formatarDataHora(dataStr) {
 function formatarDataHoraSegundo(dataStr) {
   const data = new Date(dataStr);
 
-  const hora = String(data.getUTCHours()).padStart(2, "0");
+  const hora = String(data.getHours()).padStart(2, "0");
   const minutos = String(data.getUTCMinutes()).padStart(2, "0");
   const segundo = String(data.getUTCSeconds()).padStart(2, "0");
 
@@ -54,7 +54,7 @@ function formatarDataHoraSegundo(dataStr) {
 // Função para formatar apenas a hora e os minutos
 function formatarHora(dataStr) {
   const data = new Date(dataStr);
-  const hora = String(data.getUTCHours()).padStart(2, "0");
+  const hora = String(data.getHours()).padStart(2, "0");
   const minutos = String(data.getUTCMinutes()).padStart(2, "0");
   return `${hora}:${minutos}`;
 }

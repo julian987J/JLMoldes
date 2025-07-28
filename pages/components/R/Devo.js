@@ -109,6 +109,14 @@ const Devo = ({ codigo, r }) => {
               <td className="hidden">{item.codigo}</td>
               <td>{item.nome}</td>
               <td>{Number(item.valor).toFixed(2)}</td>
+              <td>
+                <button
+                  className="btn btn-xs btn-error btn-outline"
+                  onClick={() => Execute.removeDevoById(item.id)}
+                >
+                  Excluir
+                </button>
+              </td>
             </tr>
           ))}
         </tbody>

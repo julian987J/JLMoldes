@@ -1160,6 +1160,17 @@ async function removeDevo(codigo) {
   console.log(result);
 }
 
+async function removeDevoById(id, codigo) {
+  const response = await fetch("/api/v1/tables/calculadora/devo", {
+    method: "DELETE",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ id, codigo }),
+  });
+
+  const result = await response.json();
+  console.log(result);
+}
+
 async function removeTemp(itemId) {
   try {
     const response = await fetch(`/api/v1/tables/temp`, {
@@ -1365,6 +1376,7 @@ const execute = {
   removeDeve,
   removeAviso,
   removeDevo,
+  removeDevoById,
   removePagamentoById,
   removeTemp,
   deleteAllPagamentos,
