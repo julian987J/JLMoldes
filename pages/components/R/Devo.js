@@ -36,13 +36,6 @@ const Devo = ({ codigo, r }) => {
   // Efeito para lidar com mensagens WebSocket
   useEffect(() => {
     if (lastMessage && lastMessage.data && lastMessage.timestamp) {
-      if (
-        lastProcessedTimestampRef.current &&
-        lastMessage.timestamp <= lastProcessedTimestampRef.current
-      ) {
-        return; // Ignora mensagem já processada
-      }
-
       const { type, payload } = lastMessage.data;
 
       switch (type) {
@@ -63,15 +56,19 @@ const Devo = ({ codigo, r }) => {
         case "DEVO_DELETED_ITEM":
           if (
             payload &&
-            payload.codigo !== undefined &&
+            (payload.codigo !== undefined || payload.id !== undefined) &&
             String(payload.r) === String(r)
           ) {
-            // Verifica também o 'r' para relevância
             setDados((prevDados) =>
               sortDadosByDate(
-                prevDados.filter(
-                  (item) => String(item.codigo) !== String(payload.codigo),
-                ),
+                prevDados.filter((item) => {
+                  if (payload.id !== undefined) {
+                    return Number(item.id) !== Number(payload.id);
+                  } else if (payload.codigo !== undefined) {
+                    return Number(item.codigo) !== Number(payload.codigo);
+                  }
+                  return true;
+                }),
               ),
             );
           }
@@ -112,7 +109,7 @@ const Devo = ({ codigo, r }) => {
               <td>
                 <button
                   className="btn btn-xs btn-error btn-outline"
-                  onClick={() => Execute.removeDevoById(item.id)}
+                  onClick={() => Execute.removeDevoById(item.id, item.r)}
                 >
                   Excluir
                 </button>
