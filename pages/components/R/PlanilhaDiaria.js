@@ -179,8 +179,9 @@ const PlanilhaDiaria = ({ r }) => {
     return { grandTotalUtil: utilSum, grandTotalPerdida: perdidaSum };
   }, [metragemDados]);
 
-  const totalMetragemSum = grandTotalUtil + grandTotalPerdida;
-  const leftTotalValue = Math.floor(totalMetragemSum / 150);
+  const totalMetragemSum =
+    grandTotalUtil + grandTotalPerdida + metragemDados.length * 0.06;
+  const RightTotalValue = totalMetragemSum / 150;
 
   if (loading) {
     return <div className="text-center p-4">Carregando...</div>;
@@ -199,7 +200,7 @@ const PlanilhaDiaria = ({ r }) => {
                       {totalMetragemSum}
                     </th>
                     <th className="text-center text-xs bg-warning-content/30">
-                      {leftTotalValue}
+                      {RightTotalValue.toFixed(2)}
                     </th>
                   </tr>
                 </thead>
