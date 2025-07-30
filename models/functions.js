@@ -592,10 +592,10 @@ async function receiveFromDeveJustValor(codigo, r) {
   }
 }
 
-async function receiveFromDevoJustValor(codigo) {
+async function receiveFromDevoJustValor(codigo, r) {
   try {
     const response = await fetch(
-      `/api/v1/tables/calculadora/devo?codigo=${codigo}`,
+      `/api/v1/tables/calculadora/devo?codigo=${(codigo, r)}`,
     );
 
     if (!response.ok) {

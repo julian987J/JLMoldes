@@ -179,7 +179,7 @@ const Calculadora = ({
   useEffect(() => {
     const buscarDados = async () => {
       try {
-        const resultado = await Execute.receiveFromDevoJustValor(codigo);
+        const resultado = await Execute.receiveFromDevoJustValor(codigo, r);
 
         // Soma todos os valores
         const somaTotal = Number(resultado.total_valor || 0);
@@ -191,7 +191,7 @@ const Calculadora = ({
       }
     };
     buscarDados();
-  }, [codigo]);
+  }, [codigo, r]);
 
   useEffect(() => {
     const fetchData = async () => {

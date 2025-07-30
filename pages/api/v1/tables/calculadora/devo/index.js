@@ -33,9 +33,9 @@ router.delete(deleteHandler);
 export default router.handler(controller.errorHandlers);
 
 async function getHandler(request, response) {
-  const { codigo } = request.query;
+  const { codigo, r } = request.query;
   try {
-    const valores = await ordem.getDevoJustValor(codigo);
+    const valores = await ordem.getDevoJustValor(codigo, r);
     response.status(200).json(valores);
   } catch (error) {
     response.status(500).json({ error: error.message });

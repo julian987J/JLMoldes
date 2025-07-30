@@ -1340,13 +1340,13 @@ async function getDeveJustValor(codigo, r) {
   return result.rows[0];
 }
 
-async function getDevoJustValor(codigo) {
+async function getDevoJustValor(codigo, r) {
   const result = await database.query({
     text: `SELECT 
              SUM(valor) AS total_valor
            FROM "Devo" 
-           WHERE codigo = $1;`,
-    values: [codigo],
+           WHERE codigo = $1 AND r = $2;`,
+    values: [codigo, r],
   });
 
   // Retorna apenas a primeira linha com os totais

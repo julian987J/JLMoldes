@@ -3,6 +3,7 @@ import React, { useEffect, useState, useCallback, useRef } from "react";
 import Execute from "models/functions";
 import Use from "models/utils"; // Descomentado para usar Use.formatarDataHora
 import { useWebSocket } from "../../../contexts/WebSocketContext.js";
+import { useAuth } from "../../../contexts/AuthContext.js";
 
 const sortDadosByDate = (dataArray) =>
   [...dataArray].sort((a, b) => new Date(b.data) - new Date(a.data));
@@ -10,6 +11,7 @@ const sortDadosByDate = (dataArray) =>
 const Devo = ({ codigo, r }) => {
   const [dados, setDados] = useState([]);
   const { lastMessage } = useWebSocket();
+  const { user } = useAuth();
   const lastProcessedTimestampRef = useRef(null);
 
   const loadData = useCallback(async () => {
@@ -91,6 +93,9 @@ const Devo = ({ codigo, r }) => {
             <th className="hidden">CODIGO</th>
             <th>Nome</th>
             <th className="w-20">Devo</th>
+            {user && user.role === "admin" && (
+              <th className="w-20 text-center">Ações</th>
+            )}
           </tr>
         </thead>
         <tbody>
@@ -106,14 +111,16 @@ const Devo = ({ codigo, r }) => {
               <td className="hidden">{item.codigo}</td>
               <td>{item.nome}</td>
               <td>{Number(item.valor).toFixed(2)}</td>
-              <td>
-                <button
-                  className="btn btn-xs btn-error btn-outline"
-                  onClick={() => Execute.removeDevoById(item.id, item.r)}
-                >
-                  Excluir
-                </button>
-              </td>
+              {user && user.role === "admin" && (
+                <td>
+                  <button
+                    className="btn btn-xs btn-error btn-outline"
+                    onClick={() => Execute.removeDevoById(item.id, item.r)}
+                  >
+                    Excluir
+                  </button>
+                </td>
+              )}
             </tr>
           ))}
         </tbody>
