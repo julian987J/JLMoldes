@@ -306,7 +306,7 @@ const Calculadora = ({
       if (type.startsWith("DEVO_")) {
         const buscarDadosDevo = async () => {
           try {
-            const resultado = await Execute.receiveFromDevoJustValor(codigo);
+            const resultado = await Execute.receiveFromDevoJustValor(codigo, r);
             const somaTotal = Number(resultado.total_valor || 0);
             setValorDevo(somaTotal);
           } catch (error) {

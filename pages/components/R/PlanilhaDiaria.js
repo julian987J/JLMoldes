@@ -197,7 +197,7 @@ const PlanilhaDiaria = ({ r }) => {
                 <thead>
                   <tr>
                     <th className="text-center text-xs bg-warning-content/30">
-                      {totalMetragemSum}
+                      {totalMetragemSum.toFixed(2)}
                     </th>
                     <th className="text-center text-xs bg-warning-content/30">
                       {RightTotalValue.toFixed(2)}
