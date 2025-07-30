@@ -7,6 +7,7 @@ import Devo from "./Devo.js";
 import Pendente from "./Pendente.js";
 import PlanilhaDiaria from "./PlanilhaDiaria.js";
 import Aviso from "./Aviso.js";
+import ValoresColuna from "./ValoresColuna.js";
 
 const Rcontent = ({ codigoExterno, r }) => {
   // Referência para o valor de codigoExterno, para garantir que não altere depois de passado
@@ -22,6 +23,7 @@ const Rcontent = ({ codigoExterno, r }) => {
   );
   const [data, setData] = useState();
   const [selectedPendenteItem, setSelectedPendenteItem] = useState(null);
+  const [totalValores, setTotalValores] = useState(0);
 
   useEffect(() => {
     if (codigoExterno !== codigoExternoRef.current) {
@@ -169,10 +171,16 @@ const Rcontent = ({ codigoExterno, r }) => {
     setValuesCalculadora(itemValues);
     setData(item.data); // Atualiza a data também, se relevante
   };
+
+  const handleValoresChange = (valores) => {
+    setTotalValores(valores);
+  };
+
   return (
     <div>
+      <ValoresColuna r={r} onValoresChange={handleValoresChange} />
       <div className="grid grid-cols-30 gap-1">
-        <PlanilhaDiaria r={r} />
+        <PlanilhaDiaria r={r} totalValores={totalValores} />
         <div className="col-span-9">
           <BSTA codigo={codigo} r={r} />
         </div>

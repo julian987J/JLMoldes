@@ -13,7 +13,7 @@ import { useAuth } from "../../../contexts/AuthContext.js";
 const sortDadosByDate = (dataArray) =>
   [...dataArray].sort((a, b) => new Date(b.data) - new Date(a.data));
 
-const PlanilhaDiaria = ({ r }) => {
+const PlanilhaDiaria = ({ r, totalValores }) => {
   const [pagamentosDados, setPagamentosDados] = useState([]);
   const [metragemDados, setMetragemDados] = useState([]);
   const [devoPorDia, setDevoPorDia] = useState({});
@@ -169,19 +169,7 @@ const PlanilhaDiaria = ({ r }) => {
     return combined;
   }, [pagamentosDados, metragemDados]);
 
-  const { grandTotalUtil, grandTotalPerdida } = useMemo(() => {
-    let utilSum = 0;
-    let perdidaSum = 0;
-    metragemDados.forEach((item) => {
-      utilSum += parseFloat(item.util) || 0;
-      perdidaSum += parseFloat(item.perdida) || 0;
-    });
-    return { grandTotalUtil: utilSum, grandTotalPerdida: perdidaSum };
-  }, [metragemDados]);
-
-  const totalMetragemSum =
-    grandTotalUtil + grandTotalPerdida + metragemDados.length * 0.06;
-  const RightTotalValue = totalMetragemSum / 150;
+  const RightTotalValue = totalValores / 250;
 
   if (loading) {
     return <div className="text-center p-4">Carregando...</div>;
@@ -197,7 +185,7 @@ const PlanilhaDiaria = ({ r }) => {
                 <thead>
                   <tr>
                     <th className="text-center text-xs bg-warning-content/30">
-                      {totalMetragemSum.toFixed(2)}
+                      {totalValores.toFixed(2)}
                     </th>
                     <th className="text-center text-xs bg-warning-content/30">
                       {RightTotalValue.toFixed(2)}
