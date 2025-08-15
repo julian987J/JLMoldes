@@ -63,16 +63,19 @@ async function deleteHandler(request, response) {
   const { id } = request.body;
   const idsToDelete = Array.isArray(id) ? id : [id];
 
-  const deleteResult = await ordem.deleteR(idsToDelete);
+  // A função deleteR já retorna os itens que foram deletados
+  const deletedItems = await ordem.deleteR(idsToDelete);
 
-  for (const deletedId of idsToDelete) {
+  // Itera sobre os itens deletados para notificar cada um
+  for (const deletedItem of deletedItems) {
     await notifyWebSocketServer({
       type: "BSA_DELETED_ITEM",
-      payload: { id: deletedId }, // Cliente BSATable filtrará por ID
+      // Envia o payload completo, incluindo 'r' e 'id'
+      payload: deletedItem,
     });
   }
 
-  return response.status(200).json(deleteResult);
+  return response.status(200).json(deletedItems);
 }
 
 async function updateHandler(request, response) {

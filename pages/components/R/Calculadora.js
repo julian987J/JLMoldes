@@ -1,5 +1,5 @@
 import Execute from "models/functions";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useId } from "react";
 import dynamic from "next/dynamic";
 import { useWebSocket } from "../../../contexts/WebSocketContext.js"; // Import WebSocket context
 import Use from "models/utils.js";
@@ -22,9 +22,11 @@ const Calculadora = ({
   onValuesChange, // Recebido como prop
   data,
   r,
+  isPendente,
 }) => {
   const ErrorComponent = dynamic(() => import("../Errors.js"), { ssr: false });
   const [showError, setShowError] = useState(false);
+  const componentId = useId();
 
   useEffect(() => {
     setShowError(false); // Resetar no cliente após a montagem
@@ -57,6 +59,13 @@ const Calculadora = ({
   const [comentario, setComentario] = useState("");
   const [perdida, setPerdida] = useState("");
   const [comentarioCadastro, setComentarioCadastro] = useState("");
+
+  const [allCadastroNames, setAllCadastroNames] = useState([]);
+  const [filteredSuggestions, setFilteredSuggestions] = useState([]);
+
+  const [isSalvarDisabled, setIsSalvarDisabled] = useState(false);
+  const [isPendenteDisabled, setIsPendenteDisabled] = useState(false);
+  const [isEsperaDisabled, setIsEsperaDisabled] = useState(false);
 
   // Calcula a soma bruta dos valores (novo cálculo)
   const sumValues = values.reduce((sum, current) => {
@@ -91,7 +100,7 @@ const Calculadora = ({
         const num = current === "" ? 0 : Number(current);
         return sum + num * multiplier;
       }, 0)
-    : "";
+    : 0;
 
   const total = papel + comitions;
 
@@ -170,7 +179,7 @@ const Calculadora = ({
   useEffect(() => {
     const buscarDados = async () => {
       try {
-        const resultado = await Execute.receiveFromDevoJustValor(codigo);
+        const resultado = await Execute.receiveFromDevoJustValor(codigo, r);
 
         // Soma todos os valores
         const somaTotal = Number(resultado.total_valor || 0);
@@ -182,7 +191,7 @@ const Calculadora = ({
       }
     };
     buscarDados();
-  }, [codigo]);
+  }, [codigo, r]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -205,8 +214,6 @@ const Calculadora = ({
     if (lastMessage && lastMessage.data) {
       const { type, payload } = lastMessage.data;
       if (type === "CONFIG_UPDATED_ITEM" && payload) {
-        // Assuming payload is the new config object { id, m, e, d, ... }
-        // or an array with one config object as in Config.js
         const configData = Array.isArray(payload) ? payload[0] : payload;
         if (configData) {
           setMultiplier(configData.m);
@@ -248,6 +255,118 @@ const Calculadora = ({
     };
     fetchComentarioFromCadastro();
   }, [codigo, nome]);
+
+  // WebSocket listeners for real-time updates
+  useEffect(() => {
+    if (lastMessage && lastMessage.data) {
+      const { type } = lastMessage.data;
+
+      // Listener for R updates
+      if (type.startsWith("BSA_")) {
+        const buscarDadosR = async () => {
+          try {
+            const resultado = await Execute.receiveFromRJustBSA(codigo, r);
+            const groups = resultado.map((group) => ({
+              dec: group.dec,
+              base: Number(group.total_base) || 0,
+              sis: Number(group.total_sis) || 0,
+              alt: Number(group.total_alt) || 0,
+              ids: group.ids || [],
+            }));
+            setDecGroups(groups);
+            setDadosR(
+              groups.reduce((sum, g) => sum + g.base + g.sis + g.alt, 0),
+            );
+            setIdsArray(groups.flatMap((g) => g.ids));
+          } catch (error) {
+            console.error("Erro ao recarregar dados de R:", error);
+          }
+        };
+        buscarDadosR();
+      }
+
+      // Listener for Deve updates
+      if (type.startsWith("DEVE_")) {
+        const buscarDadosDeve = async () => {
+          if (!codigo || !r) return;
+          try {
+            const resultado = await Execute.receiveFromDeveJustValor(codigo, r);
+            const somaTotal = Number(resultado.total_valor || 0);
+            const ids = resultado.deveids || [];
+            setValorDeve(somaTotal);
+            setDeveIdsArray(ids);
+          } catch (error) {
+            console.error("Erro ao recarregar dados de Deve:", error);
+          }
+        };
+        buscarDadosDeve();
+      }
+
+      // Listener for Devo updates
+      if (type.startsWith("DEVO_")) {
+        const buscarDadosDevo = async () => {
+          try {
+            const resultado = await Execute.receiveFromDevoJustValor(codigo, r);
+            const somaTotal = Number(resultado.total_valor || 0);
+            setValorDevo(somaTotal);
+          } catch (error) {
+            console.error("Erro ao recarregar dados de Devo:", error);
+          }
+        };
+        buscarDadosDevo();
+      }
+    }
+  }, [lastMessage, codigo, r]);
+
+  // Fetch all cadastro names on component mount
+  useEffect(() => {
+    let isMounted = true;
+    const fetchAllCadastroNames = async () => {
+      try {
+        const data = await Execute.receiveAllCad();
+        if (isMounted) {
+          setAllCadastroNames(data);
+        }
+      } catch (error) {
+        console.error("Erro ao buscar todos os nomes de cadastro:", error);
+      }
+    };
+    fetchAllCadastroNames();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  // WebSocket for cadastro updates
+  useEffect(() => {
+    if (lastMessage && lastMessage.data) {
+      const { type, payload } = lastMessage.data;
+      switch (type) {
+        case "CADASTRO_NEW_ITEM":
+          if (payload) {
+            setAllCadastroNames((prev) => [...prev, payload]);
+          }
+          break;
+        case "CADASTRO_UPDATED_ITEM":
+          if (payload) {
+            setAllCadastroNames((prev) =>
+              prev.map((item) => (item.id === payload.id ? payload : item)),
+            );
+          }
+          break;
+        case "CADASTRO_DELETED_ITEM":
+          if (payload && payload.id !== undefined) {
+            setAllCadastroNames((prev) =>
+              prev.filter((item) => item.id !== payload.id),
+            );
+          }
+          break;
+        default:
+          break;
+      }
+    }
+  }, [lastMessage]);
 
   const handleSave = async (editedData) => {
     try {
@@ -473,6 +592,9 @@ const Calculadora = ({
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (isSalvarDisabled) return;
+    setIsSalvarDisabled(true);
+
     const trocoValue = Number(roundedTroco);
 
     try {
@@ -483,7 +605,7 @@ const Calculadora = ({
         //
       } else if (dadosR && !trocoValue && !Number(total) && !valorDeve) {
         await sendToCAndUpdateR(trocoValue);
-        await Execute.removeMandR(idsArray);
+        await Execute.PayAllMandR(idsArray);
         console.log("caiu em Pago todo R");
         //
       } else if (trocoValue < 0) {
@@ -494,7 +616,8 @@ const Calculadora = ({
           codigo,
           valor: Math.abs(trocoValue),
         });
-        await Execute.removeMandR(idsArray);
+        await Execute.sendToPapelC(ObjPapelC);
+        await Execute.PayAllMandR(idsArray);
         console.log("Caiu em Troco Menor que Zero.");
       } else if (
         trocoValue === totalGeral &&
@@ -503,7 +626,7 @@ const Calculadora = ({
       ) {
         if (Number(total) > 0) {
           const novoCodigo = gerarEArmazenarCodigoAleatorio();
-          await Execute.removeDevo(codigo);
+          //await Execute.removeDevo(codigo);
           await Execute.sendToDeve({
             deveid: novoCodigo,
             nome,
@@ -531,24 +654,147 @@ const Calculadora = ({
         console.log("Deve Todo o Papel");
         //
       } else if (!trocoValue && valorDeve && dadosR) {
-        const exists = await Execute.receiveFromCData(codigo, data);
+        const existsMap = new Map();
+        for (const group of decGroups) {
+          const exists = await Execute.receiveFromCData(
+            codigo,
+            data,
+            r,
+            group.dec,
+          );
+          existsMap.set(group.dec, exists);
+        }
 
-        if (exists) {
+        if (existsMap) {
           const values = totalGeral - Number(total) - pixMaisReal;
           await sendToCAndUpdateR(values);
+          const numPix = Number(pix) || 0;
+          const numReal = Number(real) || 0;
+
+          if (numPix > 0 || numReal > 0) {
+            let finalPix = numPix;
+            let finalReal = numReal;
+
+            if (trocoValue < 0) {
+              const change = -trocoValue;
+              const realAfterChange = finalReal - change;
+              finalReal = Math.max(0, realAfterChange);
+
+              if (realAfterChange < 0) {
+                finalPix = Math.max(0, finalPix + realAfterChange);
+              }
+            }
+
+            if (finalPix > 0 || finalReal > 0) {
+              let pixParaPagamento = finalPix;
+              let realParaPagamento = finalReal;
+
+              if (valorDevo > 0) {
+                if (pixParaPagamento > 0) {
+                  pixParaPagamento += valorDevo;
+                } else if (realParaPagamento > 0) {
+                  realParaPagamento += valorDevo;
+                }
+              }
+
+              await Execute.sendToDeveUpdate(
+                codigo,
+                trocoValue,
+                r,
+                deveIdsArray,
+                pixParaPagamento,
+                realParaPagamento,
+              );
+            }
+          }
           await Execute.removeDeve(codigo);
           await Execute.removeDevo(codigo);
-          await Execute.removeMandR(idsArray);
+          await Execute.PayAllMandR(idsArray);
+          if (total > 0 && trocoValue === 0) {
+            await Execute.sendToPapelC(ObjPapelC);
+          }
+
           console.log("Existe no C");
         } else {
           await sendToCAndUpdateR(trocoValue);
           await Execute.removeDeve(codigo);
           await Execute.removeDevo(codigo);
-          await Execute.removeMandR(idsArray);
+          await Execute.PayAllMandR(idsArray);
         }
         console.log("Caiu em foi tudo pago Papel e R.");
         //
       } else if (valorDeve && !trocoValue) {
+        const numPix = Number(pix) || 0;
+        const numReal = Number(real) || 0;
+
+        if (numPix > 0 || numReal > 0) {
+          let finalPix = numPix;
+          let finalReal = numReal;
+
+          if (trocoValue < 0) {
+            const change = -trocoValue;
+            const realAfterChange = finalReal - change;
+            finalReal = Math.max(0, realAfterChange);
+
+            if (realAfterChange < 0) {
+              finalPix = Math.max(0, finalPix + realAfterChange);
+            }
+          }
+
+          if (finalPix > 0 || finalReal > 0) {
+            let pixParaPagamento = finalPix;
+            let realParaPagamento = finalReal;
+
+            if (valorDevo > 0) {
+              if (pixParaPagamento > 0) {
+                pixParaPagamento += valorDevo;
+              } else if (realParaPagamento > 0) {
+                realParaPagamento += valorDevo;
+              }
+            }
+
+            await Execute.sendToDeveUpdate(
+              codigo,
+              trocoValue,
+              r,
+              deveIdsArray,
+              pixParaPagamento,
+              realParaPagamento,
+            );
+          }
+        }
+
+        await Execute.removeDevo(codigo);
+        if (trocoValue > 0) {
+          await Execute.sendToPapelC(ObjPapelC);
+        } else if (total > 0 && trocoValue === 0) {
+          await Execute.sendToPapelC(ObjPapelC);
+        }
+
+        console.log("Caiu em Foi pago todo o papel.");
+
+        //
+      } else if (isPendente && !trocoValue && !valorDeve) {
+        const novoAvisoId = gerarEArmazenarCodigoAleatorio();
+        await Execute.sendToAviso({
+          avisoid: novoAvisoId,
+          data: Use.NowData(),
+          codigo,
+          r,
+          nome,
+          valorpapel: papel,
+          valorcomissao: comitions,
+          valor: total,
+        });
+
+        await Execute.sendToPapelC({
+          ...ObjPapelC,
+          deveid: novoAvisoId,
+          data: Use.NowData(),
+        });
+
+        console.log("Caiu em Nova condição: !trocoValue e criou aviso.");
+      } else if (valorDeve && trocoValue && !dadosR) {
         await Execute.sendToDeveUpdate(
           codigo,
           trocoValue,
@@ -557,51 +803,55 @@ const Calculadora = ({
           Number(pix),
           Number(real),
         );
-        await Execute.removeDeve(codigo);
-        await Execute.removeDevo(codigo);
 
-        console.log("Caiu em Foi pago todo o papel.");
+        if (total > 0) {
+          const novoCodigo = gerarEArmazenarCodigoAleatorio();
+          await Execute.sendToDeve({
+            deveid: novoCodigo,
+            nome,
+            r,
+            data: Use.NowData(),
+            codigo,
+            valorpapel: papel,
+            valorcomissao: comitions,
+            valor: trocoValue,
+          });
+          await Execute.sendToPapelC({
+            ...ObjPapelC,
+            deveid: novoCodigo,
+            papelpix:
+              Number(pix) > 0 ? Math.min(Number(pix), papel) - trocoValue : 0,
+            papelreal:
+              Number(real) > 0
+                ? Math.min(
+                    Number(real),
+                    papel -
+                      (Number(pix) > 0 ? Math.min(Number(pix), papel) : 0) -
+                      trocoValue,
+                  )
+                : 0,
+          });
+          console.log("caiu no valor novo pago e parte");
+        }
 
-        //
-      } else if (valorDeve && trocoValue && !dadosR) {
-        const novoCodigo = gerarEArmazenarCodigoAleatorio();
-        await Execute.sendToDeve({
-          deveid: novoCodigo,
-          nome,
-          r,
-          data: Use.NowData(),
-          codigo,
-          valorpapel: papel,
-          valorcomissao: comitions,
-          valor: trocoValue,
-        });
-        await Execute.sendToPapelC({
-          ...ObjPapelC,
-          deveid: novoCodigo,
-          data: Use.NowData(),
-          papelpix: 0,
-          papelreal: 0,
-          encaixepix: 0,
-          encaixereal: 0,
-        });
         await Execute.removeDevo(codigo);
         console.log("Caiu em Foi pago Parte do Valor do Papel.");
         //
       } else if (dadosR > 0 && !trocoValue && !Number(total)) {
         await sendToCAndUpdateR(trocoValue);
-        await Execute.removeMandR(idsArray);
+        await Execute.PayAllMandR(idsArray);
         console.log("Caiu em foi pago todo o R.");
         //
       } else if (dadosR > 0 && !trocoValue && Number(total)) {
         await sendToCAndUpdateR(trocoValue);
         await Execute.sendToPapelC(ObjPapelC);
-        await Execute.removeMandR(idsArray);
+        await Execute.PayAllMandR(idsArray);
         console.log("Caiu em foi pago todo o R e Papel.");
         //
       } else if (dadosR > 0 && trocoValue && Number(total)) {
         if (dadosR === pixMaisReal) {
           await Execute.sendToC(ObjC1);
-          await Execute.removeMandR(idsArray);
+          await Execute.PayAllMandR(idsArray);
           if (total > 0) {
             const novoCodigo = gerarEArmazenarCodigoAleatorio();
             await Execute.removeDevo(codigo);
@@ -666,7 +916,7 @@ const Calculadora = ({
           //
         } else if (pixMaisReal > dadosR && Number(total)) {
           await sendToCAndUpdateR(0);
-          await Execute.removeMandR(idsArray);
+          await Execute.PayAllMandR(idsArray);
           if (total > 0) {
             const value = Math.abs(totalGeral - pixMaisReal);
             await Execute.removeDevo(codigo);
@@ -702,7 +952,7 @@ const Calculadora = ({
         if (dadosR === pixMaisReal) {
           await sendToCAndUpdateR(0);
           await Execute.removeDevo(codigo);
-          await Execute.removeMandR(idsArray);
+          await Execute.PayAllMandR(idsArray);
 
           console.log("Caiu em foi pago todo R deve o Papel.");
           //
@@ -712,18 +962,26 @@ const Calculadora = ({
         } else if (pixMaisReal > dadosR) {
           await Execute.sendToDeveUpdate(codigo, trocoValue, r);
           await Execute.sendToCAndUpdateR(0);
-          await Execute.removeMandR(idsArray);
+          await Execute.PayAllMandR(idsArray);
           console.log("Caiu em foi Todo R e Parte Papel.");
         }
         console.log("Caiu em Tem R e Tem DEVE");
       } else if (valorDevo && totalGeral === pixMaisReal) {
         await Execute.removeDevo(codigo);
-        await Execute.sendToPapelC(ObjPapelC);
+        await Execute.sendToPapelC({
+          ...ObjPapelC,
+          papelpix:
+            Number(pix) > 0 ? Math.min(Number(pix), papel) + valorDevo : 0,
+          papelreal:
+            Number(real) > 0
+              ? Math.min(
+                  Number(real),
+                  papel - (Number(pix) > 0 ? Math.min(Number(pix), papel) : 0),
+                ) + valorDevo
+              : 0,
+        });
 
         console.log("Caiu em DEVO e Pagou tudo o Papel");
-      } else if (Number(total) && !dadosR && !valorDeve && !trocoValue) {
-        await Execute.sendToPapelC(ObjPapelC);
-        console.log("Caiu em tem Serviço e papel e foi Pago todo o papel");
       } else if (Number(total) && !dadosR && !valorDeve && trocoValue) {
         const novoCodigo = gerarEArmazenarCodigoAleatorio();
         await Execute.sendToDeve({
@@ -743,19 +1001,51 @@ const Calculadora = ({
         console.log("Caiu em tem Serviço e papel e foi Pago parte o papel");
       } else {
         console.log("Caiu em sem condições");
+        await Execute.sendToPapelC(ObjPapelC);
       }
 
       hadleUpdatePapel(
         Number(sumValues) + Number(desperdicio) + Number(perdida),
       );
 
-      await Execute.sendToPagamentos({
-        nome,
-        r,
-        data: Use.NowData(),
-        pix,
-        real,
-      });
+      const numPix = Number(pix) || 0;
+      const numReal = Number(real) || 0;
+
+      if (numPix > 0 || numReal > 0) {
+        let finalPix = numPix;
+        let finalReal = numReal;
+
+        if (trocoValue < 0) {
+          const change = -trocoValue;
+          const realAfterChange = finalReal - change;
+          finalReal = Math.max(0, realAfterChange);
+
+          if (realAfterChange < 0) {
+            finalPix = Math.max(0, finalPix + realAfterChange);
+          }
+        }
+
+        if (finalPix > 0 || finalReal > 0) {
+          let pixParaPagamento = finalPix;
+          let realParaPagamento = finalReal;
+
+          if (valorDevo > 0) {
+            if (pixParaPagamento > 0) {
+              pixParaPagamento += valorDevo;
+            } else if (realParaPagamento > 0) {
+              realParaPagamento += valorDevo;
+            }
+          }
+
+          await Execute.sendToPagamentos({
+            nome,
+            r,
+            data: Use.NowData(),
+            pix: pixParaPagamento,
+            real: realParaPagamento,
+          });
+        }
+      }
 
       setPix("");
       onPlusChange(0);
@@ -768,10 +1058,18 @@ const Calculadora = ({
     } catch (error) {
       console.error("Erro ao salvar:", error);
       alert("Erro ao salvar os dados!");
+    } finally {
+      setTimeout(() => setIsSalvarDisabled(false), 1000);
     }
   };
 
   const handlePendente = async () => {
+    if (isEsperaDisabled) return;
+    setIsEsperaDisabled(true);
+    setTimeout(() => {
+      setIsEsperaDisabled(false);
+    }, 1000);
+
     if (!nome || !codigo) {
       alert("Nome e Código são obrigatórios para salvar como pendente.");
       return;
@@ -803,6 +1101,63 @@ const Calculadora = ({
       console.log("Dados pendentes salvos com sucesso!");
     } catch (error) {
       console.error("Erro ao salvar dados pendentes:", error);
+    }
+  };
+
+  const handlePendentePapel = async () => {
+    if (isPendenteDisabled) return;
+    setIsPendenteDisabled(true);
+
+    setTimeout(() => {
+      setIsPendenteDisabled(false);
+    }, 1000);
+
+    if (!nome || !codigo) {
+      alert("Nome e Código são obrigatórios para marcar como pendente.");
+      return;
+    }
+
+    try {
+      if (Number(total) > 0) {
+        const novoCodigo = gerarEArmazenarCodigoAleatorio();
+        //await Execute.removeDevo(codigo);
+        await Execute.sendToDeve({
+          deveid: novoCodigo,
+          nome,
+          r,
+          data: Use.NowData(),
+          codigo,
+          valorpapel: papel,
+          valorcomissao: comitions,
+          valor: total,
+        });
+
+        await Execute.sendToPapelC({
+          ...ObjPapelC,
+          deveid: novoCodigo,
+          data: Use.NowData(),
+          papelpix: 0,
+          papelreal: 0,
+          encaixepix: 0,
+          encaixereal: 0,
+        });
+
+        // Clear form after successful operation
+        setPix("");
+        onPlusChange(0);
+        setReal("");
+        setComentario("");
+        setPerdida("");
+        onNomeChange("");
+        onCodigoChange("");
+        onValuesChange(Array(28).fill(""));
+      } else {
+        setShowError(true);
+      }
+      console.log("Deve Todo o Papel");
+    } catch (error) {
+      console.error("Erro ao salvar como pendente:", error);
+      alert("Erro ao salvar como pendente!");
     }
   };
 
@@ -892,27 +1247,20 @@ const Calculadora = ({
     comentario,
   };
 
+  const datalistId = `name-suggestions-${componentId}`;
+
   return (
-    <div className="flex flex-col gap-1">
-      <div className="badge badge-accent badge-sm w-62 whitespace-normal h-auto text-black">
+    <div>
+      <div className="badge badge-accent w-full badge-sm whitespace-normal h-auto text-black">
         {comentarioCadastro}
       </div>
 
       <form onSubmit={handleSubmit} autoComplete="nope">
-        <div className="join">
-          <input
-            type="text"
-            placeholder="Nome"
-            className="input input-warning input-xs w-32 join-item"
-            value={nome}
-            autoComplete="nope"
-            onChange={(e) => onNomeChange(e.target.value)}
-            required
-          />
+        <div className="grid grid-cols-4">
           <input
             type="text"
             placeholder="CODIGO"
-            className="input input-warning input-xs w-23 join-item"
+            className="input input-warning input-xs w-full col-span-3"
             value={codigo}
             autoComplete="nope"
             onChange={(e) => onCodigoChange(e.target.value)}
@@ -920,28 +1268,62 @@ const Calculadora = ({
           />
           <input
             type="number"
-            className="input input-warning text-warning text-left input-xs w-7.5 join-item"
+            className="input input-warning text-warning text-left input-xs w-full"
             value={plus === null || plus === undefined ? "" : plus}
             placeholder={0}
             autoComplete="nope"
             onChange={handlePlusChange}
           />
         </div>
+        <div className="grid grid-cols-1">
+          <input
+            type="text"
+            placeholder="Nome"
+            className="input input-warning input-xs w-full"
+            value={nome}
+            autoComplete="nope"
+            list={datalistId} // Linked to datalist
+            onChange={(e) => {
+              const novoNome = e.target.value;
+              onNomeChange(novoNome); // Update parent's nome state
+
+              if (novoNome.length > 0) {
+                const suggestions = allCadastroNames
+                  .filter(
+                    (item) =>
+                      item.nome &&
+                      item.nome.toLowerCase().includes(novoNome.toLowerCase()),
+                  )
+                  .map((item) => item.nome);
+                setFilteredSuggestions(suggestions);
+              } else {
+                // Clear suggestions if input is empty
+                setFilteredSuggestions([]);
+              }
+            }}
+            required
+          />
+          <datalist id={datalistId}>
+            {filteredSuggestions.map((suggestion, index) => (
+              <option key={index} value={suggestion} />
+            ))}
+          </datalist>
+        </div>
         <input
           type="number"
-          className="input input-warning hidden text-warning input-xs w-7.5"
+          className="input input-warning hidden text-warning input-xs "
           value={multiplier}
           autoComplete="nope"
           onChange={handleMultiplierChange}
         />
-        <div className="grid grid-cols-4 mt-0.5 w-fit">
+        <div className="grid grid-cols-4">
           {Array.from({ length: 28 }).map((_, i) => (
             <div key={i} className="relative">
               <input
                 min="0"
                 step="0.01"
                 type="number"
-                className="input input-info input-xs w-15.5 appearance-none"
+                className="input input-info input-xs appearance-none"
                 value={values[i]}
                 autoComplete="nope"
                 disabled={!codigo} // Adicionado aqui
@@ -956,7 +1338,7 @@ const Calculadora = ({
             placeholder="Total"
             value={typeof total === "number" ? total.toFixed(2) : ""}
             autoComplete="nope"
-            className="input input-warning input-xs w-62 z-3 text-center text-warning font-bold"
+            className="input input-warning input-xs z-3 text-center text-warning font-bold"
             readOnly
           />
         </div>
@@ -966,11 +1348,11 @@ const Calculadora = ({
             placeholder="SOMA TOTAL"
             value={displayTotalGeral}
             autoComplete="nope"
-            className="input input-success input-xl w-62 z-3 text-center text-success mt-0.5 font-bold"
+            className="input input-success input-xl z-3 text-center text-success mt-0.5 font-bold"
             readOnly
           />
         </div>
-        <div className="join grid grid-cols-3 mt-0.5 w-62">
+        <div className="join grid grid-cols-3 mt-0.5">
           <input
             min="0"
             step={0.01}
@@ -988,6 +1370,7 @@ const Calculadora = ({
             value={roundedTroco.toFixed(2)}
             autoComplete="nope"
             className="input input-defaut input-lg join-item font-bold"
+            readOnly
           />
           <input
             min="0"
@@ -1001,13 +1384,28 @@ const Calculadora = ({
           />
           <div className="grid grid-cols-2 col-span-3 my-0.5 z-50">
             <button
-              type="button" // Importante para não submeter o formulário
-              className="btn btn-warning w-full"
+              type="button"
+              className="btn btn-warning"
               onClick={handlePendente}
+              disabled={isEsperaDisabled}
+            >
+              Espera
+            </button>
+            <button
+              type="button"
+              className="btn btn-primary"
+              onClick={handlePendentePapel}
+              disabled={isPendenteDisabled}
             >
               Pendente
             </button>
-            <button type="submit" className="btn btn-secondary w-full">
+          </div>
+          <div className="col-span-3">
+            <button
+              type="submit"
+              className="btn btn-secondary w-full"
+              disabled={isSalvarDisabled}
+            >
               Salvar
             </button>
           </div>
@@ -1016,7 +1414,7 @@ const Calculadora = ({
           <input
             type="text"
             placeholder="Comentário"
-            className="input input-primary w-30 input-xs join-item" // Ajuste de largura
+            className="input input-primary input-xs join-item" // Ajuste de largura
             autoComplete="nope"
             value={comentario}
             onChange={(e) => setComentario(e.target.value)}
@@ -1026,7 +1424,7 @@ const Calculadora = ({
             step={0.01}
             type="number"
             placeholder="Desperdício"
-            className="input input-primary w-20 input-xs join-item"
+            className="input input-primary input-xs join-item"
             autoComplete="nope"
             value={perdida}
             onChange={(e) => setPerdida(e.target.value)}

@@ -4,12 +4,35 @@ import Use from "models/utils";
 import { useWebSocket } from "../../../contexts/WebSocketContext.js"; // Ajuste o caminho se necessário
 
 const sortDadosByDate = (dataArray) =>
-  [...dataArray].sort((a, b) => new Date(a.data) - new Date(b.data));
+  [...dataArray].sort((a, b) => new Date(b.data) - new Date(a.data));
 
 const Deve = ({ codigo, r }) => {
   const [dados, setDados] = useState([]);
   const { lastMessage } = useWebSocket();
   const lastProcessedTimestampRef = useRef(null);
+
+  const handleAvisar = async (deveid, codigo, r) => {
+    try {
+      const response = await fetch(`/api/v1/tables/calculadora/deve`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          deveid,
+          codigo,
+          r,
+          avisado: 1, // Marca como avisado
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Falha ao atualizar o status de aviso.");
+      }
+      // A UI será atualizada via WebSocket
+    } catch (error) {
+      console.error("Erro em handleAvisar:", error);
+      alert("Não foi possível marcar como avisado.");
+    }
+  };
 
   const loadData = useCallback(async () => {
     if (typeof r === "undefined" || r === null) {
@@ -30,7 +53,7 @@ const Deve = ({ codigo, r }) => {
 
   useEffect(() => {
     loadData(); // Busca inicial
-  }, [loadData, codigo]); // Depende de loadData e codigo
+  }, [loadData, codigo, r]); // Depende de loadData e codigo
 
   // Efeito para lidar com mensagens WebSocket
   useEffect(() => {
@@ -54,7 +77,8 @@ const Deve = ({ codigo, r }) => {
               // Verifica se o item já existe pelo ID (ou outro identificador único)
               if (
                 !prevDados.find(
-                  (item) => String(item.id) === String(payload.id),
+                  // Usa deveid como identificador único
+                  (item) => String(item.deveid) === String(payload.deveid),
                 )
               ) {
                 return sortDadosByDate([...prevDados, payload]);
@@ -85,7 +109,16 @@ const Deve = ({ codigo, r }) => {
             });
           }
           break;
-        // TODO: Adicionar case para "DEVE_UPDATED_ITEM" se o backend notificar
+        case "DEVE_UPDATED_ITEM":
+          if (payload && String(payload.r) === String(r)) {
+            setDados((prevDados) => {
+              const updatedDados = prevDados.map((item) =>
+                item.deveid === payload.deveid ? { ...item, ...payload } : item,
+              );
+              return sortDadosByDate(updatedDados);
+            });
+          }
+          break;
         default:
           break;
       }
@@ -94,36 +127,55 @@ const Deve = ({ codigo, r }) => {
   }, [lastMessage, r, setDados]); // Depende de lastMessage, r, e setDados
 
   return (
-    <div className="overflow-x-auto rounded-box border border-secondary bg-base-100">
+    <div className="overflow-x-auto rounded-box border border-neutral-content bg-base-100">
       <table className="table table-xs">
         <thead>
-          <tr>
-            <th className="hidden">ID</th>
-            <th className="w-36">Data</th>
-            <th className="hidden">CODIGO</th>
-            <th>Nome</th>
-            <th>V. Papel</th>
-            <th>Encaixe</th>
-            <th className="w-20">Deve</th>
+          <tr className="grid grid-cols-12">
+            <th className="col-span-3">Data</th>
+            <th className="col-span-1">Valor</th>
+            <th className="col-span-1">Enc</th>
+            <th className="col-span-1">Deve</th>
+            <th className="col-span-1">COD</th>
+            <th className="col-span-3">Nome</th>
+            <th className="col-span-2">Ações</th>
           </tr>
         </thead>
         <tbody>
           {dados.map((item) => (
             <tr
-              key={item.id}
-              className={
-                item.codigo === codigo
+              key={item.deveid}
+              className={`grid grid-cols-12 ${
+                item.codigo == codigo
                   ? "bg-green-200"
-                  : "border-b border-secondary"
-              }
+                  : Number(item.avisado) === 1
+                    ? "bg-info/30"
+                    : "border-b border-neutral-content"
+              }`}
             >
-              <td className="hidden">{item.id}</td>
-              <td>{Use.formatarDataHora(item.data)}</td>
-              <td className="hidden">{item.codigo}</td>
-              <td>{item.nome}</td>
-              <td>{Number(item.valorpapel).toFixed(2)}</td>
-              <td>{Number(item.valorcomissao).toFixed(2)}</td>
-              <td>{Number(item.valor).toFixed(2)}</td>
+              <td className="col-span-3">{Use.formatarDataHora(item.data)}</td>
+              <td className="col-span-1">
+                {Number(item.valorpapel).toFixed(2)}
+              </td>
+              <td className="col-span-1">
+                {Number(item.valorcomissao).toFixed(2)}
+              </td>
+              <td className="col-span-1">{Number(item.valor).toFixed(2)}</td>
+              <td className="col-span-1">{item.codigo}</td>
+              <td className="col-span-3">{item.nome}</td>
+              <td className="col-span-2">
+                {Number(item.avisado) === 1 ? (
+                  <button className="btn btn-xs btn-success" disabled>
+                    Avisado
+                  </button>
+                ) : (
+                  <button
+                    className="btn btn-xs btn-info btn-outline"
+                    onClick={() => handleAvisar(item.deveid, item.codigo, r)}
+                  >
+                    Avisar
+                  </button>
+                )}
+              </td>
             </tr>
           ))}
         </tbody>

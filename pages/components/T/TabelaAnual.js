@@ -1,5 +1,3 @@
-import React, { useMemo } from "react";
-
 const Tabela = ({ titulo, cor, dados }) => {
   const months = [
     "Ene",
@@ -18,7 +16,7 @@ const Tabela = ({ titulo, cor, dados }) => {
 
   const days = Array.from({ length: 31 }, (_, i) => i + 1);
 
-  const dadosPorDiaMes = useMemo(() => {
+  const dadosPorDiaMes = (() => {
     const lookup = {};
 
     if (!Array.isArray(dados)) {
@@ -65,7 +63,7 @@ const Tabela = ({ titulo, cor, dados }) => {
       }
     });
     return lookup;
-  }, [dados]);
+  })();
 
   return (
     <div className={`overflow-x-auto rounded-box border border-${cor} w-full`}>

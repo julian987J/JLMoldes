@@ -3,13 +3,15 @@ import React, { useEffect, useState, useCallback, useRef } from "react";
 import Execute from "models/functions";
 import Use from "models/utils"; // Descomentado para usar Use.formatarDataHora
 import { useWebSocket } from "../../../contexts/WebSocketContext.js";
+import { useAuth } from "../../../contexts/AuthContext.js";
 
 const sortDadosByDate = (dataArray) =>
-  [...dataArray].sort((a, b) => new Date(a.data) - new Date(b.data));
+  [...dataArray].sort((a, b) => new Date(b.data) - new Date(a.data));
 
 const Devo = ({ codigo, r }) => {
   const [dados, setDados] = useState([]);
   const { lastMessage } = useWebSocket();
+  const { user } = useAuth();
   const lastProcessedTimestampRef = useRef(null);
 
   const loadData = useCallback(async () => {
@@ -31,18 +33,11 @@ const Devo = ({ codigo, r }) => {
 
   useEffect(() => {
     loadData(); // Busca inicial
-  }, [loadData, codigo]);
+  }, [loadData, codigo, r]);
 
   // Efeito para lidar com mensagens WebSocket
   useEffect(() => {
     if (lastMessage && lastMessage.data && lastMessage.timestamp) {
-      if (
-        lastProcessedTimestampRef.current &&
-        lastMessage.timestamp <= lastProcessedTimestampRef.current
-      ) {
-        return; // Ignora mensagem já processada
-      }
-
       const { type, payload } = lastMessage.data;
 
       switch (type) {
@@ -63,15 +58,19 @@ const Devo = ({ codigo, r }) => {
         case "DEVO_DELETED_ITEM":
           if (
             payload &&
-            payload.codigo !== undefined &&
+            (payload.codigo !== undefined || payload.id !== undefined) &&
             String(payload.r) === String(r)
           ) {
-            // Verifica também o 'r' para relevância
             setDados((prevDados) =>
               sortDadosByDate(
-                prevDados.filter(
-                  (item) => String(item.codigo) !== String(payload.codigo),
-                ),
+                prevDados.filter((item) => {
+                  if (payload.id !== undefined) {
+                    return Number(item.id) !== Number(payload.id);
+                  } else if (payload.codigo !== undefined) {
+                    return Number(item.codigo) !== Number(payload.codigo);
+                  }
+                  return true;
+                }),
               ),
             );
           }
@@ -85,7 +84,7 @@ const Devo = ({ codigo, r }) => {
   }, [lastMessage, r, setDados]);
 
   return (
-    <div className="overflow-x-auto rounded-box border w-62 mt-1 border-error bg-base-100">
+    <div className="overflow-x-auto rounded-box border mt-1 border-error bg-base-100">
       <table className="table table-xs">
         <thead>
           <tr>
@@ -94,12 +93,15 @@ const Devo = ({ codigo, r }) => {
             <th className="hidden">CODIGO</th>
             <th>Nome</th>
             <th className="w-20">Devo</th>
+            {user && user.role === "admin" && (
+              <th className="w-20 text-center">Ações</th>
+            )}
           </tr>
         </thead>
         <tbody>
-          {dados.map((item) => (
+          {dados.map((item, index) => (
             <tr
-              key={item.id}
+              key={`${item.id}-${index}`}
               className={
                 item.codigo === codigo ? "bg-red-200" : "border-b border-error"
               }
@@ -109,6 +111,16 @@ const Devo = ({ codigo, r }) => {
               <td className="hidden">{item.codigo}</td>
               <td>{item.nome}</td>
               <td>{Number(item.valor).toFixed(2)}</td>
+              {user && user.role === "admin" && (
+                <td>
+                  <button
+                    className="btn btn-xs btn-error btn-outline"
+                    onClick={() => Execute.removeDevoById(item.id, item.r)}
+                  >
+                    Excluir
+                  </button>
+                </td>
+              )}
             </tr>
           ))}
         </tbody>

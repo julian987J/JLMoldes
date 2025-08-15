@@ -25,19 +25,19 @@ const mesesAbreviados = [
 function formatarData(dataStr) {
   const data = new Date(dataStr);
 
-  return `${diasDaSemana[data.getDay()]} - ${String(data.getDate()).padStart(2, "0")}/${
-    mesesAbreviados[data.getMonth()]
-  }`;
+  return `${diasDaSemana[data.getUTCDay()]} - ${String(
+    data.getUTCDate(),
+  ).padStart(2, "0")}/${mesesAbreviados[data.getUTCMonth()]}`;
 }
 
 function formatarDataHora(dataStr) {
   const data = new Date(dataStr);
 
-  const diaSemana = diasDaSemana[data.getDay()];
-  const dia = String(data.getDate()).padStart(2, "0");
-  const mes = mesesAbreviados[data.getMonth()];
-  const hora = String(data.getHours()).padStart(2, "0");
-  const minutos = String(data.getMinutes()).padStart(2, "0");
+  const diaSemana = diasDaSemana[data.getUTCDay()];
+  const dia = String(data.getUTCDate()).padStart(2, "0");
+  const mes = mesesAbreviados[data.getUTCMonth()];
+  const hora = String(data.getUTCHours()).padStart(2, "0");
+  const minutos = String(data.getUTCMinutes()).padStart(2, "0");
 
   return `${diaSemana} - ${dia}/${mes} - ${hora}:${minutos}`;
 }
@@ -45,8 +45,8 @@ function formatarDataHoraSegundo(dataStr) {
   const data = new Date(dataStr);
 
   const hora = String(data.getHours()).padStart(2, "0");
-  const minutos = String(data.getMinutes()).padStart(2, "0");
-  const segundo = String(data.getSeconds()).padStart(2, "0");
+  const minutos = String(data.getUTCMinutes()).padStart(2, "0");
+  const segundo = String(data.getUTCSeconds()).padStart(2, "0");
 
   return `${hora}:${minutos}:${segundo}`;
 }
@@ -55,7 +55,7 @@ function formatarDataHoraSegundo(dataStr) {
 function formatarHora(dataStr) {
   const data = new Date(dataStr);
   const hora = String(data.getHours()).padStart(2, "0");
-  const minutos = String(data.getMinutes()).padStart(2, "0");
+  const minutos = String(data.getUTCMinutes()).padStart(2, "0");
   return `${hora}:${minutos}`;
 }
 
@@ -63,7 +63,9 @@ function formatarHora(dataStr) {
 export function formatarDataAno(dataString) {
   if (!dataString) return "—";
   const data = new Date(dataString);
-  return `${String(data.getUTCDate()).padStart(2, "0")}/${String(data.getUTCMonth() + 1).padStart(2, "0")}/${data.getUTCFullYear()}`;
+  return `${String(data.getUTCDate()).padStart(2, "0")}/${String(
+    data.getUTCMonth() + 1,
+  ).padStart(2, "0")}/${data.getUTCFullYear()}`;
 }
 
 export function formatarProximo(dataString, mesesAdicionais, diasAdicionais) {
@@ -76,7 +78,9 @@ export function formatarProximo(dataString, mesesAdicionais, diasAdicionais) {
     const novaData = new Date(data);
     novaData.setUTCMonth(novaData.getUTCMonth() + meses);
     novaData.setUTCDate(novaData.getUTCDate() + dias);
-    return `${String(novaData.getUTCDate()).padStart(2, "0")}/${String(novaData.getUTCMonth() + 1).padStart(2, "0")}/${novaData.getUTCFullYear()}`;
+    return `${String(novaData.getUTCDate()).padStart(2, "0")}/${String(
+      novaData.getUTCMonth() + 1,
+    ).padStart(2, "0")}/${novaData.getUTCFullYear()}`;
   }
 }
 

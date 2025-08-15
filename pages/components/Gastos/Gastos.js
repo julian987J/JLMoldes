@@ -12,7 +12,9 @@ import Execute from "models/functions.js";
 import { useWebSocket } from "../../../contexts/WebSocketContext.js";
 
 const Gastos = ({ letras }) => {
+  const [rawVariosData, setRawVariosData] = useState([]);
   const [variosData, setVariosData] = useState([]);
+  const [rawGastosData, setRawGastosData] = useState([]);
   const [gastosData, setGastosData] = useState([]);
   const { lastMessage } = useWebSocket();
 
@@ -50,62 +52,84 @@ const Gastos = ({ letras }) => {
     }));
   };
 
-  const fetchVariosData = async () => {
-    if (!letras) return;
-    try {
-      const varios = await Execute.receiveFromCGastos(letras);
-      setVariosData(processarDados(varios, "data", ["real", "pix"]));
-    } catch (error) {
-      console.error("Erro ao buscar dados 'varios':", error);
-      setVariosData([]);
-    }
-  };
-
-  const fetchGastosData = async () => {
-    if (!letras) return;
-    try {
-      const gastos = await Execute.receiveFromSaidaP(letras);
-      setGastosData(processarDados(gastos, "pago", "valor"));
-    } catch (error) {
-      console.error("Erro ao buscar dados 'gastos':", error);
-      setGastosData([]);
-    }
-  };
-
+  // Fetch initial data
   useEffect(() => {
-    fetchVariosData();
-    fetchGastosData();
+    const fetchAllData = async () => {
+      if (!letras) return;
+      try {
+        const varios = await Execute.receiveFromCGastos(letras);
+        setRawVariosData(varios);
+      } catch (error) {
+        console.error("Erro ao buscar dados 'varios':", error);
+        setRawVariosData([]);
+      }
+      try {
+        const gastos = await Execute.receiveFromSaidaP(letras);
+        setRawGastosData(gastos);
+      } catch (error) {
+        console.error("Erro ao buscar dados 'gastos':", error);
+        setRawGastosData([]);
+      }
+    };
+    fetchAllData();
   }, [letras]);
 
+  // Process data when raw data changes
+  useEffect(() => {
+    setVariosData(processarDados(rawVariosData, "date", ["real", "pix"]));
+  }, [rawVariosData]);
+
+  useEffect(() => {
+    setGastosData(processarDados(rawGastosData, "pago", "valor"));
+  }, [rawGastosData]);
+
+  // Handle WebSocket messages
   useEffect(() => {
     if (lastMessage?.data) {
       let messageData;
-
       try {
-        if (typeof lastMessage.data === "string") {
-          messageData = JSON.parse(lastMessage.data);
-        } else {
-          messageData = lastMessage.data;
-        }
+        messageData =
+          typeof lastMessage.data === "string"
+            ? JSON.parse(lastMessage.data)
+            : lastMessage.data;
       } catch (error) {
         console.error("Erro ao parsear lastMessage.data:", error);
-        return; // Sai do efeito se falhar
+        return;
       }
 
-      const { type } = messageData;
+      const { type, payload } = messageData;
+      if (!type || !payload) return;
 
-      if (typeof type === "string") {
-        // Atualizar váriosData (CGastos)
-        if (type.startsWith("GASTOS_C_")) {
-          fetchVariosData();
+      // Handle Varios/CGastos updates
+      if (type.startsWith("C_")) {
+        if (type === "C_NEW_ITEM") {
+          setRawVariosData((prev) => [...prev, payload]);
+        } else if (type === "C_UPDATED_ITEM") {
+          setRawVariosData((prev) =>
+            prev.map((item) => (item.id === payload.id ? payload : item)),
+          );
+        } else if (type === "C_DELETED_ITEM") {
+          setRawVariosData((prev) =>
+            prev.filter((item) => item.id !== payload.id),
+          );
         }
-        // Atualizar gastosData (SaidaP) sem verificar o payload
-        else if (type.startsWith("SAIDAS_PESSOAL_")) {
-          fetchGastosData();
+      }
+      // Handle Gastos/SaidaP updates
+      else if (type.startsWith("SAIDAS_PESSOAL_")) {
+        if (type === "SAIDAS_PESSOAL_NEW_ITEM") {
+          setRawGastosData((prev) => [...prev, payload]);
+        } else if (type === "SAIDAS_PESSOAL_UPDATED_ITEM") {
+          setRawGastosData((prev) =>
+            prev.map((item) => (item.id === payload.id ? payload : item)),
+          );
+        } else if (type === "SAIDAS_PESSOAL_DELETED_ITEM") {
+          setRawGastosData((prev) =>
+            prev.filter((item) => item.id !== payload.id),
+          );
         }
       }
     }
-  }, [lastMessage, letras]);
+  }, [lastMessage]);
 
   return (
     <div>

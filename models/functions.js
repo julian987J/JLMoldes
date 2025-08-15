@@ -42,9 +42,6 @@ async function sendToR(itemData) {
       (item) => Number(item.id) === itemDataNumber,
     );
 
-    // Adicionando logs para depuração
-    console.log("Verificando IDs...");
-
     if (idExistsNumber) {
       throw new Error("RID"); // Erro específico para ID duplicado
     }
@@ -96,6 +93,35 @@ async function sendToDeve(itemData) {
     return await response.json();
   } catch (error) {
     console.error("Erro no createDeve:", error);
+    throw error;
+  }
+}
+
+async function sendToAviso(itemData) {
+  try {
+    const response = await fetch("/api/v1/tables/aviso", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        avisoid: itemData.avisoid,
+        data: itemData.data,
+        codigo: itemData.codigo,
+        r: itemData.r,
+        nome: itemData.nome,
+        valorpapel: itemData.valorpapel,
+        valorcomissao: itemData.valorcomissao,
+        valor: itemData.valor,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || "Erro ao criar registro em Aviso");
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error("Erro no createAviso:", error);
     throw error;
   }
 }
@@ -527,6 +553,18 @@ async function receiveFromDeve(r) {
   }
 }
 
+async function receiveFromAviso(r) {
+  try {
+    const response = await fetch(`/api/v1/tables/aviso?r=${r}`);
+    if (!response.ok) throw new Error("Erro ao carregar os dados");
+    const data = await response.json();
+    return Array.isArray(data.rows) ? data.rows : [];
+  } catch (error) {
+    console.error("Erro ao buscar dados aviso:", error);
+    return [];
+  }
+}
+
 async function receiveFromDeveJustValor(codigo, r) {
   try {
     const response = await fetch(
@@ -554,10 +592,10 @@ async function receiveFromDeveJustValor(codigo, r) {
   }
 }
 
-async function receiveFromDevoJustValor(codigo) {
+async function receiveFromDevoJustValor(codigo, r) {
   try {
     const response = await fetch(
-      `/api/v1/tables/calculadora/devo?codigo=${codigo}`,
+      `/api/v1/tables/calculadora/devo?codigo=${codigo}&r=${r}`,
     );
 
     if (!response.ok) {
@@ -919,6 +957,19 @@ async function receiveFromCad(codigo) {
   }
 }
 
+async function receiveAllCad() {
+  try {
+    const response = await fetch("/api/v1/tables/cadastro");
+    if (!response.ok)
+      throw new Error("Erro ao carregar todos os dados de cadastro");
+    const data = await response.json();
+    return Array.isArray(data.rows) ? data.rows : [];
+  } catch (error) {
+    console.error("Erro ao buscar todos os dados de cadastro:", error);
+    return [];
+  }
+}
+
 async function receiveFromPapelCalculadora(oficina) {
   try {
     const response = await fetch(
@@ -955,6 +1006,38 @@ async function removeMandR(id) {
 
   const result2 = await response2.json();
   console.log(result2);
+}
+
+async function PayAllMandR(ids) {
+  if (!Array.isArray(ids)) {
+    console.error("PayAllMandR expects an array of IDs.");
+    return;
+  }
+
+  for (const id of ids) {
+    try {
+      // Atualiza Mtable, definindo r4 = true
+      const response = await fetch("/api/v1/tables", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, r4: true }),
+      });
+
+      // Deleta de RBSA
+      const response2 = await fetch("/api/v1/tables/R", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id }),
+      });
+
+      if (!response.ok || !response2.ok) {
+        console.error(`Falha ao processar o ID ${id}.`);
+        // Continuar para o próximo ID
+      }
+    } catch (error) {
+      console.error(`Erro ao processar o ID ${id}:`, error);
+    }
+  }
 }
 
 async function removeC(id) {
@@ -1055,11 +1138,33 @@ async function removeDeve(codigo) {
   console.log(result);
 }
 
+async function removeAviso(avisoid) {
+  const response = await fetch("/api/v1/tables/aviso", {
+    method: "DELETE",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ avisoid }),
+  });
+
+  const result = await response.json();
+  console.log(result);
+}
+
 async function removeDevo(codigo) {
   const response = await fetch("/api/v1/tables/devo", {
     method: "DELETE",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ codigo }),
+  });
+
+  const result = await response.json();
+  console.log(result);
+}
+
+async function removeDevoById(id, r) {
+  const response = await fetch("/api/v1/tables/calculadora/devo", {
+    method: "DELETE",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ id, r }),
   });
 
   const result = await response.json();
@@ -1210,10 +1315,36 @@ async function updateUser(userData) {
   }
 }
 
+async function receiveFromPlotterC() {
+  try {
+    const response = await fetch(`/api/v1/tables/c/plotter`);
+    if (!response.ok) throw new Error("Erro ao carregar os dados de PlotterC");
+    const data = await response.json();
+    return Array.isArray(data.rows) ? data.rows : [];
+  } catch (error) {
+    console.error("Erro ao buscar dados PlotterC:", error);
+    return [];
+  }
+}
+
+async function removePlotterC(id) {
+  const response = await fetch("/api/v1/tables/c/plotter", {
+    method: "DELETE",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ id }),
+  });
+
+  const result = await response.json();
+  console.log(result);
+}
+
 const execute = {
+  receiveFromPlotterC,
+  removePlotterC,
   sendTrueMR,
   sendToR,
   sendToDeve,
+  sendToAviso,
   sendToDeveUpdate,
   sendToDevo,
   sendToC,
@@ -1246,6 +1377,7 @@ const execute = {
   receiveFromPapelCData,
   receiveFromRDeveDevo,
   receiveFromDeve,
+  receiveFromAviso,
   receiveFromDec,
   receiveFromDeveJustValor,
   receiveFromDevo,
@@ -1254,6 +1386,7 @@ const execute = {
   receiveFromPagamentos,
   receiveFromR,
   receiveFromRJustBSA,
+  receiveAllCad, // Added
   receiveFromCad,
   removeC,
   removeNota,
@@ -1264,8 +1397,11 @@ const execute = {
   removeSaidaO,
   removeOficina,
   removeMandR,
+  PayAllMandR,
   removeDeve,
+  removeAviso,
   removeDevo,
+  removeDevoById,
   removePagamentoById,
   removeTemp,
   deleteAllPagamentos,

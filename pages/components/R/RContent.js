@@ -5,8 +5,9 @@ import BSTA from "./BSATable.js";
 import Deve from "./Deve.js";
 import Devo from "./Devo.js";
 import Pendente from "./Pendente.js";
-import Pagamentos from "./Pagamentos.js";
-import Metragem from "./Metragem.js";
+import PlanilhaDiaria from "./PlanilhaDiaria.js";
+import Aviso from "./Aviso.js";
+import ValoresColuna from "./ValoresColuna.js";
 
 const Rcontent = ({ codigoExterno, r }) => {
   // Referência para o valor de codigoExterno, para garantir que não altere depois de passado
@@ -22,6 +23,7 @@ const Rcontent = ({ codigoExterno, r }) => {
   );
   const [data, setData] = useState();
   const [selectedPendenteItem, setSelectedPendenteItem] = useState(null);
+  const [totalValores, setTotalValores] = useState(0);
 
   useEffect(() => {
     if (codigoExterno !== codigoExternoRef.current) {
@@ -169,19 +171,29 @@ const Rcontent = ({ codigoExterno, r }) => {
     setValuesCalculadora(itemValues);
     setData(item.data); // Atualiza a data também, se relevante
   };
+
+  const handleValoresChange = (valores) => {
+    setTotalValores(valores);
+  };
+
   return (
     <div>
-      <div className="grid grid-flow-col auto-cols-auto gap-2">
-        <div>
+      <ValoresColuna r={r} onValoresChange={handleValoresChange} />
+      <div className="grid grid-cols-30 gap-1">
+        <PlanilhaDiaria r={r} totalValores={totalValores} />
+        <div className="col-span-9">
           <BSTA codigo={codigo} r={r} />
         </div>
-        <div>
+        <div className="col-span-10">
           <Pendente r={r} onSelectItem={handlePendenteSelect} />
-          <div className="mt-2">
+          <div className="mt-1">
             <Deve codigo={codigo} r={r} />
           </div>
+          <div className="mt-1">
+            <Aviso codigo={codigo} r={r} />
+          </div>
         </div>
-        <div>
+        <div className="col-span-4">
           <Calculadora
             r={r}
             codigo={codigo}
@@ -193,14 +205,9 @@ const Rcontent = ({ codigoExterno, r }) => {
             onPlusChange={handlePlusChange}
             onValuesChange={handleValuesChange}
             data={data}
+            isPendente={!!selectedPendenteItem}
           />
           <Devo codigo={codigo} r={r} />
-        </div>
-        <div>
-          <Pagamentos r={r} />
-        </div>
-        <div>
-          <Metragem r={r} />
         </div>
       </div>
     </div>

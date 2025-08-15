@@ -98,15 +98,11 @@ const TabelaM = ({
         lastProcessedTimestampRef.current &&
         lastMessage.timestamp <= lastProcessedTimestampRef.current
       ) {
-        // console.log("TabelaM.js: Ignorando mensagem WebSocket já processada:", lastMessage.timestamp);
         return;
       }
 
       const { type, payload } = lastMessage.data;
-      // console.log("TabelaM.js: Mensagem WebSocket recebida:", type, payload, "Oficina atual:", oficina, "Timestamp:", lastMessage.timestamp);
 
-      // Verificar se a mensagem é relevante para esta instância da tabela
-      // (mesma oficina e talvez mainEndpoint se necessário)
       if (payload && payload.oficina === oficina) {
         // Garante que a mensagem é para a oficina correta
         const itemMatchesFilter = filterCondition(payload);
@@ -256,15 +252,17 @@ const TabelaM = ({
                 {filteredGroupedData[decKey].map((item) => (
                   <tr
                     key={item.id}
-                    className={
-                      item.r1
-                        ? "bg-warning/20 border-b border-gray-700"
-                        : item.r2
-                          ? "bg-primary/20 border-b border-gray-700"
-                          : item.r3
-                            ? "bg-info/20 border-b border-gray-700"
-                            : "border-b border-gray-700"
-                    }
+                    className={(() => {
+                      let bgColor = "";
+                      if (item.r1 && item.r4) bgColor = "bg-success/20";
+                      else if (item.r2 && item.r4) bgColor = "bg-success/20";
+                      else if (item.r3 && item.r4) bgColor = "bg-success/20";
+                      else if (item.r1) bgColor = "bg-warning/20";
+                      else if (item.r2) bgColor = "bg-primary/20";
+                      else if (item.r3) bgColor = "bg-info/20";
+                      else if (item.r4) bgColor = "bg-success/20";
+                      return `${bgColor} border-b border-gray-700`;
+                    })()}
                   >
                     <td className="hidden">{item.id}</td>
                     <td>{Use.formatarData(item.data)}</td>
@@ -485,8 +483,11 @@ const TabelaM = ({
                         className={`btn btn-xs btn-soft btn-error ${
                           editingId === item.id ? "hidden" : ""
                         }`}
-                        onClick={() => {
-                          Execute.removeMandR(item.id);
+                        onClick={async () => {
+                          await Execute.removeMandR(item.id);
+                          setDados((prevDados) =>
+                            prevDados.filter((d) => d.id !== item.id),
+                          );
                         }}
                       >
                         Excluir
