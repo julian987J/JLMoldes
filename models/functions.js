@@ -1315,9 +1315,9 @@ async function updateUser(userData) {
   }
 }
 
-async function receiveFromPlotterC() {
+async function receiveFromPlotterC(r) {
   try {
-    const response = await fetch(`/api/v1/tables/c/plotter`);
+    const response = await fetch(`/api/v1/tables/c/plotter?r=${r}`);
     if (!response.ok) throw new Error("Erro ao carregar os dados de PlotterC");
     const data = await response.json();
     return Array.isArray(data.rows) ? data.rows : [];

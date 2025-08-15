@@ -1574,7 +1574,14 @@ async function updateUser(userData) {
   return result.rows[0]; // Return the updated user
 }
 
-async function getPlotterC() {
+async function getPlotterC(r) {
+  if (r) {
+    const result = await database.query({
+      text: 'SELECT * FROM "PlotterC" WHERE r = $1 ORDER BY data DESC, inicio DESC;',
+      values: [r],
+    });
+    return result;
+  }
   const result = await database.query(
     'SELECT * FROM "PlotterC" ORDER BY data DESC, inicio DESC;',
   );

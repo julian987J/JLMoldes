@@ -3,12 +3,36 @@ import Execute from "models/functions";
 import Edit from "../Edit";
 import { useWebSocket } from "../../../contexts/WebSocketContext";
 
+const formatarDataDDMMYYYY = (isoDate) => {
+  if (!isoDate) return "";
+  const date = new Date(isoDate);
+  if (isNaN(date.getTime())) {
+    return isoDate;
+  }
+  const day = String(date.getUTCDate()).padStart(2, "0");
+  const month = String(date.getUTCMonth() + 1).padStart(2, "0");
+  const year = date.getUTCFullYear();
+  return `${day}/${month}/${year}`;
+};
+
+const formatarHoraHHMMSS = (isoString) => {
+  if (!isoString) return "";
+  const date = new Date(isoString);
+  if (isNaN(date.getTime())) {
+    return isoString;
+  }
+  const hours = String(date.getUTCHours()).padStart(2, "0");
+  const minutes = String(date.getUTCMinutes()).padStart(2, "0");
+  const seconds = String(date.getUTCSeconds()).padStart(2, "0");
+  return `${hours}:${minutes}:${seconds}`;
+};
+
 const formatNumber = (value) => {
   const number = parseFloat(value);
   return isNaN(number) ? "0.00" : number.toFixed(2);
 };
 
-const Coluna3 = () => {
+const Coluna3 = ({ r }) => {
   const [dados, setDados] = useState([]);
   const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState(null);
@@ -31,9 +55,10 @@ const Coluna3 = () => {
   };
 
   const fetchData = useCallback(async () => {
+    if (typeof r === "undefined" || r === null) return;
     setLoading(true);
     try {
-      const results = await Execute.receiveFromPlotterC();
+      const results = await Execute.receiveFromPlotterC(r);
       setDados(
         Array.isArray(results)
           ? results.sort(
@@ -48,7 +73,7 @@ const Coluna3 = () => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [r]);
 
   useEffect(() => {
     fetchData();
@@ -66,9 +91,12 @@ const Coluna3 = () => {
       const { type, payload } = lastMessage.data;
 
       if (
-        type === "PLOTTER_C_NEW_ITEM" ||
-        type === "PLOTTER_C_UPDATED_ITEM" ||
-        type === "PLOTTER_C_DELETED_ITEM"
+        ((type === "PLOTTER_C_NEW_ITEM" || type === "PLOTTER_C_UPDATED_ITEM") &&
+          payload &&
+          String(payload.r) === String(r)) ||
+        (type === "PLOTTER_C_DELETED_ITEM" &&
+          payload &&
+          payload.id !== undefined)
       ) {
         setDados((prevDados) => {
           let newDados = [...prevDados];
@@ -107,7 +135,7 @@ const Coluna3 = () => {
       }
       lastProcessedTimestampRef.current = lastMessage.timestamp;
     }
-  }, [lastMessage, editingId]);
+  }, [lastMessage, editingId, r]);
 
   const handleInputChange = (field, value) => {
     setEditedData((prev) => ({ ...prev, [field]: value }));
@@ -212,9 +240,9 @@ const Coluna3 = () => {
                   formatNumber(item.desperdicio)
                 )}
               </td>
-              <td>{item.data}</td>
-              <td>{item.inicio}</td>
-              <td>{item.fim}</td>
+              <td>{formatarDataDDMMYYYY(item.data)}</td>
+              <td>{formatarHoraHHMMSS(item.inicio)}</td>
+              <td>{formatarHoraHHMMSS(item.fim)}</td>
               <td>
                 <Edit
                   isEditing={editingId === item.id}

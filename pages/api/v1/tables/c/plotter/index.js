@@ -27,7 +27,8 @@ router.put(updateHandler);
 export default router.handler(controller.errorHandlers);
 
 async function getHandler(request, response) {
-  const result = await ordem.getPlotterC();
+  const { r } = request.query;
+  const result = await ordem.getPlotterC(r);
   return response.status(200).json(result);
 }
 
