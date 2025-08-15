@@ -1574,7 +1574,56 @@ async function updateUser(userData) {
   return result.rows[0]; // Return the updated user
 }
 
+async function getPlotterC() {
+  const result = await database.query(
+    'SELECT * FROM "PlotterC" ORDER BY data DESC, inicio DESC;',
+  );
+  return result;
+}
+
+async function updatePlotterC(updatedData) {
+  const result = await database.query({
+    text: `
+      UPDATE "PlotterC"
+      SET 
+        sim = $1,
+        nao = $2,
+        m1 = $3,
+        m2 = $4,
+        desperdicio = $5,
+        data = $6,
+        inicio = $7,
+        fim = $8
+      WHERE id = $9
+      RETURNING *;
+    `,
+    values: [
+      updatedData.sim,
+      updatedData.nao,
+      updatedData.m1,
+      updatedData.m2,
+      updatedData.desperdicio,
+      updatedData.data,
+      updatedData.inicio,
+      updatedData.fim,
+      updatedData.id,
+    ],
+  });
+  return result;
+}
+
+async function deletePlotterC(id) {
+  const result = await database.query({
+    text: `DELETE FROM "PlotterC" WHERE id = $1 RETURNING *`,
+    values: [id],
+  });
+  return result.rows;
+}
+
 const ordem = {
+  getPlotterC,
+  updatePlotterC,
+  deletePlotterC,
   createM,
   createPessoal,
   createSaidaP,

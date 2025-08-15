@@ -1315,7 +1315,32 @@ async function updateUser(userData) {
   }
 }
 
+async function receiveFromPlotterC() {
+  try {
+    const response = await fetch(`/api/v1/tables/c/plotter`);
+    if (!response.ok) throw new Error("Erro ao carregar os dados de PlotterC");
+    const data = await response.json();
+    return Array.isArray(data.rows) ? data.rows : [];
+  } catch (error) {
+    console.error("Erro ao buscar dados PlotterC:", error);
+    return [];
+  }
+}
+
+async function removePlotterC(id) {
+  const response = await fetch("/api/v1/tables/c/plotter", {
+    method: "DELETE",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ id }),
+  });
+
+  const result = await response.json();
+  console.log(result);
+}
+
 const execute = {
+  receiveFromPlotterC,
+  removePlotterC,
   sendTrueMR,
   sendToR,
   sendToDeve,
