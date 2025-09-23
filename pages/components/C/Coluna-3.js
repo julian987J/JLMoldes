@@ -168,9 +168,11 @@ const Coluna3 = ({ r }) => {
             <th>M1</th>
             <th>M2</th>
             <th>Desp.</th>
-            <th>Data</th>
-            <th>Início</th>
-            <th>Fim</th>
+            <th>Larg.</th>
+            <th className="text-center bg-success">Data</th>
+            <th className="text-center bg-success">Início</th>
+            <th className="text-center bg-success">Fim</th>
+            <th className="text-center bg-success">Arquivo</th>
             <th>Ações</th>
           </tr>
         </thead>
@@ -202,30 +204,8 @@ const Coluna3 = ({ r }) => {
                   `${formatNumber(item.nao)}%`
                 )}
               </td>
-              <td>
-                {editingId === item.id ? (
-                  <input
-                    type="number"
-                    value={editedData.m1}
-                    onChange={(e) => handleInputChange("m1", e.target.value)}
-                    className="input input-xs p-0 m-0 text-center"
-                  />
-                ) : (
-                  formatNumber(item.m1)
-                )}
-              </td>
-              <td>
-                {editingId === item.id ? (
-                  <input
-                    type="number"
-                    value={editedData.m2}
-                    onChange={(e) => handleInputChange("m2", e.target.value)}
-                    className="input input-xs p-0 m-0 text-center"
-                  />
-                ) : (
-                  formatNumber(item.m2)
-                )}
-              </td>
+              <td>CAL</td>
+              <td>CAL</td>
               <td>
                 {editingId === item.id ? (
                   <input
@@ -240,9 +220,32 @@ const Coluna3 = ({ r }) => {
                   formatNumber(item.desperdicio)
                 )}
               </td>
-              <td>{formatarDataDDMMYYYY(item.data)}</td>
-              <td>{formatarHoraHHMMSS(item.inicio)}</td>
-              <td>{formatarHoraHHMMSS(item.fim)}</td>
+              <td>
+                {editingId === item.id ? (
+                  <input
+                    type="number"
+                    value={editedData.largura}
+                    onChange={(e) =>
+                      handleInputChange("largura", e.target.value)
+                    }
+                    className="input input-xs p-0 m-0 text-center"
+                  />
+                ) : (
+                  formatNumber(item.largura)
+                )}
+              </td>
+              <td className="text-center bg-success/30">
+                {formatarDataDDMMYYYY(item.data)}
+              </td>
+              <td className="text-center bg-success/30">
+                {formatarHoraHHMMSS(item.inicio)}
+              </td>
+              <td className="text-center bg-success/30">
+                {formatarHoraHHMMSS(item.fim)}
+              </td>
+              <td className="text-center bg-success/30">
+                {formatarHoraHHMMSS(item.nome)}
+              </td>
               <td>
                 <Edit
                   isEditing={editingId === item.id}

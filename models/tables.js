@@ -1595,20 +1595,16 @@ async function updatePlotterC(updatedData) {
       SET 
         sim = $1,
         nao = $2,
-        m1 = $3,
-        m2 = $4,
-        desperdicio = $5,
-        data = $6,
-        inicio = $7,
-        fim = $8
-      WHERE id = $9
+        desperdicio = $3,
+        data = $4,
+        inicio = $5,
+        fim = $6
+      WHERE id = $7
       RETURNING *;
     `,
     values: [
       updatedData.sim,
       updatedData.nao,
-      updatedData.m1,
-      updatedData.m2,
       updatedData.desperdicio,
       updatedData.data,
       updatedData.inicio,
