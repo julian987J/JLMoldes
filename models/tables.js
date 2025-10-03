@@ -1623,10 +1623,26 @@ async function deletePlotterC(id) {
   return result.rows;
 }
 
+async function swapSimNaoPlotterC(id) {
+  const result = await database.query({
+    text: `
+      UPDATE "PlotterC"
+      SET 
+        sim = nao,
+        nao = sim
+      WHERE id = $1
+      RETURNING *;
+    `,
+    values: [id],
+  });
+  return result;
+}
+
 const ordem = {
   getPlotterC,
   updatePlotterC,
   deletePlotterC,
+  swapSimNaoPlotterC,
   createM,
   createPessoal,
   createSaidaP,
