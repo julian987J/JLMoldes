@@ -180,11 +180,36 @@ const Coluna3 = ({ r }) => {
   }
 
   const desperdicioConfig = config ? parseFloat(config.d) || 0 : 0;
+  const multiplicadorConfig = config ? parseFloat(config.m) || 1 : 1;
+
+  const totalM1 = dados.reduce((acc, item) => {
+    const larguraTotal = parseFloat(item.largura) + desperdicioConfig;
+    const m1Value = (parseFloat(item.sim) / 100) * larguraTotal;
+    return acc + m1Value;
+  }, 0);
+
+  const totalM2 = dados.reduce((acc, item) => {
+    const larguraTotal = parseFloat(item.largura) + desperdicioConfig;
+    const m2Value = (parseFloat(item.nao) / 100) * larguraTotal;
+    return acc + m2Value;
+  }, 0);
+
+  const totalM1Multiplicado = totalM1 * multiplicadorConfig;
+  const totalM2Multiplicado = totalM2 * multiplicadorConfig;
 
   return (
     <div className="overflow-x-auto rounded-box border border-warning bg-base-100">
       <table className="table table-xs">
         <thead>
+          <tr>
+            <th colSpan={2}></th>
+            <th className="text-center bg-info/30">
+              R$ {formatNumber(totalM1Multiplicado)}
+            </th>
+            <th className="text-center bg-error/30">
+              R$ {formatNumber(totalM2Multiplicado)}
+            </th>
+          </tr>
           <tr>
             <th className="hidden">ID</th>
             <th className="text-center bg-info">Sim</th>
@@ -202,8 +227,7 @@ const Coluna3 = ({ r }) => {
         </thead>
         <tbody>
           {dados.map((item) => {
-            const larguraTotal =
-              parseFloat(item.largura) + desperdicioConfig;
+            const larguraTotal = parseFloat(item.largura) + desperdicioConfig;
             const larguraTotalEdit =
               (parseFloat(editedData.largura) || 0) + desperdicioConfig;
 
@@ -215,9 +239,7 @@ const Coluna3 = ({ r }) => {
                     <input
                       type="number"
                       value={editedData.sim}
-                      onChange={(e) =>
-                        handleInputChange("sim", e.target.value)
-                      }
+                      onChange={(e) => handleInputChange("sim", e.target.value)}
                       className="input input-xs p-0 m-0 text-center"
                     />
                   ) : (
@@ -229,9 +251,7 @@ const Coluna3 = ({ r }) => {
                     <input
                       type="number"
                       value={editedData.nao}
-                      onChange={(e) =>
-                        handleInputChange("nao", e.target.value)
-                      }
+                      onChange={(e) => handleInputChange("nao", e.target.value)}
                       className="input input-xs p-0 m-0 text-center"
                     />
                   ) : (
@@ -243,18 +263,14 @@ const Coluna3 = ({ r }) => {
                     ? formatNumber(
                         (parseFloat(editedData.sim) / 100) * larguraTotalEdit,
                       )
-                    : formatNumber(
-                        (parseFloat(item.sim) / 100) * larguraTotal,
-                      )}
+                    : formatNumber((parseFloat(item.sim) / 100) * larguraTotal)}
                 </td>
                 <td className="text-center bg-error/30">
                   {editingId === item.id
                     ? formatNumber(
                         (parseFloat(editedData.nao) / 100) * larguraTotalEdit,
                       )
-                    : formatNumber(
-                        (parseFloat(item.nao) / 100) * larguraTotal,
-                      )}
+                    : formatNumber((parseFloat(item.nao) / 100) * larguraTotal)}
                 </td>
                 <td>
                   {editingId === item.id ? (
