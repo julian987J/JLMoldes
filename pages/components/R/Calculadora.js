@@ -651,30 +651,29 @@ const Calculadora = ({
         Number(real) == 0
       ) {
         if (Number(total) > 0) {
-          const novoCodigo = gerarEArmazenarCodigoAleatorio();
           if (valorDevo > 0) {
             await Execute.updateDevo(codigo, valorDevo);
           }
-          await Execute.sendToDeve({
-            deveid: novoCodigo,
-            nome,
-            r,
-            data: Use.NowData(),
-            codigo,
-            valorpapel: papel,
-            valorcomissao: comitions,
-            valor: totalGeral,
-          });
 
-          await Execute.sendToPapelC({
-            ...ObjPapelC,
-            deveid: novoCodigo,
-            data: Use.NowData(),
-            papelpix: 0,
-            papelreal: 0,
-            encaixepix: 0,
-            encaixereal: 0,
-          });
+          if (totalGeral > 0) {
+            const novoCodigo = gerarEArmazenarCodigoAleatorio();
+            await Execute.sendToDeve({
+              deveid: novoCodigo,
+              nome,
+              r,
+              data: Use.NowData(),
+              codigo,
+              valorpapel: papel,
+              valorcomissao: comitions,
+              valor: totalGeral,
+            });
+            await Execute.sendToPapelC({
+              ...ObjPapelC,
+              deveid: novoCodigo,
+            });
+          } else {
+            await Execute.sendToPapelC(ObjPapelC);
+          }
         } else {
           setShowError(true);
         }
