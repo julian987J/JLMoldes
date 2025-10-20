@@ -43,10 +43,15 @@ const Coluna3 = ({ r }) => {
 
   const handleSave = async (editedData) => {
     try {
+      const dataToSave = {
+        ...editedData,
+        desperdicio: parseFloat(editedData.desperdicio) * 100,
+        largura: parseFloat(editedData.largura) * 100,
+      };
       const response = await fetch("/api/v1/tables/c/plotter", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(editedData),
+        body: JSON.stringify(dataToSave),
       });
       if (!response.ok) throw new Error("Erro ao atualizar");
       setEditingId(null);
@@ -169,9 +174,8 @@ const Coluna3 = ({ r }) => {
       ...item,
       sim: formatNumber(item.sim),
       nao: formatNumber(item.nao),
-      m1: formatNumber(item.m1),
-      m2: formatNumber(item.m2),
-      desperdicio: formatNumber(item.desperdicio),
+      desperdicio: formatNumber(item.desperdicio / 100),
+      largura: formatNumber(item.largura / 100),
     });
   };
 
@@ -182,15 +186,16 @@ const Coluna3 = ({ r }) => {
   const desperdicioConfig = config ? parseFloat(config.d) || 0 : 0;
   const multiplicadorConfig = config ? parseFloat(config.m) || 1 : 1;
 
+  // Calculations are now based on meters for monetary totals
   const totalM1 = dados.reduce((acc, item) => {
-    const larguraTotal = parseFloat(item.largura) + desperdicioConfig;
-    const m1Value = (parseFloat(item.sim) / 100) * larguraTotal;
+    const larguraTotalCm = parseFloat(item.largura) + desperdicioConfig;
+    const m1Value = (parseFloat(item.sim) / 100) * (larguraTotalCm / 100); // Convert cm to m for calculation
     return acc + m1Value;
   }, 0);
 
   const totalM2 = dados.reduce((acc, item) => {
-    const larguraTotal = parseFloat(item.largura) + desperdicioConfig;
-    const m2Value = (parseFloat(item.nao) / 100) * larguraTotal;
+    const larguraTotalCm = parseFloat(item.largura) + desperdicioConfig;
+    const m2Value = (parseFloat(item.nao) / 100) * (larguraTotalCm / 100); // Convert cm to m for calculation
     return acc + m2Value;
   }, 0);
 
@@ -229,7 +234,7 @@ const Coluna3 = ({ r }) => {
           {dados.map((item) => {
             const larguraTotal = parseFloat(item.largura) + desperdicioConfig;
             const larguraTotalEdit =
-              (parseFloat(editedData.largura) || 0) + desperdicioConfig;
+              (parseFloat(editedData.largura) * 100 || 0) + desperdicioConfig;
 
             return (
               <tr key={item.id} className="border-b border-warning">
@@ -261,16 +266,24 @@ const Coluna3 = ({ r }) => {
                 <td className="text-center bg-info/30">
                   {editingId === item.id
                     ? formatNumber(
-                        (parseFloat(editedData.sim) / 100) * larguraTotalEdit,
+                        ((parseFloat(editedData.sim) / 100) *
+                          larguraTotalEdit) /
+                          100,
                       )
-                    : formatNumber((parseFloat(item.sim) / 100) * larguraTotal)}
+                    : formatNumber(
+                        ((parseFloat(item.sim) / 100) * larguraTotal) / 100,
+                      )}
                 </td>
                 <td className="text-center bg-error/30">
                   {editingId === item.id
                     ? formatNumber(
-                        (parseFloat(editedData.nao) / 100) * larguraTotalEdit,
+                        ((parseFloat(editedData.nao) / 100) *
+                          larguraTotalEdit) /
+                          100,
                       )
-                    : formatNumber((parseFloat(item.nao) / 100) * larguraTotal)}
+                    : formatNumber(
+                        ((parseFloat(item.nao) / 100) * larguraTotal) / 100,
+                      )}
                 </td>
                 <td>
                   {editingId === item.id ? (
@@ -283,7 +296,7 @@ const Coluna3 = ({ r }) => {
                       className="input input-xs p-0 m-0 text-center"
                     />
                   ) : (
-                    formatNumber(item.desperdicio)
+                    formatNumber(item.desperdicio / 100)
                   )}
                 </td>
                 <td>
@@ -297,7 +310,7 @@ const Coluna3 = ({ r }) => {
                       className="input input-xs p-0 m-0 text-center"
                     />
                   ) : (
-                    formatNumber(larguraTotal)
+                    formatNumber(larguraTotal / 100)
                   )}
                 </td>
                 <td className="text-center bg-success/30">
@@ -309,9 +322,7 @@ const Coluna3 = ({ r }) => {
                 <td className="text-center bg-success/30">
                   {formatarHoraHHMMSS(item.fim)}
                 </td>
-                <td className="text-center bg-success/30">
-                  {formatarHoraHHMMSS(item.nome)}
-                </td>
+                <td className="text-center bg-success/30">{item.nome}</td>
                 <td>
                   <Edit
                     isEditing={editingId === item.id}

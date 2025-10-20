@@ -1,7 +1,7 @@
 use chrono::{DateTime, Local, NaiveDate, NaiveTime, TimeZone};
+use native_tls::TlsConnector;
 use postgres::{Client, Error};
 use postgres_native_tls::MakeTlsConnector;
-use native_tls::TlsConnector;
 use regex::Regex;
 use std::fs::{self, File};
 use std::io::{self, BufRead, Read};
@@ -80,8 +80,8 @@ fn analyze_plt_file(path: &Path) -> io::Result<PlotAnalysis> {
 }
 
 fn main() -> Result<(), Error> {
-    // let database_url = "postgres://local_user:local_password@localhost:5432/local_db";
-    let database_url = "postgres://neondb_owner:npg_lTfoX2CgRdS3@ep-mute-night-aec9aldl-pooler.c-2.us-east-2.aws.neon.tech:5432/stage?sslmode=require";
+    let database_url = "postgres://local_user:local_password@localhost:5432/local_db";
+    // let database_url = "postgres://neondb_owner:npg_lTfoX2CgRdS3@ep-mute-night-aec9aldl-pooler.c-2.us-east-2.aws.neon.tech:5432/stage?sslmode=require";
     let connector = TlsConnector::new().unwrap();
     let connector = MakeTlsConnector::new(connector);
     let mut client = Client::connect(database_url, connector)?;
@@ -103,9 +103,9 @@ fn main() -> Result<(), Error> {
 
                 if parts.len() >= 4 {
                     let file_path_str = parts[0];
-                    let file_name = Path::new(file_path_str)
-                        .file_name()
-                        .and_then(|s| s.to_str())
+                    let file_name = file_path_str
+                        .split('\\')
+                        .last()
                         .unwrap_or("")
                         .to_string();
 
@@ -208,8 +208,6 @@ fn main() -> Result<(), Error> {
                         // Lógica de comparação e UPDATE
                         for entry in &history_entries {
                             if entry.file_name == plt_file_name
-                                && created_datetime >= entry.start_datetime
-                                && created_datetime <= entry.end_datetime
                             {
                                 client.execute(
                                     "UPDATE \"PlotterC\" SET largura = $1 WHERE nome = $2 AND data = $3 AND inicio = $4 AND fim = $5",
