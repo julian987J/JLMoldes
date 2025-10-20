@@ -652,7 +652,9 @@ const Calculadora = ({
       ) {
         if (Number(total) > 0) {
           const novoCodigo = gerarEArmazenarCodigoAleatorio();
-          //await Execute.removeDevo(codigo);
+          if (valorDevo > 0) {
+            await Execute.updateDevo(codigo, valorDevo);
+          }
           await Execute.sendToDeve({
             deveid: novoCodigo,
             nome,
@@ -661,7 +663,7 @@ const Calculadora = ({
             codigo,
             valorpapel: papel,
             valorcomissao: comitions,
-            valor: Number(total),
+            valor: totalGeral,
           });
 
           await Execute.sendToPapelC({
@@ -1009,6 +1011,9 @@ const Calculadora = ({
 
         console.log("Caiu em DEVO e Pagou tudo o Papel");
       } else if (Number(total) && !dadosR && !valorDeve && trocoValue) {
+        if (valorDevo > 0) {
+          await Execute.updateDevo(codigo, valorDevo);
+        }
         const novoCodigo = gerarEArmazenarCodigoAleatorio();
         await Execute.sendToDeve({
           deveid: novoCodigo,
