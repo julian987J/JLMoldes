@@ -609,13 +609,39 @@ const Calculadora = ({
         console.log("caiu em Pago todo R");
         //
       } else if (trocoValue < 0) {
+        const valorDaCompra =
+          (Number(dadosR) || 0) +
+          (Number(total) || 0) +
+          (Number(valorDeve) || 0);
+        const pagamento = (Number(pix) || 0) + (Number(real) || 0);
+
+        if (valorDevo > 0) {
+          const necessarioDoCredito = valorDaCompra - pagamento;
+
+          if (necessarioDoCredito > 0) {
+            const creditoUsado = Math.min(necessarioDoCredito, valorDevo);
+            await Execute.updateDevo(codigo, creditoUsado);
+          }
+
+          const overpayment = pagamento - valorDaCompra;
+          if (overpayment > 0) {
+            await Execute.sendToDevo({
+              nome,
+              r,
+              codigo,
+              valor: overpayment,
+            });
+          }
+        } else {
+          await Execute.sendToDevo({
+            nome,
+            r,
+            codigo,
+            valor: Math.abs(trocoValue),
+          });
+        }
+
         await Execute.removeDeve(codigo);
-        await Execute.sendToDevo({
-          nome,
-          r,
-          codigo,
-          valor: Math.abs(trocoValue),
-        });
         await Execute.sendToPapelC(ObjPapelC);
         await Execute.PayAllMandR(idsArray);
         console.log("Caiu em Troco Menor que Zero.");

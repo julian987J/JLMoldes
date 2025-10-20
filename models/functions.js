@@ -1160,6 +1160,22 @@ async function removeDevo(codigo) {
   console.log(result);
 }
 
+async function updateDevo(codigo, valor) {
+  try {
+    const response = await fetch(`/api/v1/tables/devo`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ codigo, valor }),
+    });
+
+    if (!response.ok) throw new Error("Erro ao atualizar Devo");
+    return await response.json();
+  } catch (error) {
+    console.error("Erro no updateDevo:", error);
+    throw error;
+  }
+}
+
 async function removeDevoById(id, r) {
   const response = await fetch("/api/v1/tables/calculadora/devo", {
     method: "DELETE",
@@ -1418,6 +1434,7 @@ const execute = {
   removeDeve,
   removeAviso,
   removeDevo,
+  updateDevo,
   removeDevoById,
   removePagamentoById,
   removeTemp,
