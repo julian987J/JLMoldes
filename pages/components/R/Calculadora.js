@@ -1425,7 +1425,7 @@ const Calculadora = ({
               step={0.01}
               type="number"
               placeholder="Troco Real"
-              className="input input-defaut input-lg z-2 text-center font-bold"
+              className="input input-info input-lg z-2 text-center text-info font-bold"
               value={trocoReal}
               onChange={(e) => setTrocoReal(e.target.value)}
               autoComplete="nope"

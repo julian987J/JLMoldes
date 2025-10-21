@@ -277,7 +277,7 @@ const NavBar = ({
             </React.Fragment>
           );
         })}
-        <div className="ml-auto">
+        <div className="ml-auto mr-30">
           <Update />
         </div>
       </div>
