@@ -118,7 +118,7 @@ const Calculadora = ({
     roundedTotalGeral === 0 ? "SOMA TOTAL" : roundedTotalGeral.toFixed(2);
 
   const totalTroco =
-    totalGeral -
+    roundedTotalGeral -
     (Number(pix) || 0) -
     (Number(real) || 0) +
     (Number(trocoReal) || 0);
@@ -614,10 +614,7 @@ const Calculadora = ({
         console.log("caiu em Pago todo R");
         //
       } else if (trocoValue < 0) {
-        const valorDaCompra =
-          (Number(dadosR) || 0) +
-          (Number(total) || 0) +
-          (Number(valorDeve) || 0);
+        const valorDaCompra = roundedTotalGeral;
         const pagamento = (Number(pix) || 0) + (Number(real) || 0);
         const overpayment = pagamento - valorDaCompra;
         const changeGiven = Number(trocoReal) || 0;
@@ -674,7 +671,7 @@ const Calculadora = ({
               codigo,
               valorpapel: papel,
               valorcomissao: comitions,
-              valor: totalGeral,
+              valor: roundedTotalGeral,
             });
             await Execute.sendToPapelC({
               ...ObjPapelC,
