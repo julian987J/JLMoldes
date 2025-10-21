@@ -614,24 +614,37 @@ const Calculadora = ({
         console.log("caiu em Pago todo R");
         //
       } else if (trocoValue < 0) {
-        const totalOriginalDaCompra = total + (Number(dadosR) || 0) + valorDeve;
+        const valorDaCompra = roundedTotalGeral;
         const pagamento = (Number(pix) || 0) + (Number(real) || 0);
-        const trocoRealDado = Number(trocoReal) || 0;
-
-        const creditoFinal =
-          valorDevo + pagamento - totalOriginalDaCompra - trocoRealDado;
+        const overpayment = pagamento - valorDaCompra;
+        const changeGiven = Number(trocoReal) || 0;
+        const creditAmount = overpayment - changeGiven;
 
         if (valorDevo > 0) {
-          await Execute.removeDevo(codigo);
-        }
+          const necessarioDoCredito = valorDaCompra - pagamento;
 
-        if (creditoFinal > 0) {
-          await Execute.sendToDevo({
-            nome,
-            r,
-            codigo,
-            valor: creditoFinal,
-          });
+          if (necessarioDoCredito > 0) {
+            const creditoUsado = Math.min(necessarioDoCredito, valorDevo);
+            await Execute.updateDevo(codigo, creditoUsado);
+          }
+
+          if (overpayment > 0 && creditAmount > 0) {
+            await Execute.sendToDevo({
+              nome,
+              r,
+              codigo,
+              valor: creditAmount,
+            });
+          }
+        } else {
+          if (creditAmount > 0) {
+            await Execute.sendToDevo({
+              nome,
+              r,
+              codigo,
+              valor: creditAmount,
+            });
+          }
         }
 
         await Execute.removeDeve(codigo);
