@@ -250,7 +250,7 @@ const PlanilhaDiaria = ({ r, totalValores }) => {
                         <tbody>
                           {pagamentos.map((item) => (
                             <tr
-                              key={item.id}
+                              key={`pagamento-${item.id}`}
                               className="border-b border-info/30"
                             >
                               <td>{Use.formatarHora(item.data)}</td>
@@ -318,7 +318,7 @@ const PlanilhaDiaria = ({ r, totalValores }) => {
                         <tbody>
                           {metragem.map((item) => (
                             <tr
-                              key={item.id}
+                              key={`metragem-${item.id}`}
                               className="border-b border-warning"
                             >
                               <td className="text-center">{item.util}</td>

@@ -224,12 +224,27 @@ const NavBar = ({
   return (
     <div className="p-4">
       <div className="tabs tabs-lifted flex items-center">
+        {user && (
+          <div className="flex items-center gap-2 p-2 pr-30">
+            <span className="text-sm">
+              Olá, {user.username} ({user.role})
+            </span>
+            <button
+              onClick={logout}
+              className="btn btn-xs btn-outline btn-error"
+            >
+              Sair
+            </button>
+          </div>
+        )}
         {visibleTabs.map((tab, index) => {
-          const tabId = `tab-${tab.label.toLowerCase().replace(/[^a-z0-9]/g, "-")}-${index}`;
+          const tabId = `tab-${tab.label
+            .toLowerCase()
+            .replace(/[^a-z0-9]/g, "-")}-${index}`;
           return (
             <React.Fragment key={tabId}>
               {tab.hasUpdateComponent ? (
-                // Aba especial para Cadastros com componente Update
+                // Aba especial para Cadastros
                 <>
                   <input
                     type="radio"
@@ -243,7 +258,6 @@ const NavBar = ({
                     className="tab px-2 flex items-center gap-1 hover:bg-base-200"
                   >
                     {tab.label}
-                    <Update />
                   </label>
                 </>
               ) : (
@@ -263,20 +277,9 @@ const NavBar = ({
             </React.Fragment>
           );
         })}
-
-        {user && (
-          <div className="ml-auto flex items-center gap-2 p-2">
-            <span className="text-sm">
-              Olá, {user.username} ({user.role})
-            </span>
-            <button
-              onClick={logout}
-              className="btn btn-xs btn-outline btn-error"
-            >
-              Sair
-            </button>
-          </div>
-        )}
+        <div className="ml-auto mr-30">
+          <Update />
+        </div>
       </div>
     </div>
   );

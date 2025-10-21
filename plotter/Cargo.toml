@@ -5,3 +5,8 @@ edition = "2021"
 
 [dependencies]
 postgres = "0.19.7"
+geo = "0.28.0"
+regex = "1"
+chrono = "0.4"
+postgres-native-tls = "0.5.0"
+native-tls = "0.2.11"

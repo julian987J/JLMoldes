@@ -23,11 +23,29 @@ const router = createRouter();
 router.get(getHandler);
 router.delete(deleteHandler);
 router.put(updateHandler);
+router.patch(patchHandler);
 
 export default router.handler(controller.errorHandlers);
 
 async function getHandler(request, response) {
-  const result = await ordem.getPlotterC();
+  const { r } = request.query;
+  const result = await ordem.getPlotterC(r);
+  return response.status(200).json(result);
+}
+
+async function patchHandler(request, response) {
+  const { id } = request.body;
+  if (!id) {
+    return response.status(400).json({ error: "ID is required" });
+  }
+  const result = await ordem.swapSimNaoPlotterC(id);
+
+  if (result?.rows?.length > 0) {
+    await notifyWebSocketServer({
+      type: "PLOTTER_C_UPDATED_ITEM",
+      payload: result.rows[0],
+    });
+  }
   return response.status(200).json(result);
 }
 

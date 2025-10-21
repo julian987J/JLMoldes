@@ -795,6 +795,64 @@ async function updateRButton(updatedData) {
   return result.rows[0];
 }
 
+async function updateDevo(codigo, valorUsado) {
+  const client = await database.getNewClient();
+  let valorRestanteParaDeduzir = parseFloat(valorUsado) || 0;
+
+  try {
+    await client.query("BEGIN");
+
+    const { rows: devos } = await client.query({
+      text: `SELECT * FROM "Devo" WHERE codigo = $1 AND valor > 0 ORDER BY id ASC FOR UPDATE`,
+      values: [codigo],
+    });
+
+    const updatedDevos = [];
+    const deletedDevos = [];
+
+    for (const devo of devos) {
+      if (valorRestanteParaDeduzir <= 0) break;
+
+      const valorDevoAtual = parseFloat(devo.valor);
+
+      if (valorDevoAtual <= valorRestanteParaDeduzir) {
+        // This devo will be completely used.
+        const { rows: deletedRows } = await client.query({
+          text: `DELETE FROM "Devo" WHERE id = $1 RETURNING *;`,
+          values: [devo.id],
+        });
+        if (deletedRows.length > 0) {
+          deletedDevos.push(deletedRows[0]);
+        }
+        valorRestanteParaDeduzir -= valorDevoAtual;
+      } else {
+        // This devo will be partially used.
+        const novoValor = valorDevoAtual - valorRestanteParaDeduzir;
+        const { rows: updatedDevoRows } = await client.query({
+          text: `
+            UPDATE "Devo"
+            SET valor = $1
+            WHERE id = $2
+            RETURNING *;
+          `,
+          values: [novoValor, devo.id],
+        });
+        updatedDevos.push(updatedDevoRows[0]);
+        valorRestanteParaDeduzir = 0; // All used amount has been deducted.
+      }
+    }
+
+    await client.query("COMMIT");
+    return { updatedDevos, deletedDevos };
+  } catch (error) {
+    await client.query("ROLLBACK");
+    console.error("Erro na transação updateDevo:", error);
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
 async function updateAltSisR(updatedData) {
   const result = await database.query({
     text: `
@@ -1574,7 +1632,14 @@ async function updateUser(userData) {
   return result.rows[0]; // Return the updated user
 }
 
-async function getPlotterC() {
+async function getPlotterC(r) {
+  if (r) {
+    const result = await database.query({
+      text: 'SELECT * FROM "PlotterC" WHERE r = $1 ORDER BY data DESC, inicio DESC;',
+      values: [r],
+    });
+    return result;
+  }
   const result = await database.query(
     'SELECT * FROM "PlotterC" ORDER BY data DESC, inicio DESC;',
   );
@@ -1588,20 +1653,16 @@ async function updatePlotterC(updatedData) {
       SET 
         sim = $1,
         nao = $2,
-        m1 = $3,
-        m2 = $4,
-        desperdicio = $5,
-        data = $6,
-        inicio = $7,
-        fim = $8
-      WHERE id = $9
+        desperdicio = $3,
+        data = $4,
+        inicio = $5,
+        fim = $6
+      WHERE id = $7
       RETURNING *;
     `,
     values: [
       updatedData.sim,
       updatedData.nao,
-      updatedData.m1,
-      updatedData.m2,
       updatedData.desperdicio,
       updatedData.data,
       updatedData.inicio,
@@ -1620,10 +1681,26 @@ async function deletePlotterC(id) {
   return result.rows;
 }
 
+async function swapSimNaoPlotterC(id) {
+  const result = await database.query({
+    text: `
+      UPDATE "PlotterC"
+      SET 
+        sim = nao,
+        nao = sim
+      WHERE id = $1
+      RETURNING *;
+    `,
+    values: [id],
+  });
+  return result;
+}
+
 const ordem = {
   getPlotterC,
   updatePlotterC,
   deletePlotterC,
+  swapSimNaoPlotterC,
   createM,
   createPessoal,
   createSaidaP,
@@ -1691,6 +1768,7 @@ const ordem = {
   deleteAllPagamentos,
   updateDeveCalculadora,
   updateDeve,
+  updateDevo,
   updateConfig,
   updateC,
   updateDec,

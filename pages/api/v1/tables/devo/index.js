@@ -30,8 +30,27 @@ const router = createRouter();
 router.post(postHandlerDevo);
 router.get(getHandlerDevo);
 router.delete(deleteHandler);
+router.put(updateHandler);
 
 export default router.handler(controller.errorHandlers);
+
+async function updateHandler(request, response) {
+  const { codigo, valor } = request.body; // valor is valorUsado
+  const { updatedDevos, deletedDevos } = await ordem.updateDevo(codigo, valor);
+
+  for (const devo of updatedDevos) {
+    await notifyWebSocketServer({ type: "DEVO_UPDATED_ITEM", payload: devo });
+  }
+
+  for (const devo of deletedDevos) {
+    await notifyWebSocketServer({
+      type: "DEVO_DELETED_ITEM",
+      payload: { id: devo.id, codigo: codigo },
+    });
+  }
+
+  response.status(200).json({ success: true, updatedDevos, deletedDevos });
+}
 
 async function postHandlerDevo(request, response) {
   const ordemInputValues = request.body;
