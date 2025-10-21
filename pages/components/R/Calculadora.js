@@ -66,6 +66,7 @@ const Calculadora = ({
   const [isSalvarDisabled, setIsSalvarDisabled] = useState(false);
   const [isPendenteDisabled, setIsPendenteDisabled] = useState(false);
   const [isEsperaDisabled, setIsEsperaDisabled] = useState(false);
+  const [trocoReal, setTrocoReal] = useState("");
 
   // Calcula a soma bruta dos valores (novo cálculo)
   const sumValues = values.reduce((sum, current) => {
@@ -116,7 +117,11 @@ const Calculadora = ({
   const displayTotalGeral =
     roundedTotalGeral === 0 ? "SOMA TOTAL" : roundedTotalGeral.toFixed(2);
 
-  const totalTroco = totalGeral - (Number(pix) || 0) - (Number(real) || 0);
+  const totalTroco =
+    totalGeral -
+    (Number(pix) || 0) -
+    (Number(real) || 0) +
+    (Number(trocoReal) || 0);
   const roundedTroco = Math.round(totalTroco / 0.5) * 0.5;
 
   const pixMaisReal = Number(pix) + Number(real);
@@ -614,6 +619,9 @@ const Calculadora = ({
           (Number(total) || 0) +
           (Number(valorDeve) || 0);
         const pagamento = (Number(pix) || 0) + (Number(real) || 0);
+        const overpayment = pagamento - valorDaCompra;
+        const changeGiven = Number(trocoReal) || 0;
+        const creditAmount = overpayment - changeGiven;
 
         if (valorDevo > 0) {
           const necessarioDoCredito = valorDaCompra - pagamento;
@@ -623,22 +631,23 @@ const Calculadora = ({
             await Execute.updateDevo(codigo, creditoUsado);
           }
 
-          const overpayment = pagamento - valorDaCompra;
-          if (overpayment > 0) {
+          if (overpayment > 0 && creditAmount > 0) {
             await Execute.sendToDevo({
               nome,
               r,
               codigo,
-              valor: overpayment,
+              valor: creditAmount,
             });
           }
         } else {
-          await Execute.sendToDevo({
-            nome,
-            r,
-            codigo,
-            valor: Math.abs(trocoValue),
-          });
+          if (creditAmount > 0) {
+            await Execute.sendToDevo({
+              nome,
+              r,
+              codigo,
+              valor: creditAmount,
+            });
+          }
         }
 
         await Execute.removeDeve(codigo);
@@ -1082,6 +1091,7 @@ const Calculadora = ({
       setReal("");
       setComentario("");
       setPerdida("");
+      setTrocoReal("");
       onNomeChange("");
       onCodigoChange("");
       onValuesChange(Array(28).fill(""));
@@ -1412,6 +1422,18 @@ const Calculadora = ({
             autoComplete="nope"
             onChange={(e) => setReal(e.target.value)}
           />
+          <div className="grid col-span-3 my-0.5 z-50">
+            <input
+              min="0"
+              step={0.01}
+              type="number"
+              placeholder="Troco Real"
+              className="input input-defaut input-lg z-2 text-center font-bold"
+              value={trocoReal}
+              onChange={(e) => setTrocoReal(e.target.value)}
+              autoComplete="nope"
+            />
+          </div>
           <div className="grid grid-cols-2 col-span-3 my-0.5 z-50">
             <button
               type="button"
