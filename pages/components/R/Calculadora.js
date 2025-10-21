@@ -633,7 +633,7 @@ const Calculadora = ({
             valor: creditoFinal,
           });
         }
-
+        //p
         await Execute.removeDeve(codigo);
         await Execute.sendToPapelC(ObjPapelC);
         await Execute.PayAllMandR(idsArray);
