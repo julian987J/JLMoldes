@@ -270,10 +270,8 @@ const Coluna3 = ({ r }) => {
         <tbody>
           {dados.map((item) => {
             const larguraTotal = parseFloat(item.largura) + desperdicioConfig;
-            const m1Value =
-              ((parseFloat(item.sim) / 100) * larguraTotal) / 100;
-            const m2Value =
-              ((parseFloat(item.nao) / 100) * larguraTotal) / 100;
+            const m1Value = ((parseFloat(item.sim) / 100) * larguraTotal) / 100;
+            const m2Value = ((parseFloat(item.nao) / 100) * larguraTotal) / 100;
 
             return (
               <tr key={item.id} className="border-b border-warning">
