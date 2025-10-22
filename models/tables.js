@@ -1656,8 +1656,9 @@ async function updatePlotterC(updatedData) {
         desperdicio = $3,
         data = $4,
         inicio = $5,
-        fim = $6
-      WHERE id = $7
+        fim = $6,
+        largura = $7
+      WHERE id = $8
       RETURNING *;
     `,
     values: [
@@ -1667,6 +1668,7 @@ async function updatePlotterC(updatedData) {
       updatedData.data,
       updatedData.inicio,
       updatedData.fim,
+      updatedData.largura,
       updatedData.id,
     ],
   });
@@ -1679,6 +1681,28 @@ async function deletePlotterC(id) {
     values: [id],
   });
   return result.rows;
+}
+
+async function createPlotterC(plotterData) {
+  const result = await database.query({
+    text: `
+      INSERT INTO "PlotterC" (r, sim, nao, desperdicio, data, inicio, fim, nome, plotter_nome) 
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+      RETURNING *;
+    `,
+    values: [
+      plotterData.r,
+      plotterData.sim,
+      plotterData.nao,
+      plotterData.desperdicio,
+      plotterData.data,
+      plotterData.inicio,
+      plotterData.fim,
+      plotterData.nome,
+      plotterData.plotter_nome,
+    ],
+  });
+  return result;
 }
 
 async function swapSimNaoPlotterC(id) {
@@ -1698,6 +1722,7 @@ async function swapSimNaoPlotterC(id) {
 
 const ordem = {
   getPlotterC,
+  createPlotterC,
   updatePlotterC,
   deletePlotterC,
   swapSimNaoPlotterC,

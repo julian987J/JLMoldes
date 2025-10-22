@@ -186,21 +186,39 @@ const Coluna3 = ({ r }) => {
   const desperdicioConfig = config ? parseFloat(config.d) || 0 : 0;
   const multiplicadorConfig = config ? parseFloat(config.m) || 1 : 1;
 
-  // Calculations are now based on meters for monetary totals
-  const totalM1 = dados.reduce((acc, item) => {
+  // Filter data for each plotter
+  const dadosP01 = dados.filter((item) => item.plotter_nome === "P01");
+  const dadosP02 = dados.filter((item) => item.plotter_nome === "P02");
+
+  // Calculate totals for P01
+  const totalM1_P01 = dadosP01.reduce((acc, item) => {
     const larguraTotalCm = parseFloat(item.largura) + desperdicioConfig;
-    const m1Value = (parseFloat(item.sim) / 100) * (larguraTotalCm / 100); // Convert cm to m for calculation
+    const m1Value = (parseFloat(item.sim) / 100) * (larguraTotalCm / 100);
     return acc + m1Value;
   }, 0);
-
-  const totalM2 = dados.reduce((acc, item) => {
+  const totalM2_P01 = dadosP01.reduce((acc, item) => {
     const larguraTotalCm = parseFloat(item.largura) + desperdicioConfig;
-    const m2Value = (parseFloat(item.nao) / 100) * (larguraTotalCm / 100); // Convert cm to m for calculation
+    const m2Value = (parseFloat(item.nao) / 100) * (larguraTotalCm / 100);
     return acc + m2Value;
   }, 0);
 
-  const totalM1Multiplicado = totalM1 * multiplicadorConfig;
-  const totalM2Multiplicado = totalM2 * multiplicadorConfig;
+  // Calculate totals for P02
+  const totalM1_P02 = dadosP02.reduce((acc, item) => {
+    const larguraTotalCm = parseFloat(item.largura) + desperdicioConfig;
+    const m1Value = (parseFloat(item.sim) / 100) * (larguraTotalCm / 100);
+    return acc + m1Value;
+  }, 0);
+  const totalM2_P02 = dadosP02.reduce((acc, item) => {
+    const larguraTotalCm = parseFloat(item.largura) + desperdicioConfig;
+    const m2Value = (parseFloat(item.nao) / 100) * (larguraTotalCm / 100);
+    return acc + m2Value;
+  }, 0);
+
+  // Apply multiplier
+  const totalM1_P01_Multiplicado = totalM1_P01 * multiplicadorConfig;
+  const totalM2_P01_Multiplicado = totalM2_P01 * multiplicadorConfig;
+  const totalM1_P02_Multiplicado = totalM1_P02 * multiplicadorConfig;
+  const totalM2_P02_Multiplicado = totalM2_P02 * multiplicadorConfig;
 
   return (
     <div className="overflow-x-auto rounded-box border border-warning bg-base-100">
@@ -208,19 +226,38 @@ const Coluna3 = ({ r }) => {
         <thead>
           <tr>
             <th colSpan={2}></th>
+            <th colSpan={2} className="text-center">
+              P01
+            </th>
+            <th colSpan={2} className="text-center">
+              P02
+            </th>
+            <th colSpan={6}></th>
+          </tr>
+          <tr>
+            <th colSpan={2}></th>
             <th className="text-center bg-info/30">
-              R$ {formatNumber(totalM1Multiplicado)}
+              R$ {formatNumber(totalM1_P01_Multiplicado)}
             </th>
             <th className="text-center bg-error/30">
-              R$ {formatNumber(totalM2Multiplicado)}
+              R$ {formatNumber(totalM2_P01_Multiplicado)}
             </th>
+            <th className="text-center bg-info/30">
+              R$ {formatNumber(totalM1_P02_Multiplicado)}
+            </th>
+            <th className="text-center bg-error/30">
+              R$ {formatNumber(totalM2_P02_Multiplicado)}
+            </th>
+            <th colSpan={6}></th>
           </tr>
           <tr>
             <th className="hidden">ID</th>
             <th className="text-center bg-info">Sim</th>
             <th className="text-center bg-error">Não</th>
-            <th className="text-center bg-info">M1</th>
-            <th className="text-center bg-error">M2</th>
+            <th className="text-center bg-info">M1 (P01)</th>
+            <th className="text-center bg-error">M2 (P01)</th>
+            <th className="text-center bg-info">M1 (P02)</th>
+            <th className="text-center bg-error">M2 (P02)</th>
             <th>Desp.</th>
             <th>Larg.</th>
             <th className="text-center bg-success">Data</th>
@@ -233,8 +270,10 @@ const Coluna3 = ({ r }) => {
         <tbody>
           {dados.map((item) => {
             const larguraTotal = parseFloat(item.largura) + desperdicioConfig;
-            const larguraTotalEdit =
-              (parseFloat(editedData.largura) * 100 || 0) + desperdicioConfig;
+            const m1Value =
+              ((parseFloat(item.sim) / 100) * larguraTotal) / 100;
+            const m2Value =
+              ((parseFloat(item.nao) / 100) * larguraTotal) / 100;
 
             return (
               <tr key={item.id} className="border-b border-warning">
@@ -263,28 +302,23 @@ const Coluna3 = ({ r }) => {
                     `${formatNumber(item.nao)}%`
                   )}
                 </td>
+
+                {/* P01 Columns */}
                 <td className="text-center bg-info/30">
-                  {editingId === item.id
-                    ? formatNumber(
-                        ((parseFloat(editedData.sim) / 100) *
-                          larguraTotalEdit) /
-                          100,
-                      )
-                    : formatNumber(
-                        ((parseFloat(item.sim) / 100) * larguraTotal) / 100,
-                      )}
+                  {item.plotter_nome === "P01" ? formatNumber(m1Value) : ""}
                 </td>
                 <td className="text-center bg-error/30">
-                  {editingId === item.id
-                    ? formatNumber(
-                        ((parseFloat(editedData.nao) / 100) *
-                          larguraTotalEdit) /
-                          100,
-                      )
-                    : formatNumber(
-                        ((parseFloat(item.nao) / 100) * larguraTotal) / 100,
-                      )}
+                  {item.plotter_nome === "P01" ? formatNumber(m2Value) : ""}
                 </td>
+
+                {/* P02 Columns */}
+                <td className="text-center bg-info/30">
+                  {item.plotter_nome === "P02" ? formatNumber(m1Value) : ""}
+                </td>
+                <td className="text-center bg-error/30">
+                  {item.plotter_nome === "P02" ? formatNumber(m2Value) : ""}
+                </td>
+
                 <td>
                   {editingId === item.id ? (
                     <input
