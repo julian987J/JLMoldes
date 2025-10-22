@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import TableCad from "./TableCad.js";
+import ErrorComponent from "./Errors.js";
 
 function Cadastro() {
   const [regiao, setRegiao] = useState("");
@@ -14,25 +15,51 @@ function Cadastro() {
   const [observacao, setObservacao] = useState("");
   const [comentario, setComentario] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
+  const [errorCode, setErrorCode] = useState(null);
+
+  useEffect(() => {
+    if (errorCode) {
+      const timer = setTimeout(() => {
+        setErrorCode(null);
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [errorCode]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    const ordemInputValues = {
-      regiao,
-      codigo,
-      facebook,
-      instagram,
-      email,
-      whatsapp1,
-      whatsapp2,
-      nome,
-      grupo,
-      observacao,
-      comentario,
-    };
-
     try {
+      // Verificar se já existe um cadastro com o mesmo nome ou código
+      const checkResponse = await fetch("/api/v1/tables/cadastro");
+      if (!checkResponse.ok) throw new Error("Erro ao verificar cadastros.");
+      const existingData = await checkResponse.json();
+
+      const duplicate = existingData.rows.find(
+        (item) =>
+          item.nome.toLowerCase() === nome.toLowerCase() ||
+          item.codigo.toLowerCase() === codigo.toLowerCase(),
+      );
+
+      if (duplicate) {
+        setErrorCode("CAD01");
+        return;
+      }
+
+      const ordemInputValues = {
+        regiao,
+        codigo,
+        facebook,
+        instagram,
+        email,
+        whatsapp1,
+        whatsapp2,
+        nome,
+        grupo,
+        observacao,
+        comentario,
+      };
+
       const response = await fetch("/api/v1/tables/cadastro", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -59,6 +86,7 @@ function Cadastro() {
 
   return (
     <div className="h-full">
+      <ErrorComponent errorCode={errorCode} />
       {/* Formulário */}
       <div className="bg-base-100 border-base-300 pb-2">
         <form onSubmit={handleSubmit}>

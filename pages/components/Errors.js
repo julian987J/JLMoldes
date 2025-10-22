@@ -5,6 +5,7 @@ const errorMessages = {
   "000BSA": "Base, Sis e Alt Não devem ser 0 todos ao mesmo tempo.",
   R1ID: "Essa Operação ja foi enviada.",
   Nulo: "Nenhuma operação foi efetuada.",
+  CAD01: "Cadastro já existe. O código ou nome é igual.",
 };
 
 function ErrorComponent({ errorCode }) {
