@@ -7,7 +7,7 @@
     "dev": "npm run services:up && npm run services:wait:database && npm run migrations:up && concurrently --names next,postdev --hide postdev   \"next dev\" \"npm run services:wait:end\"",
     "start": "node websocket-server.js",
     "build": "next build",
-    "migrate:prod": "node-pg-migrate --migrations-dir infra/migrations up",
+    "migrate:prod": "node-pg-migrate --migrations-dir infra/migrations --no-check-order up",
     "services:wait:end": "node infra/scripts/post-dev.js",
     "postdev": "npm run services:down",
     "test": "npm run services:up && concurrently -n next,jest --hide next -k -s command-jest \"next dev\" \"jest --runInBand -verbose\"",
