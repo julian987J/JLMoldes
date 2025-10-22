@@ -1392,6 +1392,7 @@ const Calculadora = ({
             value={pix}
             autoComplete="nope"
             onChange={(e) => setPix(e.target.value)}
+            onWheel={(e) => e.target.blur()}
           />
           <input
             min="0"
@@ -1411,6 +1412,7 @@ const Calculadora = ({
             value={real}
             autoComplete="nope"
             onChange={(e) => setReal(e.target.value)}
+            onWheel={(e) => e.target.blur()}
           />
           <div className="grid col-span-3 my-0.5 z-50">
             <input
@@ -1422,6 +1424,7 @@ const Calculadora = ({
               value={trocoReal}
               onChange={(e) => setTrocoReal(e.target.value)}
               autoComplete="nope"
+              onWheel={(e) => e.target.blur()}
             />
           </div>
           <div className="grid grid-cols-2 col-span-3 my-0.5 z-50">
