@@ -34,6 +34,9 @@ const formatNumber = (value) => {
 
 const Coluna3 = ({ r }) => {
   const [dados, setDados] = useState([]);
+  const [papeis, setPapeis] = useState([]);
+  const [oldestPapel, setOldestPapel] = useState(null);
+  const [newerPapeis, setNewerPapeis] = useState([]);
   const [config, setConfig] = useState(null);
   const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState(null);
@@ -72,9 +75,11 @@ const Coluna3 = ({ r }) => {
     if (typeof r === "undefined" || r === null) return;
     setLoading(true);
     try {
-      const [plotterResults, configResult] = await Promise.all([
+      const workshop = "R" + r;
+      const [plotterResults, configResult, papelResults] = await Promise.all([
         Execute.receiveFromPlotterC(r),
         Execute.receiveFromConfig(),
+        Execute.receiveFromPapelByItem(workshop),
       ]);
 
       setDados(
@@ -86,6 +91,15 @@ const Coluna3 = ({ r }) => {
             )
           : [],
       );
+
+      if (Array.isArray(papelResults)) {
+        const filteredPapeis = papelResults
+          .filter((p) => p.gastos && p.gastos.startsWith("PAPEL-"))
+          .sort((a, b) => a.id - b.id); // Sort ascending by ID
+        setPapeis(filteredPapeis);
+      } else {
+        setPapeis([]);
+      }
 
       if (Array.isArray(configResult) && configResult.length > 0) {
         setConfig(configResult[0]);
@@ -100,6 +114,16 @@ const Coluna3 = ({ r }) => {
   useEffect(() => {
     fetchData();
   }, [fetchData]);
+
+  useEffect(() => {
+    if (papeis && papeis.length > 0) {
+      setOldestPapel(papeis[0]);
+      setNewerPapeis(papeis.slice(1));
+    } else {
+      setOldestPapel(null);
+      setNewerPapeis([]);
+    }
+  }, [papeis]);
 
   useEffect(() => {
     if (lastMessage && lastMessage.data && lastMessage.timestamp) {
@@ -154,6 +178,53 @@ const Coluna3 = ({ r }) => {
               new Date(b.inicio) - new Date(a.inicio),
           );
         });
+      }
+
+      const workshop = "R" + r;
+      if (payload && payload.item === workshop) {
+        switch (type) {
+          case "PAPEL_NEW_ITEM":
+            if (payload.gastos && payload.gastos.startsWith("PAPEL-")) {
+              setPapeis((prev) =>
+                [...prev, payload].sort((a, b) => a.id - b.id),
+              );
+            }
+            break;
+          case "PAPEL_UPDATED_ITEM":
+            setPapeis((prev) => {
+              const isPapel =
+                payload.gastos && payload.gastos.startsWith("PAPEL-");
+              const itemExists = prev.some(
+                (item) => String(item.id) === String(payload.id),
+              );
+
+              let newPapeis;
+
+              if (isPapel) {
+                if (itemExists) {
+                  newPapeis = prev.map((item) =>
+                    String(item.id) === String(payload.id) ? payload : item,
+                  );
+                } else {
+                  newPapeis = [...prev, payload];
+                }
+              } else {
+                newPapeis = prev.filter(
+                  (item) => String(item.id) !== String(payload.id),
+                );
+              }
+
+              return newPapeis.sort((a, b) => a.id - b.id);
+            });
+            break;
+          case "PAPEL_DELETED_ITEM":
+            if (payload && payload.id !== undefined) {
+              setPapeis((prev) =>
+                prev.filter((item) => String(item.id) !== String(payload.id)),
+              );
+            }
+            break;
+        }
       }
 
       if (type === "CONFIG_UPDATED_ITEM" && payload) {
@@ -214,25 +285,112 @@ const Coluna3 = ({ r }) => {
     return acc + m2Value;
   }, 0);
 
+  const handleFinalizarPapel = async () => {
+    if (oldestPapel) {
+      try {
+        // Optimistic update: remove the item from the local state immediately
+        setPapeis((prevPapeis) =>
+          prevPapeis.filter((p) => p.id !== oldestPapel.id),
+        );
+        // Then, send the request to the server
+        await Execute.removePapel(oldestPapel.id);
+      } catch (error) {
+        console.error("Erro ao finalizar papel:", error);
+        // Optional: add logic to revert state if the API call fails
+      }
+    }
+  };
+
   // Apply multiplier
   const totalM1_P01_Multiplicado = totalM1_P01 * multiplicadorConfig;
   const totalM2_P01_Multiplicado = totalM2_P01 * multiplicadorConfig;
   const totalM1_P02_Multiplicado = totalM1_P02 * multiplicadorConfig;
   const totalM2_P02_Multiplicado = totalM2_P02 * multiplicadorConfig;
 
+  const totalM1 = totalM1_P01_Multiplicado + totalM1_P02_Multiplicado;
+  const totalM2 = totalM2_P01_Multiplicado + totalM2_P02_Multiplicado;
+
+  const totalMetragemM1 = totalM1_P01 + totalM1_P02;
+  const totalMetragemM2 = totalM2_P01 + totalM2_P02;
+
   return (
-    <div className="overflow-x-auto rounded-box border border-warning bg-base-100">
+    <div className="overflow-x-auto rounded-box border border-warning bg-base-100 p-4">
+      {newerPapeis.length > 0 && (
+        <div className="mb-4">
+          <h2 className="p-2 text-center font-bold">Papeis Recentes</h2>
+          <table className="table table-xs">
+            <thead className="text-center">
+              <tr>
+                <th className="text-center bg-info">Metragem Restante</th>
+                <th className="text-center bg-success">Papel</th>
+              </tr>
+            </thead>
+            <tbody className="text-center">
+              {newerPapeis.map((papel) => (
+                <tr key={papel.id}>
+                  <td className="text-center bg-info/30">
+                    {formatNumber(papel.metragem)}
+                  </td>
+                  <td className="text-center bg-success/30">{papel.gastos}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
       <table className="table table-xs">
         <thead>
           <tr>
-            <th colSpan={2}></th>
-            <th colSpan={2} className="text-center">
-              P01
-            </th>
-            <th colSpan={2} className="text-center">
-              P02
+            {oldestPapel ? (
+              <th
+                colSpan={2}
+                key={oldestPapel.id}
+                className="text-center bg-success"
+              >
+                {oldestPapel.gastos}
+              </th>
+            ) : (
+              <th colSpan={2}></th>
+            )}
+            <th colSpan={4} className="bg-success"></th>
+            <th colSpan={2} rowSpan={2} className="bg-error">
+              {oldestPapel && (
+                <button
+                  className="btn btn-ghost btn-error rounded-none"
+                  onClick={handleFinalizarPapel}
+                >
+                  Finalizar
+                </button>
+              )}
             </th>
             <th colSpan={6}></th>
+          </tr>
+          <tr>
+            {oldestPapel ? (
+              <th
+                colSpan={2}
+                key={oldestPapel.id}
+                className="text-center bg-info/30"
+              >
+                {formatNumber(oldestPapel.metragem)}
+              </th>
+            ) : (
+              <th colSpan={2}></th>
+            )}
+            <th colSpan={4} className="text-center bg-info/30">
+              {formatNumber(totalMetragemM1 + totalMetragemM2)}
+            </th>
+            <th colSpan={6}></th>
+          </tr>
+          <tr>
+            <th colSpan={2}></th>
+            <th colSpan={2} className="bg-primary-content text-center">
+              P01
+            </th>
+            <th colSpan={2} className="bg-secondary-content text-center">
+              P02
+            </th>
+            <th colSpan={7}></th>
           </tr>
           <tr>
             <th colSpan={2}></th>
@@ -248,16 +406,16 @@ const Coluna3 = ({ r }) => {
             <th className="text-center bg-error/30">
               R$ {formatNumber(totalM2_P02_Multiplicado)}
             </th>
-            <th colSpan={6}></th>
+            <th colSpan={7}></th>
           </tr>
           <tr>
             <th className="hidden">ID</th>
             <th className="text-center bg-info">Sim</th>
             <th className="text-center bg-error">Não</th>
-            <th className="text-center bg-info">M1 (P01)</th>
-            <th className="text-center bg-error">M2 (P01)</th>
-            <th className="text-center bg-info">M1 (P02)</th>
-            <th className="text-center bg-error">M2 (P02)</th>
+            <th className="text-center bg-info">M1</th>
+            <th className="text-center bg-error">M2</th>
+            <th className="text-center bg-info">M1</th>
+            <th className="text-center bg-error">M2</th>
             <th>Desp.</th>
             <th>Larg.</th>
             <th className="text-center bg-success">Data</th>

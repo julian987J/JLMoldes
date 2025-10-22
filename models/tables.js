@@ -1240,6 +1240,14 @@ async function getPapelCalculadora(oficina) {
   return result;
 }
 
+async function getPapelByItem(item) {
+  const result = await database.query({
+    text: `SELECT * FROM "Papel" WHERE item = $1;`,
+    values: [item],
+  });
+  return result.rows;
+}
+
 async function getValorOficinas(oficina) {
   const result = await database.query({
     text: `SELECT * FROM "SaidaO" WHERE oficina = $1;`,
@@ -1757,6 +1765,7 @@ const ordem = {
   getCByDec,
   getCData,
   getPapel,
+  getPapelByItem,
   getPapelCalculadora,
   getPapelC,
   getAnualPapelC,

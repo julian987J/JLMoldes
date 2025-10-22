@@ -50,9 +50,14 @@ async function postHandler(request, response) {
 }
 
 async function getHandler(request, response) {
-  const { letras } = request.query;
+  const { letras, item } = request.query;
   try {
-    const valores = await ordem.getPapel(letras);
+    let valores;
+    if (item) {
+      valores = await ordem.getPapelByItem(item);
+    } else {
+      valores = await ordem.getPapel(letras);
+    }
     response.status(200).json({ rows: valores });
   } catch (error) {
     response.status(500).json({ error: error.message });
