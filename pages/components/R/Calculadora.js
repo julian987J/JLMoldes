@@ -4,11 +4,12 @@ import dynamic from "next/dynamic";
 import { useWebSocket } from "../../../contexts/WebSocketContext.js"; // Import WebSocket context
 import Use from "models/utils.js";
 
-let codigoAleatorioGlobal = "";
-function gerarEArmazenarCodigoAleatorio() {
-  codigoAleatorioGlobal = Math.random().toString(36).slice(2, 10).toUpperCase();
-  console.log("Novo código aleatório gerado:", codigoAleatorioGlobal); // Para fins de demonstração
-  return codigoAleatorioGlobal;
+function gerarCodigoUnico() {
+  // Combina o timestamp atual com uma string aleatória para garantir unicidade.
+  return (
+    Date.now().toString(36) +
+    Math.random().toString(36).slice(2, 10).toUpperCase()
+  );
 }
 
 const Calculadora = ({
@@ -649,7 +650,7 @@ const Calculadora = ({
           }
 
           if (totalGeral > 0) {
-            const novoCodigo = gerarEArmazenarCodigoAleatorio();
+            const novoCodigo = gerarCodigoUnico();
             await Execute.sendToDeve({
               deveid: novoCodigo,
               nome,
@@ -795,7 +796,7 @@ const Calculadora = ({
 
         //
       } else if (isPendente && !trocoValue && !valorDeve) {
-        const novoAvisoId = gerarEArmazenarCodigoAleatorio();
+        const novoAvisoId = gerarCodigoUnico();
         await Execute.sendToAviso({
           avisoid: novoAvisoId,
           data: Use.NowData(),
@@ -825,7 +826,7 @@ const Calculadora = ({
         );
 
         if (total > 0) {
-          const novoCodigo = gerarEArmazenarCodigoAleatorio();
+          const novoCodigo = gerarCodigoUnico();
           await Execute.sendToDeve({
             deveid: novoCodigo,
             nome,
@@ -873,7 +874,7 @@ const Calculadora = ({
           await Execute.sendToC(ObjC1);
           await Execute.PayAllMandR(idsArray);
           if (total > 0) {
-            const novoCodigo = gerarEArmazenarCodigoAleatorio();
+            const novoCodigo = gerarCodigoUnico();
             await Execute.removeDevo(codigo);
             await Execute.sendToDeve({
               deveid: novoCodigo,
@@ -904,7 +905,7 @@ const Calculadora = ({
           (pixMaisReal < dadosR && pixMaisReal > Number(total))
         ) {
           const values = totalGeral - Number(total) - pixMaisReal;
-          const novoCodigo = gerarEArmazenarCodigoAleatorio();
+          const novoCodigo = gerarCodigoUnico();
           await sendToCAndUpdateR(values);
           if (total > 0) {
             await Execute.removeDevo(codigo);
@@ -939,17 +940,22 @@ const Calculadora = ({
           await Execute.PayAllMandR(idsArray);
           if (total > 0) {
             const value = Math.abs(totalGeral - pixMaisReal);
+            const novoCodigo = gerarCodigoUnico();
             await Execute.removeDevo(codigo);
             await Execute.removeDeve(codigo);
             await Execute.sendToDeve({
+              deveid: novoCodigo,
               nome,
               r,
               data: Use.NowData(),
               codigo,
+              valorpapel: papel,
+              valorcomissao: comitions,
               valor: value,
             });
             await Execute.sendToPapelC({
               ...ObjPapelC,
+              deveid: novoCodigo,
               data: Use.NowData(),
             });
           } else {
@@ -1006,7 +1012,7 @@ const Calculadora = ({
         if (valorDevo > 0) {
           await Execute.updateDevo(codigo, valorDevo);
         }
-        const novoCodigo = gerarEArmazenarCodigoAleatorio();
+        const novoCodigo = gerarCodigoUnico();
         await Execute.sendToDeve({
           deveid: novoCodigo,
           nome,
@@ -1143,7 +1149,7 @@ const Calculadora = ({
 
     try {
       if (Number(total) > 0) {
-        const novoCodigo = gerarEArmazenarCodigoAleatorio();
+        const novoCodigo = gerarCodigoUnico();
         //await Execute.removeDevo(codigo);
         await Execute.sendToDeve({
           deveid: novoCodigo,
