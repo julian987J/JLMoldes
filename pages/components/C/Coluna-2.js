@@ -12,7 +12,11 @@ import { useWebSocket } from "../../../contexts/WebSocketContext.js"; // Ajuste 
 
 const formatCurrency = (value) => {
   const number = parseFloat(value);
-  return isNaN(number) ? "0.00" : number.toFixed(2);
+  if (isNaN(number)) {
+    return "0.00";
+  }
+  const rounded = Math.round((number + Number.EPSILON) * 100) / 100;
+  return rounded.toFixed(2);
 };
 
 const Coluna = ({ r }) => {

@@ -91,7 +91,9 @@ const ValoresColuna = ({ r, onValoresChange }) => {
   }, [dados]);
 
   useEffect(() => {
-    onValoresChange(totalDesperdicio + totalUtil + totalPerdida);
+    const total = totalDesperdicio + totalUtil + totalPerdida;
+    const roundedTotal = Math.round((total + Number.EPSILON) * 100) / 100;
+    onValoresChange(roundedTotal);
   }, [totalDesperdicio, totalUtil, totalPerdida, onValoresChange]);
 
   return null;
