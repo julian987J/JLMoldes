@@ -573,7 +573,7 @@ const Coluna = ({ r }) => {
                             className="input input-xs p-0 m-0 text-center"
                           />
                         ) : (
-                          item.papel
+                          formatCurrency(item.papel)
                         )}
                       </td>
                       <td>
@@ -663,7 +663,7 @@ const Coluna = ({ r }) => {
                             className="input input-xs p-0 m-0 text-center"
                           />
                         ) : (
-                          item.util
+                          formatCurrency(item.util)
                         )}
                       </td>
                       <td>
@@ -678,7 +678,7 @@ const Coluna = ({ r }) => {
                             className="input input-xs p-0 m-0 text-center"
                           />
                         ) : (
-                          item.perdida
+                          formatCurrency(item.perdida)
                         )}
                       </td>
                       <td>
