@@ -307,9 +307,6 @@ const Coluna3 = ({ r }) => {
   const totalM1_P02_Multiplicado = totalM1_P02 * multiplicadorConfig;
   const totalM2_P02_Multiplicado = totalM2_P02 * multiplicadorConfig;
 
-  const totalM1 = totalM1_P01_Multiplicado + totalM1_P02_Multiplicado;
-  const totalM2 = totalM2_P01_Multiplicado + totalM2_P02_Multiplicado;
-
   const totalMetragemM1 = totalM1_P01 + totalM1_P02;
   const totalMetragemM2 = totalM2_P01 + totalM2_P02;
 
