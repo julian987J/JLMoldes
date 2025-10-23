@@ -10,8 +10,6 @@ import Aviso from "./Aviso.js";
 import ValoresColuna from "./ValoresColuna.js";
 
 const Rcontent = ({ codigoExterno, nomeExterno, r }) => {
-  // Referência para o valor de codigoExterno, para garantir que não altere depois de passado
-  const codigoExternoRef = useRef(codigoExterno);
   const tablesToSearch = useRef(["R", "deve", "devo", "cadastro"]);
 
   // Se o codigoExterno for passado, não alteramos o estado de codigo

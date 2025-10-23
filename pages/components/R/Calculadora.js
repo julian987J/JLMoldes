@@ -671,7 +671,43 @@ const Calculadora = ({
     const trocoValue = Number(roundedTroco);
 
     try {
-      if (dadosR && !valorDeve && trocoValue > 0 && !Number(total)) {
+      // Condição para devolver crédito (Devo) em dinheiro para o cliente
+      if (
+        valorDevo > 0 &&
+        Number(trocoReal) > 0 &&
+        !total &&
+        !dadosR &&
+        !valorDeve &&
+        !pix &&
+        !real
+      ) {
+        const valorRetirado = Number(trocoReal);
+        const novoValorDevo = valorDevo - valorRetirado;
+
+        // Remove o registro de crédito antigo
+        await Execute.removeDevo(codigo);
+
+        // Se ainda sobrar crédito, cria um novo registro com o valor atualizado
+        if (novoValorDevo > 0) {
+          await Execute.sendToDevo({
+            nome,
+            r,
+            codigo,
+            valor: roundToHalf(novoValorDevo),
+          });
+        }
+
+        // Registra a saída de caixa como um pagamento negativo
+        await Execute.sendToPagamentos({
+          nome,
+          r,
+          data: Use.NowData(),
+          pix: 0,
+          real: -valorRetirado,
+        });
+
+        console.log("Caiu em Devolver crédito (Devo) em dinheiro.");
+      } else if (dadosR && !valorDeve && trocoValue > 0 && !Number(total)) {
         await sendToCAndUpdateR(trocoValue);
         console.log("caiu em Pago Parte do R");
 
