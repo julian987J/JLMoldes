@@ -4,6 +4,14 @@ import dynamic from "next/dynamic";
 import { useWebSocket } from "../../../contexts/WebSocketContext.js"; // Import WebSocket context
 import Use from "models/utils.js";
 
+function round(value) {
+  return Math.round(value * 100) / 100;
+}
+
+function roundToHalf(value) {
+  return Math.round(value / 0.5) * 0.5;
+}
+
 function gerarCodigoUnico() {
   // Combina o timestamp atual com uma string aleatória para garantir unicidade.
   return (
@@ -114,18 +122,18 @@ const Calculadora = ({
     comitions;
 
   // Calculate the display value for totalGeral according to the new rounding rules
-  const roundedTotalGeral = Math.round(totalGeral / 0.5) * 0.5;
+  const roundedTotalGeral = roundToHalf(totalGeral);
   const displayTotalGeral =
     roundedTotalGeral === 0 ? "SOMA TOTAL" : roundedTotalGeral.toFixed(2);
 
-  const totalTroco =
-    roundedTotalGeral -
-    (Number(pix) || 0) -
-    (Number(real) || 0) +
-    (Number(trocoReal) || 0);
-  const roundedTroco = Math.round(totalTroco / 0.5) * 0.5;
+  const roundedPix = roundToHalf(Number(pix) || 0);
+  const roundedReal = roundToHalf(Number(real) || 0);
 
-  const pixMaisReal = Number(pix) + Number(real);
+  const totalTroco =
+    roundedTotalGeral - roundedPix - roundedReal + (Number(trocoReal) || 0);
+  const roundedTroco = roundToHalf(totalTroco);
+
+  const pixMaisReal = roundedPix + roundedReal;
   // Buscar dados R agrupados por dec
   useEffect(() => {
     const buscarDados = async () => {
@@ -422,7 +430,7 @@ const Calculadora = ({
     try {
       const dadosParaAtualizar = {
         id: itemComMenorId.id,
-        metragem: novaMetragem,
+        metragem: round(novaMetragem),
       };
 
       const response = await fetch("/api/v1/tables/gastos/papel", {
@@ -458,8 +466,8 @@ const Calculadora = ({
       const newBase = (existingData.base || 0) + (New.base || 0);
 
       // Ajustar valores de real e pix para não ultrapassar o total permitido
-      let adjustedReal = Number(real);
-      let adjustedPix = Number(pix);
+      let adjustedReal = roundedReal;
+      let adjustedPix = roundedPix;
 
       // Calcular o máximo permitido para este grupo dec
       const maxForDec = newSis + newAlt + newBase;
@@ -495,11 +503,11 @@ const Calculadora = ({
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            sis: newSis,
-            alt: newAlt,
-            base: newBase,
-            real: adjustedReal,
-            pix: adjustedPix,
+            sis: round(newSis),
+            alt: round(newAlt),
+            base: round(newBase),
+            real: roundToHalf(adjustedReal),
+            pix: roundToHalf(adjustedPix),
           }),
         },
       );
@@ -575,8 +583,8 @@ const Calculadora = ({
           base: group.base - adjustments[group.dec].base,
           sis: group.sis - adjustments[group.dec].sis,
           alt: group.alt - adjustments[group.dec].alt,
-          real: Math.min(Number(real)), // Adicione
-          pix: Math.min(Number(pix)), // Adicione
+          real: Math.min(roundedReal), // Adicione
+          pix: Math.min(roundedPix), // Adicione
         };
 
         const exists = existsMap.get(group.dec);
@@ -588,8 +596,12 @@ const Calculadora = ({
             ...ObjC1,
             dec: group.dec,
             ...diff,
-            real: Math.min(Number(real), diff.base + diff.sis + diff.alt),
-            pix: Math.min(Number(pix), diff.base + diff.sis + diff.alt),
+            real: roundToHalf(
+              Math.min(roundedReal, diff.base + diff.sis + diff.alt),
+            ),
+            pix: roundToHalf(
+              Math.min(roundedPix, diff.base + diff.sis + diff.alt),
+            ),
           });
         }
       }
@@ -616,7 +628,7 @@ const Calculadora = ({
         //
       } else if (trocoValue < 0) {
         const totalOriginalDaCompra = total + (Number(dadosR) || 0) + valorDeve;
-        const pagamento = (Number(pix) || 0) + (Number(real) || 0);
+        const pagamento = pixMaisReal;
         const trocoRealDado = Number(trocoReal) || 0;
 
         const creditoFinal =
@@ -631,7 +643,7 @@ const Calculadora = ({
             nome,
             r,
             codigo,
-            valor: creditoFinal,
+            valor: roundToHalf(creditoFinal),
           });
         }
 
@@ -657,8 +669,8 @@ const Calculadora = ({
               r,
               data: Use.NowData(),
               codigo,
-              valorpapel: papel,
-              valorcomissao: comitions,
+              valorpapel: round(papel),
+              valorcomissao: round(comitions),
               valor: roundedTotalGeral,
             });
             await Execute.sendToPapelC({
@@ -689,8 +701,8 @@ const Calculadora = ({
         if (existsMap) {
           const values = totalGeral - Number(total) - pixMaisReal;
           await sendToCAndUpdateR(values);
-          const numPix = Number(pix) || 0;
-          const numReal = Number(real) || 0;
+          const numPix = roundedPix;
+          const numReal = roundedReal;
 
           if (numPix > 0 || numReal > 0) {
             let finalPix = numPix;
@@ -745,8 +757,8 @@ const Calculadora = ({
         console.log("Caiu em foi tudo pago Papel e R.");
         //
       } else if (valorDeve && !trocoValue) {
-        const numPix = Number(pix) || 0;
-        const numReal = Number(real) || 0;
+        const numPix = roundedPix;
+        const numReal = roundedReal;
 
         if (numPix > 0 || numReal > 0) {
           let finalPix = numPix;
@@ -803,9 +815,9 @@ const Calculadora = ({
           codigo,
           r,
           nome,
-          valorpapel: papel,
-          valorcomissao: comitions,
-          valor: total,
+          valorpapel: round(papel),
+          valorcomissao: round(comitions),
+          valor: roundToHalf(total),
         });
 
         await Execute.sendToPapelC({
@@ -821,8 +833,8 @@ const Calculadora = ({
           trocoValue,
           r,
           deveIdsArray,
-          Number(pix),
-          Number(real),
+          roundedPix,
+          roundedReal,
         );
 
         if (total > 0) {
@@ -833,24 +845,26 @@ const Calculadora = ({
             r,
             data: Use.NowData(),
             codigo,
-            valorpapel: papel,
-            valorcomissao: comitions,
+            valorpapel: round(papel),
+            valorcomissao: round(comitions),
             valor: trocoValue,
           });
           await Execute.sendToPapelC({
             ...ObjPapelC,
             deveid: novoCodigo,
-            papelpix:
-              Number(pix) > 0 ? Math.min(Number(pix), papel) - trocoValue : 0,
-            papelreal:
-              Number(real) > 0
+            papelpix: round(
+              roundedPix > 0 ? Math.min(roundedPix, papel) - trocoValue : 0,
+            ),
+            papelreal: round(
+              roundedReal > 0
                 ? Math.min(
-                    Number(real),
+                    roundedReal,
                     papel -
-                      (Number(pix) > 0 ? Math.min(Number(pix), papel) : 0) -
+                      (roundedPix > 0 ? Math.min(roundedPix, papel) : 0) -
                       trocoValue,
                   )
                 : 0,
+            ),
           });
           console.log("caiu no valor novo pago e parte");
         }
@@ -882,8 +896,8 @@ const Calculadora = ({
               r,
               data: Use.NowData(),
               codigo,
-              valorpapel: papel,
-              valorcomissao: comitions,
+              valorpapel: round(papel),
+              valorcomissao: round(comitions),
               valor: trocoValue,
             });
             await Execute.sendToPapelC({
@@ -916,9 +930,9 @@ const Calculadora = ({
               r,
               data: Use.NowData(),
               codigo,
-              valorpapel: papel,
-              valorcomissao: comitions,
-              valor: Number(total),
+              valorpapel: round(papel),
+              valorcomissao: round(comitions),
+              valor: roundToHalf(total),
             });
 
             await Execute.sendToPapelC({
@@ -949,9 +963,9 @@ const Calculadora = ({
               r,
               data: Use.NowData(),
               codigo,
-              valorpapel: papel,
-              valorcomissao: comitions,
-              valor: value,
+              valorpapel: round(papel),
+              valorcomissao: round(comitions),
+              valor: roundToHalf(value),
             });
             await Execute.sendToPapelC({
               ...ObjPapelC,
@@ -996,15 +1010,17 @@ const Calculadora = ({
         await Execute.removeDevo(codigo);
         await Execute.sendToPapelC({
           ...ObjPapelC,
-          papelpix:
-            Number(pix) > 0 ? Math.min(Number(pix), papel) + valorDevo : 0,
-          papelreal:
-            Number(real) > 0
+          papelpix: round(
+            roundedPix > 0 ? Math.min(roundedPix, papel) + valorDevo : 0,
+          ),
+          papelreal: round(
+            roundedReal > 0
               ? Math.min(
-                  Number(real),
-                  papel - (Number(pix) > 0 ? Math.min(Number(pix), papel) : 0),
+                  roundedReal,
+                  papel - (roundedPix > 0 ? Math.min(roundedPix, papel) : 0),
                 ) + valorDevo
               : 0,
+          ),
         });
 
         console.log("Caiu em DEVO e Pagou tudo o Papel");
@@ -1019,8 +1035,8 @@ const Calculadora = ({
           r,
           data: Use.NowData(),
           codigo,
-          valorpapel: papel - pixMaisReal,
-          valorcomissao: comitions,
+          valorpapel: round(papel - pixMaisReal),
+          valorcomissao: round(comitions),
           valor: trocoValue,
         });
         await Execute.sendToPapelC({
@@ -1037,8 +1053,8 @@ const Calculadora = ({
         Number(sumValues) + Number(desperdicio) + Number(perdida),
       );
 
-      const numPix = Number(pix) || 0;
-      const numReal = Number(real) || 0;
+      const numPix = roundedPix;
+      const numReal = roundedReal;
 
       if (numPix > 0 || numReal > 0) {
         let finalPix = numPix;
@@ -1070,8 +1086,8 @@ const Calculadora = ({
             nome,
             r,
             data: Use.NowData(),
-            pix: pixParaPagamento,
-            real: realParaPagamento,
+            pix: round(pixParaPagamento),
+            real: round(realParaPagamento),
           });
         }
       }
@@ -1157,9 +1173,9 @@ const Calculadora = ({
           r,
           data: Use.NowData(),
           codigo,
-          valorpapel: papel,
-          valorcomissao: comitions,
-          valor: total,
+          valorpapel: round(papel),
+          valorcomissao: round(comitions),
+          valor: roundToHalf(total),
         });
 
         await Execute.sendToPapelC({
@@ -1209,7 +1225,7 @@ const Calculadora = ({
       papelreal: 0,
       encaixepix: 0,
       encaixereal: 0,
-      desperdicio: (Number(desperdicio) || 0) * activeValuesCount,
+      desperdicio: round((Number(desperdicio) || 0) * activeValuesCount),
       util: 0,
       perdida: Number(perdida) || 0,
       comentario,
@@ -1237,8 +1253,8 @@ const Calculadora = ({
     sis: 0, // Valores serão ajustados
     alt: 0,
     base: 0,
-    real: Number(real),
-    pix: Number(pix),
+    real: roundedReal,
+    pix: roundedPix,
   };
 
   const activeValuesCount = values.reduce((count, currentValue) => {
@@ -1253,26 +1269,27 @@ const Calculadora = ({
     nome,
     multi: multiplier,
     comissao: plus || 0,
-    papel: papel || 0,
-    papelpix: Number(pix) > 0 ? Math.min(Number(pix), papel) : 0,
-    papelreal:
-      Number(real) > 0
+    papel: round(papel) || 0,
+    papelpix: round(roundedPix > 0 ? Math.min(roundedPix, papel) : 0),
+    papelreal: round(
+      roundedReal > 0
         ? Math.min(
-            Number(real),
-            papel - (Number(pix) > 0 ? Math.min(Number(pix), papel) : 0),
+            roundedReal,
+            papel - (roundedPix > 0 ? Math.min(roundedPix, papel) : 0),
           )
         : 0,
-    encaixepix: Number(pix) > 0 ? Math.min(Number(pix), comitions) : 0,
-    encaixereal:
-      Number(real) > 0
+    ),
+    encaixepix: round(roundedPix > 0 ? Math.min(roundedPix, comitions) : 0),
+    encaixereal: round(
+      roundedReal > 0
         ? Math.min(
-            Number(real),
-            comitions -
-              (Number(pix) > 0 ? Math.min(Number(pix), comitions) : 0),
+            roundedReal,
+            comitions - (roundedPix > 0 ? Math.min(roundedPix, comitions) : 0),
           )
         : 0,
-    desperdicio: (Number(desperdicio) || 0) * activeValuesCount,
-    util: sumValues,
+    ),
+    desperdicio: round((Number(desperdicio) || 0) * activeValuesCount),
+    util: round(sumValues),
     perdida: Number(perdida) || 0,
     comentario,
   };
