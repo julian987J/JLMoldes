@@ -21,12 +21,8 @@ function gerarCodigoUnico() {
 }
 
 const Calculadora = ({
-  codigo,
-  nome,
   plus,
   values = Array(28).fill(""), // Provide a default value for values
-  onCodigoChange,
-  onNomeChange,
   onPlusChange, // Recebido como prop
   onValuesChange, // Recebido como prop
   data,
@@ -36,6 +32,8 @@ const Calculadora = ({
   const ErrorComponent = dynamic(() => import("../Errors.js"), { ssr: false });
   const [showError, setShowError] = useState(false);
   const componentId = useId();
+  const [codigo, setCodigo] = useState("");
+  const [nome, setNome] = useState("");
 
   useEffect(() => {
     setShowError(false); // Resetar no cliente após a montagem
@@ -76,6 +74,61 @@ const Calculadora = ({
   const [isPendenteDisabled, setIsPendenteDisabled] = useState(false);
   const [isEsperaDisabled, setIsEsperaDisabled] = useState(false);
   const [trocoReal, setTrocoReal] = useState("");
+
+  const handleCodigoChange = (e) => {
+    const newCodigo = e.target.value;
+    setCodigo(newCodigo);
+
+    const codigoBuscado = newCodigo.trim();
+    if (!codigoBuscado) {
+      setNome("");
+      return;
+    }
+
+    const registro = allCadastroNames.find(
+      (item) => item.codigo?.toString().trim() === codigoBuscado,
+    );
+
+    if (registro) {
+      setNome(registro.nome || "");
+    } else {
+      setNome("");
+    }
+  };
+
+  const handleNomeChange = (e) => {
+    const newNome = e.target.value;
+    setNome(newNome);
+
+    if (newNome.length > 0) {
+      const suggestions = allCadastroNames
+        .filter(
+          (item) =>
+            item.nome &&
+            item.nome.toLowerCase().includes(newNome.toLowerCase()),
+        )
+        .map((item) => item.nome);
+      setFilteredSuggestions(suggestions);
+    } else {
+      setFilteredSuggestions([]);
+    }
+
+    const nomeBuscado = newNome.trim().toLowerCase();
+    if (!nomeBuscado) {
+      setCodigo("");
+      return;
+    }
+
+    const registro = allCadastroNames.find(
+      (item) => item.nome?.trim().toLowerCase() === nomeBuscado,
+    );
+
+    if (registro) {
+      setCodigo(registro.codigo?.toString() || "");
+    } else {
+      setCodigo("");
+    }
+  };
 
   // Calcula a soma bruta dos valores (novo cálculo)
   const sumValues = values.reduce((sum, current) => {
@@ -1098,8 +1151,8 @@ const Calculadora = ({
       setComentario("");
       setPerdida("");
       setTrocoReal("");
-      onNomeChange("");
-      onCodigoChange("");
+      setNome("");
+      setCodigo("");
       onValuesChange(Array(28).fill(""));
     } catch (error) {
       console.error("Erro ao salvar:", error);
@@ -1142,8 +1195,8 @@ const Calculadora = ({
       await Execute.sendToTemp(dataToSend);
       onValuesChange(Array(28).fill(""));
       onPlusChange(0);
-      onNomeChange(""); // Limpa o campo nome
-      onCodigoChange(""); // Limpa o campo codigo
+      setNome(""); // Limpa o campo nome
+      setCodigo(""); // Limpa o campo codigo
       console.log("Dados pendentes salvos com sucesso!");
     } catch (error) {
       console.error("Erro ao salvar dados pendentes:", error);
@@ -1194,8 +1247,8 @@ const Calculadora = ({
         setReal("");
         setComentario("");
         setPerdida("");
-        onNomeChange("");
-        onCodigoChange("");
+        setNome("");
+        setCodigo("");
         onValuesChange(Array(28).fill(""));
       } else {
         setShowError(true);
@@ -1310,7 +1363,7 @@ const Calculadora = ({
             className="input input-warning input-xs w-full col-span-3"
             value={codigo}
             autoComplete="nope"
-            onChange={(e) => onCodigoChange(e.target.value)}
+            onChange={handleCodigoChange}
             required
           />
           <input
@@ -1330,24 +1383,7 @@ const Calculadora = ({
             value={nome}
             autoComplete="nope"
             list={datalistId} // Linked to datalist
-            onChange={(e) => {
-              const novoNome = e.target.value;
-              onNomeChange(novoNome); // Update parent's nome state
-
-              if (novoNome.length > 0) {
-                const suggestions = allCadastroNames
-                  .filter(
-                    (item) =>
-                      item.nome &&
-                      item.nome.toLowerCase().includes(novoNome.toLowerCase()),
-                  )
-                  .map((item) => item.nome);
-                setFilteredSuggestions(suggestions);
-              } else {
-                // Clear suggestions if input is empty
-                setFilteredSuggestions([]);
-              }
-            }}
+            onChange={handleNomeChange}
             required
           />
           <datalist id={datalistId}>
