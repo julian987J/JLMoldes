@@ -337,7 +337,7 @@ const Mcontent = ({ oficina, r }) => {
       </div>
       <div className="divider divider-neutral">OFICINA</div>
       <div>
-        <Rcontent codigoExterno={codigo} r={r} />
+        <Rcontent codigoExterno={codigo} nomeExterno={nome} r={r} />
       </div>
 
       {showError && <ErrorComponent errorCode="000BSA" />}

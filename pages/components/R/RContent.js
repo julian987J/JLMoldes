@@ -9,14 +9,14 @@ import PlanilhaDiaria from "./PlanilhaDiaria.js";
 import Aviso from "./Aviso.js";
 import ValoresColuna from "./ValoresColuna.js";
 
-const Rcontent = ({ codigoExterno, r }) => {
+const Rcontent = ({ codigoExterno, nomeExterno, r }) => {
   // Referência para o valor de codigoExterno, para garantir que não altere depois de passado
   const codigoExternoRef = useRef(codigoExterno);
   const tablesToSearch = useRef(["R", "deve", "devo", "cadastro"]);
 
   // Se o codigoExterno for passado, não alteramos o estado de codigo
   const [codigo, setCodigo] = useState(codigoExterno || "");
-  const [nome, setNome] = useState("");
+  const [nome, setNome] = useState(nomeExterno || "");
   const [plusCalculadora, setPlusCalculadora] = useState(null);
   const [valuesCalculadora, setValuesCalculadora] = useState(
     Array(28).fill(""),
@@ -26,25 +26,17 @@ const Rcontent = ({ codigoExterno, r }) => {
   const [totalValores, setTotalValores] = useState(0);
 
   useEffect(() => {
-    if (codigoExterno !== codigoExternoRef.current) {
-      codigoExternoRef.current = codigoExterno;
-      setCodigo(codigoExterno || "");
-    }
+    setCodigo(codigoExterno || "");
   }, [codigoExterno]);
 
   useEffect(() => {
-    let isMounted = true;
-    // Se um item foi selecionado do Pendente, não busca o nome automaticamente
-    if (selectedPendenteItem) {
-      return;
-    }
+    setNome(nomeExterno || "");
+  }, [nomeExterno]);
 
-    const fetchNome = async () => {
+  useEffect(() => {
+    const fetchDataForCodigo = async () => {
       if (!codigo) {
-        if (isMounted) {
-          setNome("");
-          setData(undefined);
-        }
+        setData(undefined);
         return;
       }
 
@@ -56,70 +48,25 @@ const Rcontent = ({ codigoExterno, r }) => {
           if (foundItem) break;
         }
 
-        if (isMounted && foundItem) {
-          setNome(foundItem.nome || "");
+        if (foundItem) {
           setData(foundItem.data);
-        } else if (isMounted) {
-          setNome("");
+        } else {
           setData(undefined);
         }
       } catch (error) {
-        console.error("Falha ao buscar nome:", error);
-        if (isMounted) {
-          setNome("");
-          setData(undefined);
-        }
+        console.error("Falha ao buscar data para o código:", error);
+        setData(undefined);
       }
     };
 
-    fetchNome();
-    return () => {
-      isMounted = false;
-    };
-  }, [codigo, selectedPendenteItem]);
+    fetchDataForCodigo();
+  }, [codigo]); // Adiciona selectedPendenteItem como dependência
 
-  useEffect(() => {
-    if (selectedPendenteItem) {
-      return;
-    }
-
-    let isMounted = true;
-    const fetchCodigo = async () => {
-      if (!nome) {
-        if (isMounted) setCodigo("");
-        return;
-      }
-
-      try {
-        let foundCodigo = "";
-        for (const table of tablesToSearch.current) {
-          const items = await Execute.receiveFromRDeveDevo(table);
-          const foundItem = items.find((item) => item.nome === nome);
-          if (foundItem) {
-            foundCodigo = foundItem.codigo;
-            break;
-          }
-        }
-        if (isMounted) setCodigo(foundCodigo);
-      } catch (error) {
-        console.error("Falha ao buscar código:", error);
-      }
-    };
-
-    fetchCodigo();
-    return () => {
-      isMounted = false;
-    };
-  }, [nome, selectedPendenteItem]); // Adiciona selectedPendenteItem como dependência
-
-  // Atualizando o estado 'codigo' ou 'nome' diretamente
   const handleCodigoChange = (novoCodigo) => {
-    if (!codigoExternoRef.current) {
-      setCodigo(novoCodigo); // Só altera o código se codigoExterno não estiver definido
-      setSelectedPendenteItem(null); // Limpa a seleção do pendente
-      setPlusCalculadora(null); // Reseta o plus para null
-      setValuesCalculadora(Array(28).fill("")); // Reseta os values
-    }
+    setCodigo(novoCodigo);
+    setSelectedPendenteItem(null); // Limpa a seleção do pendente
+    setPlusCalculadora(null); // Reseta o plus para null
+    setValuesCalculadora(Array(28).fill("")); // Reseta os values
   };
 
   const handleNomeChange = (novoNome) => {

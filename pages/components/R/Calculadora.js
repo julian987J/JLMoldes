@@ -28,12 +28,14 @@ const Calculadora = ({
   data,
   r,
   isPendente,
+  codigo,
+  nome,
+  onCodigoChange,
+  onNomeChange,
 }) => {
   const ErrorComponent = dynamic(() => import("../Errors.js"), { ssr: false });
   const [showError, setShowError] = useState(false);
   const componentId = useId();
-  const [codigo, setCodigo] = useState("");
-  const [nome, setNome] = useState("");
 
   useEffect(() => {
     setShowError(false); // Resetar no cliente após a montagem
@@ -77,11 +79,11 @@ const Calculadora = ({
 
   const handleCodigoChange = (e) => {
     const newCodigo = e.target.value;
-    setCodigo(newCodigo);
+    onCodigoChange(newCodigo);
 
     const codigoBuscado = newCodigo.trim();
     if (!codigoBuscado) {
-      setNome("");
+      onNomeChange("");
       return;
     }
 
@@ -90,15 +92,15 @@ const Calculadora = ({
     );
 
     if (registro) {
-      setNome(registro.nome || "");
+      onNomeChange(registro.nome || "");
     } else {
-      setNome("");
+      onNomeChange("");
     }
   };
 
   const handleNomeChange = (e) => {
     const newNome = e.target.value;
-    setNome(newNome);
+    onNomeChange(newNome);
 
     if (newNome.length > 0) {
       const suggestions = allCadastroNames
@@ -115,7 +117,7 @@ const Calculadora = ({
 
     const nomeBuscado = newNome.trim().toLowerCase();
     if (!nomeBuscado) {
-      setCodigo("");
+      onCodigoChange("");
       return;
     }
 
@@ -124,9 +126,9 @@ const Calculadora = ({
     );
 
     if (registro) {
-      setCodigo(registro.codigo?.toString() || "");
+      onCodigoChange(registro.codigo?.toString() || "");
     } else {
-      setCodigo("");
+      onCodigoChange("");
     }
   };
 
@@ -1151,8 +1153,8 @@ const Calculadora = ({
       setComentario("");
       setPerdida("");
       setTrocoReal("");
-      setNome("");
-      setCodigo("");
+      onNomeChange("");
+      onCodigoChange("");
       onValuesChange(Array(28).fill(""));
     } catch (error) {
       console.error("Erro ao salvar:", error);
@@ -1195,8 +1197,8 @@ const Calculadora = ({
       await Execute.sendToTemp(dataToSend);
       onValuesChange(Array(28).fill(""));
       onPlusChange(0);
-      setNome(""); // Limpa o campo nome
-      setCodigo(""); // Limpa o campo codigo
+      onNomeChange(""); // Limpa o campo nome
+      onCodigoChange(""); // Limpa o campo codigo
       console.log("Dados pendentes salvos com sucesso!");
     } catch (error) {
       console.error("Erro ao salvar dados pendentes:", error);
@@ -1251,8 +1253,8 @@ const Calculadora = ({
         setReal("");
         setComentario("");
         setPerdida("");
-        setNome("");
-        setCodigo("");
+        onNomeChange("");
+        onCodigoChange("");
         onValuesChange(Array(28).fill(""));
       } else {
         setShowError(true);
