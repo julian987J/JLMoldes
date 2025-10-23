@@ -1241,6 +1241,10 @@ const Calculadora = ({
           encaixereal: 0,
         });
 
+        hadleUpdatePapel(
+          Number(sumValues) + Number(desperdicio) + Number(perdida),
+        );
+
         // Clear form after successful operation
         setPix("");
         onPlusChange(0);
