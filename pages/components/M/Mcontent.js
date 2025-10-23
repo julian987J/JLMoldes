@@ -63,14 +63,14 @@ const Mcontent = ({ oficina, r }) => {
     }
   }, [lastMessage]);
 
-  // useEffect para código (modificado)
-  useEffect(() => {
-    const codigoBuscado = codigo.trim().toUpperCase();
+  const handleCodigoChange = (e) => {
+    const newCodigo = e.target.value;
+    setCodigo(newCodigo);
 
-    // Sempre limpa quando o código está vazio
+    const codigoBuscado = newCodigo.trim().toUpperCase();
     if (!codigoBuscado) {
-      setObservacao("");
       setNome("");
+      setObservacao("");
       return;
     }
 
@@ -79,22 +79,35 @@ const Mcontent = ({ oficina, r }) => {
     );
 
     if (registro) {
-      setObservacao(registro.observacao || "");
       setNome(registro.nome || "");
+      setObservacao(registro.observacao || "");
     } else {
-      setObservacao("");
       setNome("");
-    }
-  }, [codigo, cadastroItems]);
-
-  // useEffect para nome (modificado)
-  useEffect(() => {
-    const nomeBuscado = nome.trim().toLowerCase();
-
-    // Sempre limpa quando o nome está vazio
-    if (!nomeBuscado) {
       setObservacao("");
+    }
+  };
+
+  const handleNomeChange = (e) => {
+    const newNome = e.target.value;
+    setNome(newNome);
+
+    if (newNome.length > 0) {
+      const suggestions = cadastroItems
+        .filter(
+          (item) =>
+            item.nome &&
+            item.nome.toLowerCase().includes(newNome.toLowerCase()),
+        )
+        .map((item) => item.nome);
+      setFilteredSuggestions(suggestions);
+    } else {
+      setFilteredSuggestions([]);
+    }
+
+    const nomeBuscado = newNome.trim().toLowerCase();
+    if (!nomeBuscado) {
       setCodigo("");
+      setObservacao("");
       return;
     }
 
@@ -103,13 +116,13 @@ const Mcontent = ({ oficina, r }) => {
     );
 
     if (registro) {
-      setObservacao(registro.observacao || "");
       setCodigo(registro.codigo?.toString() || "");
+      setObservacao(registro.observacao || "");
     } else {
-      setObservacao("");
       setCodigo("");
+      setObservacao("");
     }
-  }, [nome, cadastroItems]);
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -238,7 +251,7 @@ const Mcontent = ({ oficina, r }) => {
             placeholder="CODIGO"
             className="input input-info input-xs w-24"
             value={codigo}
-            onChange={(e) => setCodigo(e.target.value)}
+            onChange={handleCodigoChange}
           />
           <input
             type="text"
@@ -262,25 +275,7 @@ const Mcontent = ({ oficina, r }) => {
               value={nome}
               autoComplete="off"
               list={`m-name-suggestions-${componentId}`}
-              onChange={(e) => {
-                const novoNome = e.target.value;
-                setNome(novoNome);
-
-                if (novoNome.length > 0) {
-                  const suggestions = cadastroItems
-                    .filter(
-                      (item) =>
-                        item.nome &&
-                        item.nome
-                          .toLowerCase()
-                          .includes(novoNome.toLowerCase()),
-                    )
-                    .map((item) => item.nome);
-                  setFilteredSuggestions(suggestions);
-                } else {
-                  setFilteredSuggestions([]);
-                }
-              }}
+              onChange={handleNomeChange}
             />
             <datalist id={`m-name-suggestions-${componentId}`}>
               {filteredSuggestions.map((suggestion, index) => (
