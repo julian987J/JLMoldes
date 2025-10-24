@@ -77,6 +77,54 @@ const Calculadora = ({
   const [isEsperaDisabled, setIsEsperaDisabled] = useState(false);
   const [trocoReal, setTrocoReal] = useState("");
 
+  // Estados para a nova funcionalidade de papel
+  const [papeis, setPapeis] = useState([]);
+  const [oldestPapel, setOldestPapel] = useState(null);
+  const [plotterData, setPlotterData] = useState([]);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      if (typeof r === "undefined" || r === null) return;
+      try {
+        const workshop = "R" + r;
+        const [plotterResults, papelResults] = await Promise.all([
+          Execute.receiveFromPlotterC(r),
+          Execute.receiveFromPapelByItem(workshop),
+        ]);
+
+        setPlotterData(
+          Array.isArray(plotterResults)
+            ? plotterResults.sort(
+                (a, b) =>
+                  new Date(b.data) - new Date(a.data) ||
+                  new Date(b.inicio) - new Date(a.inicio),
+              )
+            : [],
+        );
+
+        if (Array.isArray(papelResults)) {
+          const filteredPapeis = papelResults
+            .filter((p) => p.gastos && p.gastos.startsWith("PAPEL-"))
+            .sort((a, b) => a.id - b.id); // Sort ascending by ID
+          setPapeis(filteredPapeis);
+        } else {
+          setPapeis([]);
+        }
+      } catch (error) {
+        console.error("Erro ao buscar dados de papel e plotter:", error);
+      }
+    };
+    fetchData();
+  }, [r]);
+
+  useEffect(() => {
+    if (papeis && papeis.length > 0) {
+      setOldestPapel(papeis[0]);
+    } else {
+      setOldestPapel(null);
+    }
+  }, [papeis]);
+
   const handleCodigoChange = (e) => {
     const newCodigo = e.target.value;
     onCodigoChange(newCodigo);
@@ -328,7 +376,7 @@ const Calculadora = ({
   // WebSocket listeners for real-time updates
   useEffect(() => {
     if (lastMessage && lastMessage.data) {
-      const { type } = lastMessage.data;
+      const { type, payload } = lastMessage.data;
 
       // Listener for R updates
       if (type.startsWith("BSA_")) {
@@ -384,8 +432,82 @@ const Calculadora = ({
         };
         buscarDadosDevo();
       }
+
+      // Listeners para Papel e PlotterC
+      const workshop = "R" + r;
+      if (
+        (type.startsWith("PLOTTER_C_") &&
+          payload &&
+          String(payload.r) === String(r)) ||
+        (type.startsWith("PAPEL_") && payload)
+      ) {
+        // Atualiza Plotter Data
+        if (type.startsWith("PLOTTER_C_")) {
+          setPlotterData((prev) => {
+            let newData = [...prev];
+            const index = newData.findIndex(
+              (item) => String(item.id) === String(payload.id),
+            );
+            if (type === "PLOTTER_C_NEW_ITEM" && index === -1) {
+              newData.push(payload);
+            } else if (type === "PLOTTER_C_UPDATED_ITEM" && index !== -1) {
+              newData[index] = payload;
+            } else if (type === "PLOTTER_C_DELETED_ITEM") {
+              newData = newData.filter(
+                (item) => String(item.id) !== String(payload.id),
+              );
+            }
+            return newData.sort(
+              (a, b) =>
+                new Date(b.data) - new Date(a.data) ||
+                new Date(b.inicio) - new Date(a.inicio),
+            );
+          });
+        }
+
+        // Atualiza Papeis
+        if (type.startsWith("PAPEL_") && payload.item === workshop) {
+          if (
+            type === "PAPEL_NEW_ITEM" &&
+            payload.gastos?.startsWith("PAPEL-")
+          ) {
+            setPapeis((prev) => [...prev, payload].sort((a, b) => a.id - b.id));
+          } else if (type === "PAPEL_UPDATED_ITEM") {
+            setPapeis((prev) =>
+              prev
+                .map((item) =>
+                  String(item.id) === String(payload.id) ? payload : item,
+                )
+                .sort((a, b) => a.id - b.id),
+            );
+          }
+        }
+        if (type === "PAPEL_DELETED_ITEM") {
+          setPapeis((prev) =>
+            prev.filter((item) => String(item.id) !== String(payload.id)),
+          );
+        }
+      }
     }
   }, [lastMessage, codigo, r]);
+
+  const handleFinalizarPapel = async () => {
+    if (oldestPapel) {
+      try {
+        setPapeis((prevPapeis) =>
+          prevPapeis.filter((p) => p.id !== oldestPapel.id),
+        );
+        await Execute.removePapel(oldestPapel.id);
+      } catch (error) {
+        console.error("Erro ao finalizar papel:", error);
+      }
+    }
+  };
+
+  const formatNumber = (value) => {
+    const number = parseFloat(value);
+    return isNaN(number) ? "0.00" : number.toFixed(2);
+  };
 
   // Fetch all cadastro names on component mount
   useEffect(() => {
@@ -1404,6 +1526,63 @@ const Calculadora = ({
 
   return (
     <div>
+      {/* Seção de Papel Adicionada */}
+      <div className="overflow-x-auto rounded-box border border-warning bg-base-100">
+        <table className="table table-xs">
+          <thead>
+            <tr>
+              {oldestPapel ? (
+                <th
+                  colSpan={2}
+                  key={oldestPapel.id}
+                  className="text-center bg-success py-0 px-1"
+                >
+                  {oldestPapel.gastos}
+                </th>
+              ) : (
+                <th colSpan={2}></th>
+              )}
+              <th colSpan={4} className="bg-success py-0 px-1"></th>
+              <th colSpan={2} rowSpan={2} className="bg-error p-0">
+                {oldestPapel && (
+                  <button
+                    type="button"
+                    className="btn btn-xs btn-ghost btn-error rounded-none w-full h-full p-0 m-0"
+                    onClick={handleFinalizarPapel}
+                  >
+                    Finalizar
+                  </button>
+                )}
+              </th>
+            </tr>
+            <tr>
+              {oldestPapel ? (
+                <th
+                  colSpan={2}
+                  key={oldestPapel.id}
+                  className="text-center bg-info/30 py-0 px-1"
+                >
+                  {formatNumber(oldestPapel.metragem)}
+                </th>
+              ) : (
+                <th colSpan={2}></th>
+              )}
+              <th colSpan={4} className="text-center bg-secondary/30 py-0 px-1">
+                {formatNumber(
+                  plotterData.reduce((acc, item) => {
+                    const larguraTotalCm =
+                      parseFloat(item.largura) + (Number(desperdicio) || 0);
+                    const mValue =
+                      ((parseFloat(item.sim) + parseFloat(item.nao)) / 100) *
+                      (larguraTotalCm / 100);
+                    return acc + mValue;
+                  }, 0),
+                )}
+              </th>
+            </tr>
+          </thead>
+        </table>
+      </div>
       <div className="badge badge-accent w-full badge-sm whitespace-normal h-auto text-black">
         {comentarioCadastro}
       </div>
