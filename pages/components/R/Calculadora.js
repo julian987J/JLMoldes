@@ -206,6 +206,14 @@ const Calculadora = ({
     onValuesChange(newValues); // Usa o handler do prop
   };
 
+  const handleHalfStepChange = (setter) => (e) => {
+    const value = e.target.value;
+    // Permite números inteiros, números terminados em ".", ou números terminados em ".5"
+    if (/^\d*(\.5?)?$/.test(value) || value === "") {
+      setter(value);
+    }
+  };
+
   // calculos da calculadora
   const comitions = plus * comissi;
   const papel = values.some((val) => val !== "")
@@ -1547,7 +1555,7 @@ const Calculadora = ({
                 {oldestPapel && (
                   <button
                     type="button"
-                    className="btn btn-xs btn-ghost btn-error rounded-none w-full h-full p-0 m-0"
+                    className="btn btn-ghost btn-error rounded-none w-full h-full p-0 m-0"
                     onClick={handleFinalizarPapel}
                   >
                     Finalizar
@@ -1670,13 +1678,16 @@ const Calculadora = ({
         <div className="join grid grid-cols-3 mt-0.5">
           <input
             min="0"
-            step={0.01}
+            step="0.5"
             type="number"
             placeholder="Pix"
             className="input input-secondary input-lg z-2 text-secondary font-bold join-item"
             value={pix}
             autoComplete="nope"
-            onChange={(e) => setPix(e.target.value)}
+            onChange={handleHalfStepChange(setPix)}
+            onBlur={(e) =>
+              e.target.value && setPix(parseFloat(e.target.value).toFixed(2))
+            }
             onWheel={(e) => e.target.blur()}
           />
           <input
@@ -1690,24 +1701,31 @@ const Calculadora = ({
           />
           <input
             min="0"
-            step={0.01}
+            step="0.5"
             type="number"
             placeholder="Real"
             className="input input-secondary input-lg z-2 text-secondary font-bold join-item"
             value={real}
             autoComplete="nope"
-            onChange={(e) => setReal(e.target.value)}
+            onChange={handleHalfStepChange(setReal)}
+            onBlur={(e) =>
+              e.target.value && setReal(parseFloat(e.target.value).toFixed(2))
+            }
             onWheel={(e) => e.target.blur()}
           />
           <div className="grid col-span-3 my-0.5 z-50">
             <input
               min="0"
-              step={0.01}
+              step="0.5"
               type="number"
               placeholder="Troco Real"
               className="input input-info input-lg z-2 text-center text-info font-bold"
               value={trocoReal}
-              onChange={(e) => setTrocoReal(e.target.value)}
+              onChange={handleHalfStepChange(setTrocoReal)}
+              onBlur={(e) =>
+                e.target.value &&
+                setTrocoReal(parseFloat(e.target.value).toFixed(2))
+              }
               autoComplete="nope"
               onWheel={(e) => e.target.blur()}
             />
