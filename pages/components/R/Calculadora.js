@@ -451,7 +451,15 @@ const Calculadora = ({
     }
   };
 
-  const hadleUpdatePapel = async (metroConsumido) => {
+  const hadleUpdatePapel = async () => {
+    const activeValuesCount = values.filter((v) => Number(v) > 0).length;
+    const metroConsumido =
+      sumValues +
+      (Number(desperdicio) || 0) * activeValuesCount +
+      (Number(perdida) || 0);
+
+    if (metroConsumido <= 0) return; // Não faz nada se não houver consumo
+
     const oficina = `R${r}`;
     const result = await Execute.receiveFromPapelCalculadora(oficina);
 
@@ -463,12 +471,10 @@ const Calculadora = ({
       return;
     }
 
-    // Encontrar o item com o menor ID
     const itemComMenorId = result.reduce((menor, itemAtual) => {
-      if (!menor || Number(itemAtual.id) < Number(menor.id)) {
-        return itemAtual;
-      }
-      return menor;
+      return !menor || Number(itemAtual.id) < Number(menor.id)
+        ? itemAtual
+        : menor;
     }, null);
 
     if (!itemComMenorId || typeof itemComMenorId.metragem === "undefined") {
@@ -479,8 +485,7 @@ const Calculadora = ({
       return;
     }
 
-    const metragemAtual = Number(itemComMenorId.metragem);
-    const novaMetragem = metragemAtual - Number(metroConsumido);
+    const novaMetragem = Number(itemComMenorId.metragem) - metroConsumido;
 
     try {
       const dadosParaAtualizar = {
@@ -494,9 +499,6 @@ const Calculadora = ({
         body: JSON.stringify(dadosParaAtualizar),
       });
       if (!response.ok) throw new Error("Erro ao atualizar");
-      console.log(
-        "Papel.js: Dados salvos via API. Aguardando mensagem WebSocket para fechar o modo de edição.",
-      );
     } catch (error) {
       console.error("Erro ao salvar:", error);
     }
@@ -1140,9 +1142,9 @@ const Calculadora = ({
         await Execute.sendToPapelC(ObjPapelC);
       }
 
-      hadleUpdatePapel(
-        Number(sumValues) + Number(desperdicio) + Number(perdida),
-      );
+      if (sumValues > 0) {
+        hadleUpdatePapel();
+      }
 
       const numPix = roundedPix;
       const numReal = roundedReal;
@@ -1303,16 +1305,17 @@ const Calculadora = ({
   };
 
   const handleSaveCommentWaste = async () => {
-    const activeValuesCount = values.reduce((count, currentValue) => {
-      return count + (currentValue !== "" ? 1 : 0);
-    }, 0);
+    const activeValuesCount = values.filter((v) => Number(v) > 0).length;
+    const desperdicioCalculado = round(
+      (Number(desperdicio) || 0) * activeValuesCount,
+    );
 
     const dataToSave = {
       deveid: 0,
-      codigo: 0,
+      codigo: codigo || 0,
       r,
       data: Use.NowData(),
-      nome: "Desperdício",
+      nome: nome || "Desperdício",
       multi: 0,
       comissao: 0,
       papel: 0,
@@ -1320,7 +1323,7 @@ const Calculadora = ({
       papelreal: 0,
       encaixepix: 0,
       encaixereal: 0,
-      desperdicio: round((Number(desperdicio) || 0) * activeValuesCount),
+      desperdicio: desperdicioCalculado,
       util: 0,
       perdida: Number(perdida) || 0,
       comentario,
@@ -1328,9 +1331,7 @@ const Calculadora = ({
 
     try {
       await Execute.sendToPapelC(dataToSave);
-      hadleUpdatePapel(
-        Number(sumValues) + Number(desperdicio) + Number(perdida),
-      );
+      hadleUpdatePapel(); // A função agora calcula o consumo internamente
 
       setComentario("");
       setPerdida("");
@@ -1352,9 +1353,7 @@ const Calculadora = ({
     pix: roundedPix,
   };
 
-  const activeValuesCount = values.reduce((count, currentValue) => {
-    return count + (currentValue !== "" ? 1 : 0);
-  }, 0);
+  const activeValuesCount = values.filter((v) => Number(v) > 0).length;
 
   const ObjPapelC = {
     deveid: 0,
