@@ -709,6 +709,18 @@ const Calculadora = ({
         });
 
         console.log("Caiu em Devolver crédito (Devo) em dinheiro.");
+
+        // Limpa o formulário e encerra a execução para não processar o resto da função
+        setPix("");
+        onPlusChange(0);
+        setReal("");
+        setComentario("");
+        setPerdida("");
+        setTrocoReal("");
+        onNomeChange("");
+        onCodigoChange("");
+        onValuesChange(Array(28).fill(""));
+        return;
       } else if (dadosR && !valorDeve && trocoValue > 0 && !Number(total)) {
         await sendToCAndUpdateR(trocoValue);
         console.log("caiu em Pago Parte do R");

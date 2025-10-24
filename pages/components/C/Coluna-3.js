@@ -217,14 +217,18 @@ const Coluna3 = ({ r }) => {
               return newPapeis.sort((a, b) => a.id - b.id);
             });
             break;
-          case "PAPEL_DELETED_ITEM":
-            if (payload && payload.id !== undefined) {
-              setPapeis((prev) =>
-                prev.filter((item) => String(item.id) !== String(payload.id)),
-              );
-            }
-            break;
         }
+      }
+
+      // Handle PAPEL_DELETED_ITEM separately as it may not have the 'item' property
+      if (
+        type === "PAPEL_DELETED_ITEM" &&
+        payload &&
+        payload.id !== undefined
+      ) {
+        setPapeis((prev) =>
+          prev.filter((item) => String(item.id) !== String(payload.id)),
+        );
       }
 
       if (type === "CONFIG_UPDATED_ITEM" && payload) {
