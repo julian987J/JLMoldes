@@ -8,7 +8,7 @@ import { useAuth } from "../../../contexts/AuthContext.js";
 const sortDadosByDate = (dataArray) =>
   [...dataArray].sort((a, b) => new Date(b.data) - new Date(a.data));
 
-const BSA = ({ codigo, r }) => {
+const BSA = ({ codigo, r, onTotalsChange }) => {
   const [dados, setDados] = useState([]);
   const { lastMessage } = useWebSocket();
   const { user } = useAuth();
@@ -134,6 +134,18 @@ const BSA = ({ codigo, r }) => {
     },
     { base: 0, sis: 0, alt: 0 },
   );
+
+  useEffect(() => {
+    if (onTotalsChange) {
+      onTotalsChange({
+        total1M:
+          totalsBetweenOneAndTwoMonths.base +
+          totalsBetweenOneAndTwoMonths.sis +
+          totalsBetweenOneAndTwoMonths.alt,
+        total2M: totalsOld.base + totalsOld.sis + totalsOld.alt,
+      });
+    }
+  }, [totalsBetweenOneAndTwoMonths, totalsOld, onTotalsChange]);
 
   return (
     <div className="overflow-x-auto rounded-box border border-warning bg-base-100">

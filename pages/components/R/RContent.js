@@ -24,6 +24,8 @@ const Rcontent = ({ codigoExterno, nomeExterno, r }) => {
   const [data, setData] = useState();
   const [selectedPendenteItem, setSelectedPendenteItem] = useState(null);
   const [totalValores, setTotalValores] = useState(0);
+  const [bsaTotals, setBsaTotals] = useState({ total1M: 0, total2M: 0 });
+  const [deveTotals, setDeveTotals] = useState({ total1M: 0, total2M: 0 });
 
   useEffect(() => {
     setCodigo(codigoExterno || "");
@@ -123,6 +125,14 @@ const Rcontent = ({ codigoExterno, nomeExterno, r }) => {
     setTotalValores(valores);
   };
 
+  const handleBsaTotalsChange = (totals) => {
+    setBsaTotals(totals);
+  };
+
+  const handleDeveTotalsChange = (totals) => {
+    setDeveTotals(totals);
+  };
+
   return (
     <div>
       <ValoresColuna r={r} onValoresChange={handleValoresChange} />
@@ -132,12 +142,18 @@ const Rcontent = ({ codigoExterno, nomeExterno, r }) => {
           <PlotterTotals r={r} />
         </div>
         <div className="col-span-9">
-          <BSTA codigo={codigo} r={r} />
+          <BSTA codigo={codigo} r={r} onTotalsChange={handleBsaTotalsChange} />
         </div>
         <div className="col-span-10">
           <Pendente r={r} onSelectItem={handlePendenteSelect} />
           <div className="mt-1">
-            <Deve codigo={codigo} r={r} />
+            <Deve
+              codigo={codigo}
+              r={r}
+              onTotalsChange={handleDeveTotalsChange}
+              total1M={bsaTotals.total1M + deveTotals.total1M}
+              total2M={bsaTotals.total2M + deveTotals.total2M}
+            />
           </div>
           <div className="mt-1">
             <Aviso codigo={codigo} r={r} />

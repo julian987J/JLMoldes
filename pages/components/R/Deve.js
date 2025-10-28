@@ -7,7 +7,7 @@ import { useAuth } from "../../../contexts/AuthContext.js";
 const sortDadosByDate = (dataArray) =>
   [...dataArray].sort((a, b) => new Date(b.data) - new Date(a.data));
 
-const Deve = ({ codigo, r }) => {
+const Deve = ({ codigo, r, onTotalsChange, total1M, total2M }) => {
   const [dados, setDados] = useState([]);
   const { lastMessage } = useWebSocket();
   const { user } = useAuth();
@@ -160,6 +160,15 @@ const Deve = ({ codigo, r }) => {
     0,
   );
 
+  useEffect(() => {
+    if (onTotalsChange) {
+      onTotalsChange({
+        total1M: totalDeveBetweenOneAndTwoMonths,
+        total2M: totalDeveOld,
+      });
+    }
+  }, [totalDeveBetweenOneAndTwoMonths, totalDeveOld, onTotalsChange]);
+
   return (
     <div className="overflow-x-auto rounded-box border border-neutral-content bg-base-100">
       <table className="table table-xs">
@@ -280,7 +289,11 @@ const Deve = ({ codigo, r }) => {
                 <td className="col-span-1">
                   {totalDeveBetweenOneAndTwoMonths.toFixed(2)}
                 </td>
-                <td className="col-span-6"></td>
+                <td className="col-span-6 text-right">
+                  <span className="badge badge-warning text-black">
+                    {total1M.toFixed(2)}
+                  </span>
+                </td>
               </tr>
             </tfoot>
           </table>
@@ -356,7 +369,11 @@ const Deve = ({ codigo, r }) => {
               <tr className="grid grid-cols-12 font-bold bg-info/30">
                 <td className="col-span-5 text-right">Total:</td>
                 <td className="col-span-1">{totalDeveOld.toFixed(2)}</td>
-                <td className="col-span-6"></td>
+                <td className="col-span-6 text-right">
+                  <span className="badge badge-warning text-black">
+                    {total2M.toFixed(2)}
+                  </span>
+                </td>
               </tr>
             </tfoot>
           </table>
