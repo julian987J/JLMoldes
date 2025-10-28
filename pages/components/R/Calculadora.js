@@ -86,6 +86,51 @@ const Calculadora = ({
   const [isPendenteDisabled, setIsPendenteDisabled] = useState(false);
   const [isEsperaDisabled, setIsEsperaDisabled] = useState(false);
   const [trocoReal, setTrocoReal] = useState("");
+  const [nomeInputClass, setNomeInputClass] = useState("input-warning");
+
+  useEffect(() => {
+    const checkOldestDebt = async () => {
+      if (!codigo || !r) {
+        setNomeInputClass("input-warning");
+        return;
+      }
+
+      try {
+        const allDeveData = await Execute.receiveFromDeve(r);
+        const userDeveData = allDeveData.filter(
+          (item) => item.codigo === codigo,
+        );
+
+        if (userDeveData.length === 0) {
+          setNomeInputClass("input-warning");
+          return;
+        }
+
+        const oldestDate = userDeveData.reduce((oldest, current) => {
+          const currentDate = new Date(current.data);
+          return currentDate < oldest ? currentDate : oldest;
+        }, new Date(userDeveData[0].data));
+
+        const oneMonthAgo = new Date();
+        oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
+        const twoMonthsAgo = new Date();
+        twoMonthsAgo.setMonth(twoMonthsAgo.getMonth() - 2);
+
+        if (oldestDate < twoMonthsAgo) {
+          setNomeInputClass("input-error bg-error/30");
+        } else if (oldestDate < oneMonthAgo) {
+          setNomeInputClass("input-secondary bg-secondary/30");
+        } else {
+          setNomeInputClass("input-warning");
+        }
+      } catch (error) {
+        console.error("Erro ao verificar dívidas antigas:", error);
+        setNomeInputClass("input-warning");
+      }
+    };
+
+    checkOldestDebt();
+  }, [codigo, r, lastMessage]);
 
   // Estados para a nova funcionalidade de papel
   const [papeis, setPapeis] = useState([]);
@@ -1642,7 +1687,7 @@ const Calculadora = ({
           <input
             type="text"
             placeholder="Nome"
-            className="input input-warning input-xs w-full"
+            className={`input ${nomeInputClass} input-xs w-full`}
             value={nome}
             autoComplete="nope"
             list={datalistId} // Linked to datalist

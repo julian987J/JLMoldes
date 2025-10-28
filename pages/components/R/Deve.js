@@ -126,6 +126,20 @@ const Deve = ({ codigo, r }) => {
     }
   }, [lastMessage, r, setDados]); // Depende de lastMessage, r, e setDados
 
+  const oneMonthAgo = new Date();
+  oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
+  const twoMonthsAgo = new Date();
+  twoMonthsAgo.setMonth(twoMonthsAgo.getMonth() - 2);
+
+  const recentDados = dados.filter(
+    (item) => new Date(item.data) >= oneMonthAgo,
+  );
+  const betweenOneAndTwoMonthsDados = dados.filter(
+    (item) =>
+      new Date(item.data) < oneMonthAgo && new Date(item.data) >= twoMonthsAgo,
+  );
+  const oldDados = dados.filter((item) => new Date(item.data) < twoMonthsAgo);
+
   return (
     <div className="overflow-x-auto rounded-box border border-neutral-content bg-base-100">
       <table className="table table-xs">
@@ -141,7 +155,7 @@ const Deve = ({ codigo, r }) => {
           </tr>
         </thead>
         <tbody>
-          {dados.map((item) => (
+          {recentDados.map((item) => (
             <tr
               key={item.deveid}
               className={`grid grid-cols-12 ${
@@ -180,6 +194,130 @@ const Deve = ({ codigo, r }) => {
           ))}
         </tbody>
       </table>
+      {betweenOneAndTwoMonthsDados.length > 0 && (
+        <div className="mt-4">
+          <h3 className="text-center font-bold text-lg mb-2">
+            Registros a vencer em 1 mês
+          </h3>
+          <table className="table table-xs">
+            <thead>
+              <tr className="grid grid-cols-12">
+                <th className="col-span-3 bg-secondary-content">Data</th>
+                <th className="col-span-1 bg-secondary-content">Valor</th>
+                <th className="col-span-1 bg-secondary-content">Enc</th>
+                <th className="col-span-1 bg-secondary-content">Deve</th>
+                <th className="col-span-1 bg-secondary-content">COD</th>
+                <th className="col-span-3 bg-secondary-content">Nome</th>
+                <th className="col-span-2 bg-secondary-content">Ações</th>
+              </tr>
+            </thead>
+            <tbody>
+              {betweenOneAndTwoMonthsDados.map((item) => (
+                <tr
+                  key={item.deveid}
+                  className={`grid grid-cols-12 ${
+                    item.codigo == codigo
+                      ? "bg-green-200"
+                      : "bg-secondary-content"
+                  }`}
+                >
+                  <td className="col-span-3">
+                    {Use.formatarDataHora(item.data)}
+                  </td>
+                  <td className="col-span-1">
+                    {Number(item.valorpapel).toFixed(2)}
+                  </td>
+                  <td className="col-span-1">
+                    {Number(item.valorcomissao).toFixed(2)}
+                  </td>
+                  <td className="col-span-1">
+                    {Number(item.valor).toFixed(2)}
+                  </td>
+                  <td className="col-span-1">{item.codigo}</td>
+                  <td className="col-span-3">{item.nome}</td>
+                  <td className="col-span-2">
+                    {Number(item.avisado) === 1 ? (
+                      <button className="btn btn-xs btn-success" disabled>
+                        Avisado
+                      </button>
+                    ) : (
+                      <button
+                        className="btn btn-xs btn-info btn-outline"
+                        onClick={() =>
+                          handleAvisar(item.deveid, item.codigo, r)
+                        }
+                      >
+                        Avisar
+                      </button>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+      {oldDados.length > 0 && (
+        <div className="mt-4">
+          <h3 className="text-center font-bold text-lg mb-2">
+            Registros com mais de 2 meses
+          </h3>
+          <table className="table table-xs">
+            <thead>
+              <tr className="grid grid-cols-12">
+                <th className="col-span-3 bg-error/30">Data</th>
+                <th className="col-span-1 bg-error/30">Valor</th>
+                <th className="col-span-1 bg-error/30">Enc</th>
+                <th className="col-span-1 bg-error/30">Deve</th>
+                <th className="col-span-1 bg-error/30">COD</th>
+                <th className="col-span-3 bg-error/30">Nome</th>
+                <th className="col-span-2 bg-error/30">Ações</th>
+              </tr>
+            </thead>
+            <tbody>
+              {oldDados.map((item) => (
+                <tr
+                  key={item.deveid}
+                  className={`grid grid-cols-12 ${
+                    item.codigo == codigo ? "bg-green-200" : "bg-error/30"
+                  }`}
+                >
+                  <td className="col-span-3">
+                    {Use.formatarDataHora(item.data)}
+                  </td>
+                  <td className="col-span-1">
+                    {Number(item.valorpapel).toFixed(2)}
+                  </td>
+                  <td className="col-span-1">
+                    {Number(item.valorcomissao).toFixed(2)}
+                  </td>
+                  <td className="col-span-1">
+                    {Number(item.valor).toFixed(2)}
+                  </td>
+                  <td className="col-span-1">{item.codigo}</td>
+                  <td className="col-span-3">{item.nome}</td>
+                  <td className="col-span-2">
+                    {Number(item.avisado) === 1 ? (
+                      <button className="btn btn-xs btn-success" disabled>
+                        Avisado
+                      </button>
+                    ) : (
+                      <button
+                        className="btn btn-xs btn-info btn-outline"
+                        onClick={() =>
+                          handleAvisar(item.deveid, item.codigo, r)
+                        }
+                      >
+                        Avisar
+                      </button>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 };

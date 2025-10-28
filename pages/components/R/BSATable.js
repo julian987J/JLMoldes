@@ -90,6 +90,20 @@ const BSA = ({ codigo, r }) => {
     }
   }, [lastMessage, r, setDados]);
 
+  const oneMonthAgo = new Date();
+  oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
+  const twoMonthsAgo = new Date();
+  twoMonthsAgo.setMonth(twoMonthsAgo.getMonth() - 2);
+
+  const recentDados = dados.filter(
+    (item) => new Date(item.data) >= oneMonthAgo,
+  );
+  const betweenOneAndTwoMonthsDados = dados.filter(
+    (item) =>
+      new Date(item.data) < oneMonthAgo && new Date(item.data) >= twoMonthsAgo,
+  );
+  const oldDados = dados.filter((item) => new Date(item.data) < twoMonthsAgo);
+
   return (
     <div className="overflow-x-auto rounded-box border border-warning bg-base-100">
       <table className="table table-xs">
@@ -106,7 +120,7 @@ const BSA = ({ codigo, r }) => {
           </tr>
         </thead>
         <tbody>
-          {dados.map((item) => (
+          {recentDados.map((item) => (
             <tr
               key={item.id}
               className={
@@ -127,6 +141,92 @@ const BSA = ({ codigo, r }) => {
           ))}
         </tbody>
       </table>
+      {betweenOneAndTwoMonthsDados.length > 0 && (
+        <div className="mt-4">
+          <h3 className="text-center font-bold text-lg mb-2">
+            Registros a vencer em 1 mês
+          </h3>
+          <table className="table table-xs">
+            <thead>
+              <tr>
+                <th className="hidden bg-secondary-content">ID</th>
+                <th className="w-36 bg-secondary-content">Data</th>
+                <th className="hidden bg-secondary-content">CODIGO</th>
+                <th className="text-center bg-secondary-content">Dec</th>
+                <th className="bg-secondary-content">Nome</th>
+                <th className="w-10 text-center bg-secondary-content">Base</th>
+                <th className="w-10 text-center bg-secondary-content">Sis</th>
+                <th className="w-10 text-center bg-secondary-content">Alt</th>
+              </tr>
+            </thead>
+            <tbody>
+              {betweenOneAndTwoMonthsDados.map((item) => (
+                <tr
+                  key={item.id}
+                  className={
+                    item.codigo === codigo
+                      ? "bg-green-200"
+                      : "bg-secondary-content"
+                  }
+                >
+                  <td className="hidden">{item.id}</td>
+                  <td>{Use.formatarData(item.data)}</td>
+                  <td className="hidden">{item.codigo}</td>
+                  <td className="text-center">{item.dec}</td>
+                  <td>{item.nome}</td>
+                  <td className="text-center">
+                    {Number(item.base).toFixed(2)}
+                  </td>
+                  <td className="text-center">{Number(item.sis).toFixed(2)}</td>
+                  <td className="text-center">{Number(item.alt).toFixed(2)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+      {oldDados.length > 0 && (
+        <div className="mt-4">
+          <h3 className="text-center font-bold text-lg mb-2">
+            Registros com mais de 2 meses
+          </h3>
+          <table className="table table-xs">
+            <thead>
+              <tr>
+                <th className="hidden bg-error/30">ID</th>
+                <th className="w-36 bg-error/30">Data</th>
+                <th className="hidden bg-error/30">CODIGO</th>
+                <th className="text-center bg-error/30">Dec</th>
+                <th className="bg-error/30">Nome</th>
+                <th className="w-10 text-center bg-error/30">Base</th>
+                <th className="w-10 text-center bg-error/30">Sis</th>
+                <th className="w-10 text-center bg-error/30">Alt</th>
+              </tr>
+            </thead>
+            <tbody>
+              {oldDados.map((item) => (
+                <tr
+                  key={item.id}
+                  className={
+                    item.codigo === codigo ? "bg-green-200" : "bg-error/30"
+                  }
+                >
+                  <td className="hidden">{item.id}</td>
+                  <td>{Use.formatarData(item.data)}</td>
+                  <td className="hidden">{item.codigo}</td>
+                  <td className="text-center">{item.dec}</td>
+                  <td>{item.nome}</td>
+                  <td className="text-center">
+                    {Number(item.base).toFixed(2)}
+                  </td>
+                  <td className="text-center">{Number(item.sis).toFixed(2)}</td>
+                  <td className="text-center">{Number(item.alt).toFixed(2)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 };
