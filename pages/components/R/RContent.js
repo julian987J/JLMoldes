@@ -9,6 +9,7 @@ import PlanilhaDiaria from "./PlanilhaDiaria.js";
 import Aviso from "./Aviso.js";
 import ValoresColuna from "./ValoresColuna.js";
 import PlotterStatus from "./PlotterStatus.js";
+import PlotterTotals from "./PlotterTotals.js";
 
 const Rcontent = ({ codigoExterno, nomeExterno, r }) => {
   const tablesToSearch = useRef(["R", "deve", "devo", "cadastro"]);
@@ -125,8 +126,11 @@ const Rcontent = ({ codigoExterno, nomeExterno, r }) => {
   return (
     <div>
       <ValoresColuna r={r} onValoresChange={handleValoresChange} />
-      <div className="grid grid-cols-30 gap-1">
+      <div className="grid grid-cols-36 gap-1">
         <PlanilhaDiaria r={r} totalValores={totalValores} />
+        <div className="col-span-5">
+          <PlotterTotals r={r} />
+        </div>
         <div className="col-span-9">
           <BSTA codigo={codigo} r={r} />
         </div>
@@ -139,7 +143,7 @@ const Rcontent = ({ codigoExterno, nomeExterno, r }) => {
             <Aviso codigo={codigo} r={r} />
           </div>
         </div>
-        <div className="col-span-4">
+        <div className="col-span-5">
           <Calculadora
             r={r}
             codigo={codigo}
