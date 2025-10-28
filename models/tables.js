@@ -1561,6 +1561,14 @@ export async function deleteAviso(avisoid) {
   return result.rows;
 }
 
+export async function deleteDeveById(deveid) {
+  const result = await database.query({
+    text: `DELETE FROM "Deve" WHERE deveid = $1 RETURNING *`,
+    values: [deveid],
+  });
+  return result.rows;
+}
+
 export async function deleteTemp(id) {
   const result = await database.query({
     text: `DELETE FROM "Temp" WHERE id = $1 RETURNING id;`,
@@ -1793,6 +1801,7 @@ const ordem = {
   deleteM,
   deleteR,
   deleteDeve,
+  deleteDeveById,
   deleteAviso,
   deleteDevo,
   deleteDevoID,

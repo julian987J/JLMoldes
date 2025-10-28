@@ -87,11 +87,15 @@ const Calculadora = ({
   const [isEsperaDisabled, setIsEsperaDisabled] = useState(false);
   const [trocoReal, setTrocoReal] = useState("");
   const [nomeInputClass, setNomeInputClass] = useState("input-warning");
+  const [somaTotalInputClass, setSomaTotalInputClass] = useState(
+    "input-success text-success",
+  );
 
   useEffect(() => {
     const checkOldestDebt = async () => {
       if (!codigo || !r) {
         setNomeInputClass("input-warning");
+        setSomaTotalInputClass("input-success text-success");
         return;
       }
 
@@ -103,6 +107,7 @@ const Calculadora = ({
 
         if (userDeveData.length === 0) {
           setNomeInputClass("input-warning");
+          setSomaTotalInputClass("input-success text-success");
           return;
         }
 
@@ -118,19 +123,30 @@ const Calculadora = ({
 
         if (oldestDate < twoMonthsAgo) {
           setNomeInputClass("input-error bg-error/30");
+          setSomaTotalInputClass("input-error bg-error/30 text-error");
         } else if (oldestDate < oneMonthAgo) {
           setNomeInputClass("input-secondary bg-secondary/30");
+          setSomaTotalInputClass(
+            "input-secondary bg-secondary/30 text-secondary",
+          );
         } else {
           setNomeInputClass("input-warning");
+          setSomaTotalInputClass("input-success text-success");
         }
       } catch (error) {
         console.error("Erro ao verificar dívidas antigas:", error);
         setNomeInputClass("input-warning");
+        setSomaTotalInputClass("input-success text-success");
       }
     };
 
-    checkOldestDebt();
-  }, [codigo, r, lastMessage]);
+    if (!codigo && !nome) {
+      setNomeInputClass("input-warning");
+      setSomaTotalInputClass("input-success text-success");
+    } else {
+      checkOldestDebt();
+    }
+  }, [codigo, nome, r, lastMessage]);
 
   // Estados para a nova funcionalidade de papel
   const [papeis, setPapeis] = useState([]);
@@ -1299,7 +1315,7 @@ const Calculadora = ({
           console.log("Caiu em foi pago Parte R deve o Papel.");
         } else if (pixMaisReal > dadosR) {
           await Execute.sendToDeveUpdate(codigo, trocoValue, r);
-          await Execute.sendToCAndUpdateR(0);
+          await sendToCAndUpdateR(0);
           await Execute.PayAllMandR(idsArray);
           console.log("Caiu em foi Todo R e Parte Papel.");
         }
@@ -1739,7 +1755,7 @@ const Calculadora = ({
             placeholder="SOMA TOTAL"
             value={displayTotalGeral}
             autoComplete="nope"
-            className="input input-success input-xl z-3 text-center text-success mt-0.5 font-bold"
+            className={`input ${somaTotalInputClass} input-xl z-3 text-center mt-0.5 font-bold`}
             readOnly
           />
         </div>

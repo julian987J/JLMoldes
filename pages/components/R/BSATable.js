@@ -3,6 +3,7 @@ import React, { useEffect, useState, useCallback, useRef } from "react";
 import Execute from "models/functions";
 import Use from "models/utils";
 import { useWebSocket } from "../../../contexts/WebSocketContext.js"; // Ajuste o caminho se necessário
+import { useAuth } from "../../../contexts/AuthContext.js";
 
 const sortDadosByDate = (dataArray) =>
   [...dataArray].sort((a, b) => new Date(b.data) - new Date(a.data));
@@ -10,6 +11,7 @@ const sortDadosByDate = (dataArray) =>
 const BSA = ({ codigo, r }) => {
   const [dados, setDados] = useState([]);
   const { lastMessage } = useWebSocket();
+  const { user } = useAuth();
   const lastProcessedTimestampRef = useRef(null);
 
   const loadData = useCallback(async () => {
@@ -89,6 +91,15 @@ const BSA = ({ codigo, r }) => {
       lastProcessedTimestampRef.current = lastMessage.timestamp;
     }
   }, [lastMessage, r, setDados]);
+
+  const handleDelete = async (id) => {
+    try {
+      await Execute.removeMandR(id);
+    } catch (error) {
+      console.error("Erro ao excluir registro BSA:", error);
+      alert("Falha ao excluir registro.");
+    }
+  };
 
   const oneMonthAgo = new Date();
   oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
@@ -201,6 +212,9 @@ const BSA = ({ codigo, r }) => {
                 <th className="w-10 text-center bg-error/30">Base</th>
                 <th className="w-10 text-center bg-error/30">Sis</th>
                 <th className="w-10 text-center bg-error/30">Alt</th>
+                {user && user.role === "admin" && (
+                  <th className="w-20 text-center bg-error/30">Ações</th>
+                )}
               </tr>
             </thead>
             <tbody>
@@ -221,6 +235,16 @@ const BSA = ({ codigo, r }) => {
                   </td>
                   <td className="text-center">{Number(item.sis).toFixed(2)}</td>
                   <td className="text-center">{Number(item.alt).toFixed(2)}</td>
+                  {user && user.role === "admin" && (
+                    <td className="text-center">
+                      <button
+                        className="btn btn-xs btn-error btn-outline"
+                        onClick={() => handleDelete(item.id)}
+                      >
+                        Excluir
+                      </button>
+                    </td>
+                  )}
                 </tr>
               ))}
             </tbody>

@@ -2,6 +2,7 @@ import React, { useEffect, useState, useCallback, useRef } from "react";
 import Execute from "models/functions";
 import Use from "models/utils";
 import { useWebSocket } from "../../../contexts/WebSocketContext.js"; // Ajuste o caminho se necessário
+import { useAuth } from "../../../contexts/AuthContext.js";
 
 const sortDadosByDate = (dataArray) =>
   [...dataArray].sort((a, b) => new Date(b.data) - new Date(a.data));
@@ -9,6 +10,7 @@ const sortDadosByDate = (dataArray) =>
 const Deve = ({ codigo, r }) => {
   const [dados, setDados] = useState([]);
   const { lastMessage } = useWebSocket();
+  const { user } = useAuth();
   const lastProcessedTimestampRef = useRef(null);
 
   const handleAvisar = async (deveid, codigo, r) => {
@@ -31,6 +33,15 @@ const Deve = ({ codigo, r }) => {
     } catch (error) {
       console.error("Erro em handleAvisar:", error);
       alert("Não foi possível marcar como avisado.");
+    }
+  };
+
+  const handleDelete = async (deveid) => {
+    try {
+      await Execute.removeDeveById(deveid);
+    } catch (error) {
+      console.error("Erro ao excluir dívida:", error);
+      alert("Falha ao excluir a dívida.");
     }
   };
 
@@ -87,18 +98,17 @@ const Deve = ({ codigo, r }) => {
             });
           }
           break;
-        case "DEVE_DELETED_ITEM": // Payload é { codigo: "some-codigo" }
-          if (
-            payload &&
-            payload.codigo !== undefined &&
-            payload.codigo !== null
-          ) {
+        case "DEVE_DELETED_ITEM":
+          if (payload && String(payload.r) === String(r)) {
             setDados((prevDados) => {
-              // Remove o item se o código corresponder
-              const itemExistsInTable = prevDados.some(
-                (item) => String(item.codigo) === String(payload.codigo),
-              );
-              if (itemExistsInTable) {
+              if (payload.deveid) {
+                return sortDadosByDate(
+                  prevDados.filter(
+                    (item) => String(item.deveid) !== String(payload.deveid),
+                  ),
+                );
+              }
+              if (payload.codigo) {
                 return sortDadosByDate(
                   prevDados.filter(
                     (item) => String(item.codigo) !== String(payload.codigo),
@@ -309,6 +319,14 @@ const Deve = ({ codigo, r }) => {
                         }
                       >
                         Avisar
+                      </button>
+                    )}
+                    {user && user.role === "admin" && (
+                      <button
+                        className="btn btn-xs btn-error btn-outline ml-1"
+                        onClick={() => handleDelete(item.deveid)}
+                      >
+                        Excluir
                       </button>
                     )}
                   </td>

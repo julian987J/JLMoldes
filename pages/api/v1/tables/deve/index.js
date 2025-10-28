@@ -55,16 +55,31 @@ async function getHandlerDeve(request, response) {
 }
 
 async function deleteHandler(request, response) {
-  const { codigo } = request.body;
-  const result = await ordem.deleteDeve(codigo);
+  const { codigo, deveid } = request.body;
 
-  // Notifica sobre a exclusão usando o código
-  await notifyWebSocketServer({
-    type: "DEVE_DELETED_ITEM",
-    payload: { codigo: codigo }, // Envia o código do item deletado
-  });
+  if (deveid) {
+    const result = await ordem.deleteDeveById(deveid);
+    if (result && result.length > 0) {
+      await notifyWebSocketServer({
+        type: "DEVE_DELETED_ITEM",
+        payload: { deveid: result[0].deveid, r: result[0].r },
+      });
+    }
+    return response.status(200).json(result);
+  }
 
-  return response.status(200).json(result);
+  if (codigo) {
+    const result = await ordem.deleteDeve(codigo);
+    if (result && result.length > 0) {
+      await notifyWebSocketServer({
+        type: "DEVE_DELETED_ITEM",
+        payload: { codigo: codigo, r: result[0].r },
+      });
+    }
+    return response.status(200).json(result);
+  }
+
+  return response.status(400).json({ error: "codigo or deveid is required" });
 }
 
 async function updateHandler(request, response) {
