@@ -1416,6 +1416,11 @@ const Calculadora = ({
       return;
     }
 
+    if (sumValues > 0 && papeis.length === 0) {
+      setErrorCode("PAPEL01");
+      return;
+    }
+
     try {
       if (Number(total) > 0) {
         const novoCodigo = gerarCodigoUnico();
