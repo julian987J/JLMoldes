@@ -133,8 +133,15 @@ const PlotterTotals = ({ r }) => {
   const totalP01 = totalM1_P01 + totalM2_P01;
   const totalP02 = totalM1_P02 + totalM2_P02;
 
+  const countM1 = dados.filter((item) => parseFloat(item.sim) > 0).length;
+  const countM2 = dados.filter((item) => parseFloat(item.nao) > 0).length;
+
   return (
     <div className="overflow-x-auto rounded-box border border-warning bg-base-100 p-1">
+      <div className="flex justify-around text-center p-1">
+        <div className="badge badge-info">{countM1}</div>
+        <div className="badge badge-error">{countM2}</div>
+      </div>
       <table className="table table-xs text-center">
         <thead>
           <tr>

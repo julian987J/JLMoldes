@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useCallback, useRef } from "react";
 import Execute from "models/functions";
+import Edit from "../Edit";
 import { useWebSocket } from "../../../contexts/WebSocketContext";
 
 const formatNumber = (value) => {
@@ -11,8 +12,45 @@ const PlotterStatus = ({ r, plotterNome }) => {
   const [dados, setDados] = useState([]);
   const [config, setConfig] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [editingId, setEditingId] = useState(null);
+  const [editedData, setEditedData] = useState({});
   const { lastMessage } = useWebSocket();
   const lastProcessedTimestampRef = useRef(null);
+
+  const handleSave = async (editedData) => {
+    try {
+      const desperdicioConfigValue = config ? parseFloat(config.d) || 0 : 0;
+      // Use the original 'largura' from the item, which is in editedData in cm
+      const largura_cm = editedData.largura;
+      const larguraTotal_cm = largura_cm + desperdicioConfigValue;
+
+      if (larguraTotal_cm === 0) {
+        console.error("Largura total não pode ser zero.");
+        return;
+      }
+
+      const newSim = (parseFloat(editedData.m1) * 100 * 100) / larguraTotal_cm;
+      const newNao = (parseFloat(editedData.m2) * 100 * 100) / larguraTotal_cm;
+
+      const dataToSave = {
+        ...editedData,
+        sim: newSim,
+        nao: newNao,
+      };
+      delete dataToSave.m1;
+      delete dataToSave.m2;
+
+      const response = await fetch("/api/v1/tables/c/plotter", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(dataToSave),
+      });
+      if (!response.ok) throw new Error("Erro ao atualizar");
+      setEditingId(null);
+    } catch (error) {
+      console.error("Erro ao salvar:", error);
+    }
+  };
 
   const handleSwap = async (item) => {
     try {
@@ -88,6 +126,7 @@ const PlotterStatus = ({ r, plotterNome }) => {
             } else {
               newDados.push(payload);
             }
+            if (editingId === payload.id) setEditingId(null);
           }
           return newDados.sort(
             (a, b) =>
@@ -103,6 +142,7 @@ const PlotterStatus = ({ r, plotterNome }) => {
         setDados((prevDados) =>
           prevDados.filter((item) => String(item.id) !== String(payload.id)),
         );
+        if (editingId === payload.id) setEditingId(null);
       }
 
       if (type === "CONFIG_UPDATED_ITEM" && payload) {
@@ -111,7 +151,25 @@ const PlotterStatus = ({ r, plotterNome }) => {
 
       lastProcessedTimestampRef.current = lastMessage.timestamp;
     }
-  }, [lastMessage, r, plotterNome]);
+  }, [lastMessage, editingId, r, plotterNome]);
+
+  const handleInputChange = (field, value) => {
+    setEditedData((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const startEditing = (item) => {
+    const desperdicioConfigValue = config ? parseFloat(config.d) || 0 : 0;
+    const larguraTotal = parseFloat(item.largura) + desperdicioConfigValue;
+    const m1Value = ((parseFloat(item.sim) / 100) * larguraTotal) / 100;
+    const m2Value = ((parseFloat(item.nao) / 100) * larguraTotal) / 100;
+
+    setEditingId(item.id);
+    setEditedData({
+      ...item,
+      m1: formatNumber(m1Value),
+      m2: formatNumber(m2Value),
+    });
+  };
 
   if (loading) {
     return <div className="text-center p-4">Carregando...</div>;
@@ -132,15 +190,41 @@ const PlotterStatus = ({ r, plotterNome }) => {
             return (
               <tr key={item.id} className="border-b border-warning">
                 <td className="text-center bg-info/30">
-                  {formatNumber(m1Value)}
+                  {editingId === item.id ? (
+                    <input
+                      type="number"
+                      placeholder="M1"
+                      value={editedData.m1}
+                      onChange={(e) => handleInputChange("m1", e.target.value)}
+                      className="input input-xs p-0 m-0 text-center w-20"
+                    />
+                  ) : (
+                    formatNumber(m1Value)
+                  )}
                 </td>
                 <td className="text-center bg-error/30">
-                  {formatNumber(m2Value)}
+                  {editingId === item.id ? (
+                    <input
+                      type="number"
+                      placeholder="M2"
+                      value={editedData.m2}
+                      onChange={(e) => handleInputChange("m2", e.target.value)}
+                      className="input input-xs p-0 m-0 text-center w-20"
+                    />
+                  ) : (
+                    formatNumber(m2Value)
+                  )}
                 </td>
                 <td className="text-center bg-success/30">{item.nome}</td>
                 <td>
+                  <Edit
+                    isEditing={editingId === item.id}
+                    onEdit={() => startEditing(item)}
+                    onSave={() => handleSave(editedData)}
+                    onCancel={() => setEditingId(null)}
+                  />
                   <button
-                    className="btn btn-xs btn-soft btn-success"
+                    className={`btn btn-xs btn-soft btn-success ${editingId === item.id ? "hidden" : ""}`}
                     onClick={() => handleSwap(item)}
                   >
                     <strong className="text-info">S</strong>/
