@@ -150,6 +150,16 @@ const Deve = ({ codigo, r }) => {
   );
   const oldDados = dados.filter((item) => new Date(item.data) < twoMonthsAgo);
 
+  const totalDeveBetweenOneAndTwoMonths = betweenOneAndTwoMonthsDados.reduce(
+    (sum, item) => sum + (Number(item.valor) || 0),
+    0,
+  );
+
+  const totalDeveOld = oldDados.reduce(
+    (sum, item) => sum + (Number(item.valor) || 0),
+    0,
+  );
+
   return (
     <div className="overflow-x-auto rounded-box border border-neutral-content bg-base-100">
       <table className="table table-xs">
@@ -207,7 +217,7 @@ const Deve = ({ codigo, r }) => {
       {betweenOneAndTwoMonthsDados.length > 0 && (
         <div className="mt-4">
           <h3 className="text-center font-bold text-lg mb-2">
-            Registros a vencer em 1 mês
+            Registros com mais de 1 mês
           </h3>
           <table className="table table-xs">
             <thead>
@@ -264,9 +274,18 @@ const Deve = ({ codigo, r }) => {
                 </tr>
               ))}
             </tbody>
+            <tfoot>
+              <tr className="grid grid-cols-12 font-bold bg-info/30">
+                <td className="col-span-5 text-right">Total:</td>
+                <td className="col-span-1">
+                  {totalDeveBetweenOneAndTwoMonths.toFixed(2)}
+                </td>
+                <td className="col-span-6"></td>
+              </tr>
+            </tfoot>
           </table>
         </div>
-      )}
+      )}{" "}
       {oldDados.length > 0 && (
         <div className="mt-4">
           <h3 className="text-center font-bold text-lg mb-2">
@@ -333,6 +352,13 @@ const Deve = ({ codigo, r }) => {
                 </tr>
               ))}
             </tbody>
+            <tfoot>
+              <tr className="grid grid-cols-12 font-bold bg-info/30">
+                <td className="col-span-5 text-right">Total:</td>
+                <td className="col-span-1">{totalDeveOld.toFixed(2)}</td>
+                <td className="col-span-6"></td>
+              </tr>
+            </tfoot>
           </table>
         </div>
       )}

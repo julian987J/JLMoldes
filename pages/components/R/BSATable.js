@@ -115,6 +115,26 @@ const BSA = ({ codigo, r }) => {
   );
   const oldDados = dados.filter((item) => new Date(item.data) < twoMonthsAgo);
 
+  const totalsBetweenOneAndTwoMonths = betweenOneAndTwoMonthsDados.reduce(
+    (acc, item) => {
+      acc.base += Number(item.base) || 0;
+      acc.sis += Number(item.sis) || 0;
+      acc.alt += Number(item.alt) || 0;
+      return acc;
+    },
+    { base: 0, sis: 0, alt: 0 },
+  );
+
+  const totalsOld = oldDados.reduce(
+    (acc, item) => {
+      acc.base += Number(item.base) || 0;
+      acc.sis += Number(item.sis) || 0;
+      acc.alt += Number(item.alt) || 0;
+      return acc;
+    },
+    { base: 0, sis: 0, alt: 0 },
+  );
+
   return (
     <div className="overflow-x-auto rounded-box border border-warning bg-base-100">
       <table className="table table-xs">
@@ -155,7 +175,7 @@ const BSA = ({ codigo, r }) => {
       {betweenOneAndTwoMonthsDados.length > 0 && (
         <div className="mt-4">
           <h3 className="text-center font-bold text-lg mb-2">
-            Registros a vencer em 1 mês
+            Registros com mais de 1 mês
           </h3>
           <table className="table table-xs">
             <thead>
@@ -193,9 +213,22 @@ const BSA = ({ codigo, r }) => {
                 </tr>
               ))}
             </tbody>
+            <tfoot>
+              <tr className="font-bold bg-info/30">
+                <td colSpan="2"></td>
+                <td className="text-right">Total:</td>
+                <td colSpan="3" className="text-center">
+                  {(
+                    totalsBetweenOneAndTwoMonths.base +
+                    totalsBetweenOneAndTwoMonths.sis +
+                    totalsBetweenOneAndTwoMonths.alt
+                  ).toFixed(2)}
+                </td>
+              </tr>
+            </tfoot>{" "}
           </table>
         </div>
-      )}
+      )}{" "}
       {oldDados.length > 0 && (
         <div className="mt-4">
           <h3 className="text-center font-bold text-lg mb-2">
@@ -248,6 +281,18 @@ const BSA = ({ codigo, r }) => {
                 </tr>
               ))}
             </tbody>
+            <tfoot>
+              <tr className="font-bold bg-info/30">
+                <td colSpan="2"></td>
+                <td className="text-right">Total:</td>
+                <td
+                  colSpan={user && user.role === "admin" ? 4 : 3}
+                  className="text-center"
+                >
+                  {(totalsOld.base + totalsOld.sis + totalsOld.alt).toFixed(2)}
+                </td>
+              </tr>
+            </tfoot>
           </table>
         </div>
       )}
