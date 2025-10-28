@@ -8,6 +8,7 @@ import Pendente from "./Pendente.js";
 import PlanilhaDiaria from "./PlanilhaDiaria.js";
 import Aviso from "./Aviso.js";
 import ValoresColuna from "./ValoresColuna.js";
+import PlotterStatus from "./PlotterStatus.js";
 
 const Rcontent = ({ codigoExterno, nomeExterno, r }) => {
   const tablesToSearch = useRef(["R", "deve", "devo", "cadastro"]);
@@ -152,7 +153,15 @@ const Rcontent = ({ codigoExterno, nomeExterno, r }) => {
             data={data}
             isPendente={!!selectedPendenteItem}
           />
-          <Devo codigo={codigo} r={r} />
+          <div className="mt-1">
+            <PlotterStatus r={r} plotterNome="P01" />
+          </div>
+          <div className="mt-1">
+            <PlotterStatus r={r} plotterNome="P02" />
+          </div>
+          <div className="mt-1">
+            <Devo codigo={codigo} r={r} />
+          </div>
         </div>
       </div>
     </div>
