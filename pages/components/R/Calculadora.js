@@ -35,6 +35,7 @@ const Calculadora = ({
 }) => {
   const ErrorComponent = dynamic(() => import("../Errors.js"), { ssr: false });
   const [showError, setShowError] = useState(false);
+  const [errorCode, setErrorCode] = useState(null);
   const componentId = useId();
 
   useEffect(() => {
@@ -49,6 +50,15 @@ const Calculadora = ({
     }
     return () => clearTimeout(timer);
   }, [showError]);
+
+  useEffect(() => {
+    if (errorCode) {
+      const timer = setTimeout(() => {
+        setErrorCode(null);
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [errorCode]);
 
   const [dadosR, setDadosR] = useState(0);
   const [idsArray, setIdsArray] = useState(0);
@@ -581,7 +591,7 @@ const Calculadora = ({
     }
   };
 
-  const hadleUpdatePapel = async () => {
+  const handleUpdatePapel = async () => {
     const activeValuesCount = values.filter((v) => Number(v) > 0).length;
     const metroConsumido =
       sumValues +
@@ -594,11 +604,8 @@ const Calculadora = ({
     const result = await Execute.receiveFromPapelCalculadora(oficina);
 
     if (!result || result.length === 0) {
-      console.error(
-        "hadleUpdatePapel: Nenhum dado retornado de receiveFromPapelCalculadora para a oficina:",
-        oficina,
-      );
-      return;
+      setErrorCode("PAPEL01");
+      return false;
     }
 
     const itemComMenorId = result.reduce((menor, itemAtual) => {
@@ -629,6 +636,7 @@ const Calculadora = ({
         body: JSON.stringify(dadosParaAtualizar),
       });
       if (!response.ok) throw new Error("Erro ao atualizar");
+      return true;
     } catch (error) {
       console.error("Erro ao salvar:", error);
     }
@@ -799,6 +807,16 @@ const Calculadora = ({
     e.preventDefault();
     if (isSalvarDisabled) return;
     setIsSalvarDisabled(true);
+
+    if (sumValues > 0) {
+      const oficina = `R${r}`;
+      const result = await Execute.receiveFromPapelCalculadora(oficina);
+      if (!result || result.length === 0) {
+        setErrorCode("PAPEL01");
+        setIsSalvarDisabled(false);
+        return;
+      }
+    }
 
     const trocoValue = Number(roundedTroco);
 
@@ -1285,7 +1303,7 @@ const Calculadora = ({
       }
 
       if (sumValues > 0) {
-        hadleUpdatePapel();
+        await handleUpdatePapel();
       }
 
       const numPix = roundedPix;
@@ -1423,7 +1441,7 @@ const Calculadora = ({
           encaixereal: 0,
         });
 
-        hadleUpdatePapel(
+        handleUpdatePapel(
           Number(sumValues) + Number(desperdicio) + Number(perdida),
         );
 
@@ -1473,7 +1491,7 @@ const Calculadora = ({
 
     try {
       await Execute.sendToPapelC(dataToSave);
-      hadleUpdatePapel(); // A função agora calcula o consumo internamente
+      handleUpdatePapel(); // A função agora calcula o consumo internamente
 
       setComentario("");
       setPerdida("");
@@ -1789,6 +1807,7 @@ const Calculadora = ({
       {typeof window !== "undefined" && showError && (
         <ErrorComponent errorCode="Nulo" />
       )}
+      {errorCode && <ErrorComponent errorCode={errorCode} />}
     </div>
   );
 };
