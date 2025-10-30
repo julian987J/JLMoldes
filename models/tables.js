@@ -1240,6 +1240,14 @@ async function getPapelCalculadora(oficina) {
   return result;
 }
 
+async function getPapelByItem(item) {
+  const result = await database.query({
+    text: `SELECT * FROM "Papel" WHERE item = $1;`,
+    values: [item],
+  });
+  return result.rows;
+}
+
 async function getValorOficinas(oficina) {
   const result = await database.query({
     text: `SELECT * FROM "SaidaO" WHERE oficina = $1;`,
@@ -1553,6 +1561,14 @@ export async function deleteAviso(avisoid) {
   return result.rows;
 }
 
+export async function deleteDeveById(deveid) {
+  const result = await database.query({
+    text: `DELETE FROM "Deve" WHERE deveid = $1 RETURNING *`,
+    values: [deveid],
+  });
+  return result.rows;
+}
+
 export async function deleteTemp(id) {
   const result = await database.query({
     text: `DELETE FROM "Temp" WHERE id = $1 RETURNING id;`,
@@ -1656,8 +1672,10 @@ async function updatePlotterC(updatedData) {
         desperdicio = $3,
         data = $4,
         inicio = $5,
-        fim = $6
-      WHERE id = $7
+        fim = $6,
+        largura = $7,
+        confirmado = $8
+      WHERE id = $9
       RETURNING *;
     `,
     values: [
@@ -1667,6 +1685,8 @@ async function updatePlotterC(updatedData) {
       updatedData.data,
       updatedData.inicio,
       updatedData.fim,
+      updatedData.largura,
+      updatedData.confirmado,
       updatedData.id,
     ],
   });
@@ -1679,6 +1699,28 @@ async function deletePlotterC(id) {
     values: [id],
   });
   return result.rows;
+}
+
+async function createPlotterC(plotterData) {
+  const result = await database.query({
+    text: `
+      INSERT INTO "PlotterC" (r, sim, nao, desperdicio, data, inicio, fim, nome, plotter_nome) 
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+      RETURNING *;
+    `,
+    values: [
+      plotterData.r,
+      plotterData.sim,
+      plotterData.nao,
+      plotterData.desperdicio,
+      plotterData.data,
+      plotterData.inicio,
+      plotterData.fim,
+      plotterData.nome,
+      plotterData.plotter_nome,
+    ],
+  });
+  return result;
 }
 
 async function swapSimNaoPlotterC(id) {
@@ -1698,6 +1740,7 @@ async function swapSimNaoPlotterC(id) {
 
 const ordem = {
   getPlotterC,
+  createPlotterC,
   updatePlotterC,
   deletePlotterC,
   swapSimNaoPlotterC,
@@ -1732,6 +1775,7 @@ const ordem = {
   getCByDec,
   getCData,
   getPapel,
+  getPapelByItem,
   getPapelCalculadora,
   getPapelC,
   getAnualPapelC,
@@ -1759,6 +1803,7 @@ const ordem = {
   deleteM,
   deleteR,
   deleteDeve,
+  deleteDeveById,
   deleteAviso,
   deleteDevo,
   deleteDevoID,

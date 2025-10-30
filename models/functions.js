@@ -944,6 +944,22 @@ async function receiveFromPapel(letras) {
   }
 }
 
+async function receiveFromPapelByItem(item) {
+  try {
+    const response = await fetch(`/api/v1/tables/gastos/papel?item=${item}`);
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || "Erro ao carregar os dados");
+    }
+
+    const data = await response.json();
+    return Array.isArray(data.rows) ? data.rows : [];
+  } catch (error) {
+    console.error("Erro ao buscar dados Papel por item:", error);
+  }
+}
+
 async function receiveFromCad(codigo) {
   try {
     const response = await fetch(
@@ -1138,15 +1154,40 @@ async function removeDeve(codigo) {
   console.log(result);
 }
 
-async function removeAviso(avisoid) {
-  const response = await fetch("/api/v1/tables/aviso", {
-    method: "DELETE",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ avisoid }),
-  });
+async function removeDeveById(deveid) {
+  try {
+    const response = await fetch("/api/v1/tables/deve", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ deveid }),
+    });
+    if (!response.ok) {
+      throw new Error("Falha ao remover dívida");
+    }
+    return await response.json();
+  } catch (error) {
+    console.error("Erro em removeDeveById:", error);
+    throw error;
+  }
+}
 
-  const result = await response.json();
-  console.log(result);
+async function removeAviso(avisoid) {
+  try {
+    const response = await fetch("/api/v1/tables/aviso", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ avisoid }),
+    });
+
+    if (!response.ok) {
+      throw new Error("Falha ao remover o aviso");
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error("Erro em removeAviso:", error);
+    throw error;
+  }
 }
 
 async function removeDevo(codigo) {
@@ -1405,6 +1446,7 @@ const execute = {
   receiveAnualFromPapelC,
   receiveFromConfig,
   receiveFromPapel,
+  receiveFromPapelByItem,
   receiveFromPapelCalculadora,
   receiveFromPapelC,
   receiveFromPapelCData,
@@ -1432,6 +1474,7 @@ const execute = {
   removeMandR,
   PayAllMandR,
   removeDeve,
+  removeDeveById,
   removeAviso,
   removeDevo,
   updateDevo,

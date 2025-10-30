@@ -1,10 +1,4 @@
-import React, {
-  useEffect,
-  useState,
-  useCallback,
-  useRef,
-  useMemo,
-} from "react";
+import React, { useEffect, useState, useRef, useMemo } from "react";
 import Execute from "models/functions";
 import Edit from "../Edit";
 import Use from "models/utils";
@@ -41,29 +35,27 @@ const Coluna = ({ r }) => {
     }
   };
 
-  const fetchData = async () => {
-    try {
-      if (typeof r === "undefined" || r === null) return;
-      const results = await Execute.receiveFromC(r);
-      const existsData = await Execute.receiveFromR(r);
-      setDados(
-        Array.isArray(results)
-          ? results.sort((a, b) => new Date(b.date) - new Date(a.date))
-          : [],
-      );
-      setExists(Array.isArray(existsData) ? existsData : []);
-    } catch (error) {
-      console.error("Erro:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const memoizedFetchData = useCallback(fetchData, [r]);
-
   useEffect(() => {
-    memoizedFetchData();
-  }, [memoizedFetchData]);
+    const fetchData = async () => {
+      try {
+        if (typeof r === "undefined" || r === null) return;
+        const results = await Execute.receiveFromC(r);
+        const existsData = await Execute.receiveFromR(r);
+        setDados(
+          Array.isArray(results)
+            ? results.sort((a, b) => new Date(b.date) - new Date(a.date))
+            : [],
+        );
+        setExists(Array.isArray(existsData) ? existsData : []);
+      } catch (error) {
+        console.error("Erro:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [r]);
 
   // Efeito para lidar com mensagens WebSocket
   useEffect(() => {

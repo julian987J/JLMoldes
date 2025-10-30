@@ -1,18 +1,17 @@
 use chrono::{DateTime, Local, NaiveDate, NaiveTime, TimeZone};
-use native_tls::TlsConnector;
-use postgres::{Client, Error};
-use postgres_native_tls::MakeTlsConnector;
 use regex::Regex;
+use reqwest;
+use serde::{Deserialize, Serialize};
 use std::fs::{self, File};
 use std::io::{self, BufRead, Read};
 use std::path::Path;
+use tokio::runtime::Runtime;
 
-#[derive(Debug)]
+#[derive(Debug, Deserialize)]
 struct HistoryEntry {
     file_name: String,
     start_datetime: DateTime<Local>,
     end_datetime: DateTime<Local>,
-    // Keep original strings for identifying the record in the DB
     data_str_formatted: String,
     inicio_str: String,
     fim_str: String,
@@ -21,7 +20,54 @@ struct HistoryEntry {
 #[derive(Debug)]
 struct PlotAnalysis {
     width: f64,
-    height: f64,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+struct PlotterData {
+    id: Option<i32>,
+    r: f64,
+    sim: f64,
+    nao: f64,
+    desperdicio: f64,
+    data: String,
+    inicio: String,
+    fim: String,
+    nome: String,
+    plotter_nome: String,
+    largura: Option<f64>,
+    #[serde(default)]
+    confirmado: bool,
+}
+
+#[derive(Deserialize, Debug)]
+struct ApiResponse {
+    rows: Vec<PlotterData>,
+}
+
+async fn create_plotter_c(
+    api_url: &str,
+    data: &PlotterData,
+) -> Result<(), reqwest::Error> {
+    let client = reqwest::Client::new();
+    client
+        .post(api_url)
+        .json(data)
+        .send()
+        .await?;
+    Ok(())
+}
+
+async fn update_plotter_c(
+    api_url: &str,
+    data: &PlotterData,
+) -> Result<(), reqwest::Error> {
+    let client = reqwest::Client::new();
+    client
+        .put(api_url)
+        .json(data)
+        .send()
+        .await?;
+    Ok(())
 }
 
 fn analyze_plt_file(path: &Path) -> io::Result<PlotAnalysis> {
@@ -31,8 +77,6 @@ fn analyze_plt_file(path: &Path) -> io::Result<PlotAnalysis> {
 
     let mut min_x = f64::MAX;
     let mut max_x = f64::MIN;
-    let mut min_y = f64::MAX;
-    let mut max_y = f64::MIN;
 
     let re_cmd = Regex::new(r"([A-Z]{2})([^A-Z]*)").unwrap();
     let re_coords = Regex::new(r"-?\d+\.?\d*").unwrap();
@@ -53,11 +97,9 @@ fn analyze_plt_file(path: &Path) -> io::Result<PlotAnalysis> {
         match cmd {
             "PU" | "PD" => {
                 for chunk in coords.chunks(2) {
-                    if let [x, y] = *chunk {
+                    if let [x, _y] = *chunk {
                         min_x = min_x.min(x);
                         max_x = max_x.max(x);
-                        min_y = min_y.min(y);
-                        max_y = max_y.max(y);
                     }
                 }
             }
@@ -65,76 +107,55 @@ fn analyze_plt_file(path: &Path) -> io::Result<PlotAnalysis> {
         }
     }
 
-    let width = if min_x == f64::MAX {
-        0.0
-    } else {
-        max_x - min_x
-    };
-    let height = if min_y == f64::MAX {
-        0.0
-    } else {
-        max_y - min_y
-    };
+    let width = if min_x == f64::MAX { 0.0 } else { max_x - min_x };
 
-    Ok(PlotAnalysis { width, height })
+    Ok(PlotAnalysis { width })
 }
 
-fn main() -> Result<(), Error> {
-    let database_url = "postgres://local_user:local_password@localhost:5432/local_db";
-    // let database_url = "postgres://neondb_owner:npg_lTfoX2CgRdS3@ep-mute-night-aec9aldl-pooler.c-2.us-east-2.aws.neon.tech:5432/stage?sslmode=require";
-    let connector = TlsConnector::new().unwrap();
-    let connector = MakeTlsConnector::new(connector);
-    let mut client = Client::connect(database_url, connector)?;
-    println!("Conectado ao banco de dados com sucesso!");
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let rt = Runtime::new()?;
+    // ambiente de desenvolvimento
+    let api_url = "http://localhost:3000/api/v1/tables/c/plotter?r=1";
 
-    let mut history_entries: Vec<HistoryEntry> = Vec::new();
-    let path = Path::new("history.ini");
+    // ambiente de teste
+    //let api_url = "https://jl-moldes-git-update-julians-projects-33b8fcdf.vercel.app/api/v1/tables/c/plotter?r=1";
 
-    if let Ok(file) = File::open(path) {
+    // --- ETAPA 1: Sincronizar history.ini com a API ---
+    println!("--- Etapa 1: Sincronizando history.ini ---");
+    let existing_plotter_data: Vec<PlotterData> = rt.block_on(async {
+        let response = reqwest::get(api_url).await?.json::<ApiResponse>().await?;
+        Ok::<_, reqwest::Error>(response.rows)
+    })?;
+
+    let history_path = Path::new("history.ini");
+    if let Ok(file) = File::open(history_path) {
         let reader = io::BufReader::new(file);
-        println!("Lendo arquivo history.ini e processando registros...");
-
-        for (_index, line) in reader.lines().enumerate() {
+        for line in reader.lines() {
             if let Ok(line_content) = line {
-                if line_content.trim().is_empty() {
-                    continue;
-                }
+                if line_content.trim().is_empty() { continue; }
                 let parts: Vec<&str> = line_content.split('|').collect();
 
                 if parts.len() >= 4 {
                     let file_path_str = parts[0];
-                    let file_name = file_path_str
-                        .split('\\')
-                        .last()
-                        .unwrap_or("")
-                        .to_string();
-
+                    let file_name = file_path_str.split('\\').last().unwrap_or("").to_string();
                     let datetime_parts: Vec<&str> = parts[1].split(' ').collect();
-                    let data_original = if !datetime_parts.is_empty() {
-                        datetime_parts[0]
-                    } else {
-                        ""
-                    };
-                    let inicio_str = if datetime_parts.len() >= 2 {
-                        datetime_parts[1]
-                    } else {
-                        ""
-                    };
-                    let fim_str = parts[2];
+                    let data_original = datetime_parts.get(0).unwrap_or(&"");
+                    let inicio_str = datetime_parts.get(1).unwrap_or(&"").to_string();
+                    let fim_str = parts.get(2).unwrap_or(&"").to_string();
 
                     let data_formatada = NaiveDate::parse_from_str(data_original, "%Y-%m-%d")
                         .map(|d| d.format("%d/%m/%Y").to_string())
                         .unwrap_or_else(|_| data_original.to_string());
 
-                    // Verifica se o registro já existe
-                    let row = client.query_one(
-                        "SELECT COUNT(*) FROM \"PlotterC\" WHERE data = $1 AND inicio = $2 AND fim = $3 AND nome = $4",
-                        &[&data_formatada, &inicio_str, &fim_str, &file_name],
-                    )?;
-                    let count: i64 = row.get(0);
+                    let record_exists = existing_plotter_data.iter().any(|record| {
+                        record.nome == file_name
+                            && record.data == data_formatada
+                            && record.inicio == inicio_str
+                            && record.fim == fim_str
+                    });
 
-                    if count == 0 {
-                        // Lógica de inserção (existente)
+                    if !record_exists {
+                        println!("Encontrado novo registro para '{}', enviando para a API...", file_name);
                         let progress_str = parts[3].trim().trim_end_matches('%');
                         let progress_val: f64 = progress_str.parse().unwrap_or(0.0);
                         let (sim, nao) = if (progress_val - 100.0).abs() < f64::EPSILON {
@@ -142,87 +163,78 @@ fn main() -> Result<(), Error> {
                         } else {
                             (0.0, progress_val)
                         };
-                        client.execute(
-                            "INSERT INTO \"PlotterC\" (r, sim, nao, desperdicio, data, inicio, fim, nome) VALUES (1.0, $1, $2, 0.0, $3, $4, $5, $6)",
-                            &[&sim, &nao, &data_formatada, &inicio_str, &fim_str, &file_name],
-                        )?;
-                        println!("Novo registro para '{}' inserido com sucesso.", file_name);
-                    }
 
-                    // Guarda a entrada para a lógica de UPDATE
-                    if let (Ok(date), Ok(start_time), Ok(end_time)) = (
-                        NaiveDate::parse_from_str(data_original, "%Y-%m-%d"),
-                        NaiveTime::parse_from_str(inicio_str, "%H:%M:%S"),
-                        NaiveTime::parse_from_str(fim_str, "%H:%M:%S"),
-                    ) {
-                        let start_datetime = Local
-                            .from_local_datetime(&date.and_time(start_time))
-                            .unwrap();
-                        let end_datetime =
-                            Local.from_local_datetime(&date.and_time(end_time)).unwrap();
-                        history_entries.push(HistoryEntry {
-                            file_name,
-                            start_datetime,
-                            end_datetime,
-                            data_str_formatted: data_formatada,
-                            inicio_str: inicio_str.to_string(),
-                            fim_str: fim_str.to_string(),
+                        let new_plotter_data = PlotterData {
+                            id: None, r: 1.0, sim, nao, desperdicio: 0.0,
+                            data: data_formatada.clone(),
+                            inicio: inicio_str.to_string(),
+                            fim: fim_str.to_string(),
+                            nome: file_name.clone(),
+                            plotter_nome: "P01".to_string(),
+                            largura: None,
+                            confirmado: false,
+                        };
+
+                        rt.block_on(async {
+                            if let Err(e) = create_plotter_c(api_url, &new_plotter_data).await {
+                                eprintln!("Erro ao criar novo registro via API para '{}': {}", file_name, e);
+                            } else {
+                                println!("Novo registro para '{}' criado com sucesso.", file_name);
+                            }
                         });
                     }
                 }
             }
         }
     } else {
-        eprintln!("Erro: Não foi possível encontrar ou ler o arquivo 'history.ini'.");
+        eprintln!("AVISO: Não foi possível encontrar ou ler o arquivo 'history.ini'.");
     }
 
-    // Lê todos os arquivos .plt no diretório
-    let paths = fs::read_dir("./").unwrap();
-    let conversion_factor = 400.0; // 40 units/mm * 10 mm/cm = 400 units/cm
+    // --- ETAPA 2: Atualizar larguras para registros nulos ---
+    println!("\n--- Etapa 2: Verificando e atualizando larguras ---");
+    let all_data: Vec<PlotterData> = rt.block_on(async {
+        let response = reqwest::get(api_url).await?.json::<ApiResponse>().await?;
+        Ok::<_, reqwest::Error>(response.rows)
+    })?;
 
-    for path in paths {
-        let path = path.unwrap().path();
-        if let Some(extension) = path.extension() {
-            if extension == "plt" {
-                let plt_file_name = path.file_name().unwrap().to_str().unwrap().to_string();
-                println!("\nProcessando arquivo {:?}...", plt_file_name);
+    let records_needing_width: Vec<_> = all_data.into_iter().filter(|r| r.largura.is_none()).collect();
 
-                // Pega os metadados do arquivo para obter a data de criação
-                let created_datetime: DateTime<Local> = if let Ok(metadata) = fs::metadata(&path) {
-                    metadata.created().unwrap().into()
-                } else {
-                    continue;
-                };
-                println!(
-                    "  Data de Criação: {}",
-                    created_datetime.format("%d/%m/%Y %H:%M:%S")
-                );
+    if records_needing_width.is_empty() {
+        println!("Nenhum registro precisa de atualização de largura.");
+    } else {
+        println!("Encontrados {} registros para atualizar a largura.", records_needing_width.len());
+        let conversion_factor = 400.0;
 
-                match analyze_plt_file(&path) {
-                    Ok(analysis) => {
-                        let width_cm = analysis.width / conversion_factor;
-                        let height_cm = analysis.height / conversion_factor;
-                        println!("  Largura: {:.2} cm", width_cm);
-                        println!("  Altura:  {:.2} cm", height_cm);
+        for record in records_needing_width {
+            println!("\nProcessando registro: {}", record.nome);
+            let file_path = Path::new(&record.nome);
 
-                        // Lógica de comparação e UPDATE
-                        for entry in &history_entries {
-                            if entry.file_name == plt_file_name
-                            {
-                                client.execute(
-                                    "UPDATE \"PlotterC\" SET largura = $1 WHERE nome = $2 AND data = $3 AND inicio = $4 AND fim = $5",
-                                    &[&width_cm, &entry.file_name, &entry.data_str_formatted, &entry.inicio_str, &entry.fim_str],
-                                )?;
-                                println!("  -> Largura atualizada no banco de dados para o registro correspondente.");
-                                break;
-                            }
+            if !file_path.exists() {
+                println!("  -> AVISO: Arquivo '{}' não encontrado no diretório.", record.nome);
+                continue;
+            }
+
+            match analyze_plt_file(file_path) {
+                Ok(analysis) => {
+                    let width_cm = analysis.width / conversion_factor;
+                    println!("  -> Largura calculada: {:.2} cm", width_cm);
+
+                    let mut updated_record = record.clone();
+                    updated_record.largura = Some(width_cm);
+
+                    rt.block_on(async {
+                        if let Err(e) = update_plotter_c(api_url, &updated_record).await {
+                            eprintln!("  -> ERRO ao atualizar largura via API para '{}': {}", updated_record.nome, e);
+                        } else {
+                            println!("  -> Largura para '{}' atualizada com sucesso.", updated_record.nome);
                         }
-                    }
-                    Err(e) => eprintln!("Erro ao processar o arquivo {:?}: {}", path, e),
+                    });
                 }
+                Err(e) => eprintln!("  -> ERRO ao processar o arquivo '{}': {}", record.nome, e),
             }
         }
     }
 
+    println!("\nProcesso concluído.");
     Ok(())
 }

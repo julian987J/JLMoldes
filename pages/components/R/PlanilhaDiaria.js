@@ -178,7 +178,7 @@ const PlanilhaDiaria = ({ r, totalValores }) => {
   return (
     <div className="col-span-7">
       <div className="flex justify-end mb-2">
-        <div className="w-1/4 mr-2">
+        <div className="mr-2">
           {Object.keys(combinedData).length > 0 && (
             <div className="overflow-x-auto rounded-box border border-warning bg-base-100">
               <table className="table table-xs">
@@ -218,9 +218,6 @@ const PlanilhaDiaria = ({ r, totalValores }) => {
           const countUtilGreaterThanZero = metragem.filter(
             (item) => (parseFloat(item.util) || 0) > 0,
           ).length;
-          const countPerdidaGreaterThanZero = metragem.filter(
-            (item) => (parseFloat(item.perdida) || 0) > 0,
-          ).length;
 
           return (
             <div
@@ -230,7 +227,7 @@ const PlanilhaDiaria = ({ r, totalValores }) => {
               <div className="text-center font-bold text-lg mb-2">
                 {Use.formatarData(dateKey)}
               </div>
-              <div className="flex space-x-4">
+              <div className="flex gap-1">
                 {/* Pagamentos Column */}
                 <div className="flex-1">
                   {pagamentos.length > 0 && (
@@ -238,31 +235,35 @@ const PlanilhaDiaria = ({ r, totalValores }) => {
                       <table className="table table-xs w-full">
                         <thead>
                           <tr>
-                            <th className="w-24">Hora</th>
-                            <th>Nome</th>
-                            <th className="w-28 text-right">R</th>
-                            <th className="w-28 text-right">P</th>
+                            <th className="py-0.5 px-1">Hora</th>
+                            <th className="py-0.5 px-1">Nome</th>
+                            <th className="py-0.5 px-1 text-right">R</th>
+                            <th className="py-0.5 px-1 text-right">P</th>
                             {user && user.role === "admin" && (
-                              <th className="w-20 text-center">Ações</th>
+                              <th className="py-0.5 px-1 text-center">Ações</th>
                             )}
                           </tr>
                         </thead>
                         <tbody>
                           {pagamentos.map((item) => (
                             <tr
-                              key={`pagamento-${item.id}`}
+                              key={`pagamento-${item.id}-${new Date(
+                                item.data,
+                              ).getTime()}`}
                               className="border-b border-info/30"
                             >
-                              <td>{Use.formatarHora(item.data)}</td>
-                              <td>{item.nome}</td>
-                              <td className="text-right">
+                              <td className="py-0.5 px-1">
+                                {Use.formatarHora(item.data)}
+                              </td>
+                              <td className="py-0.5 px-1">{item.nome}</td>
+                              <td className="py-0.5 px-1 text-right">
                                 {Number(item.real).toFixed(2)}
                               </td>
-                              <td className="text-right">
+                              <td className="py-0.5 px-1 text-right">
                                 {Number(item.pix).toFixed(2)}
                               </td>
                               {user && user.role === "admin" && (
-                                <td className="text-center">
+                                <td className="py-0.5 px-1 text-center">
                                   <button
                                     className="btn btn-xs btn-error btn-outline"
                                     onClick={() =>
@@ -280,16 +281,16 @@ const PlanilhaDiaria = ({ r, totalValores }) => {
                           <tr>
                             <td
                               colSpan="1"
-                              className="font-bold text-right"
+                              className="py-0.5 px-1 font-bold text-right"
                             ></td>
-                            <td className="font-bold text-left bg-error/30 w-28">
+                            <td className="py-0.5 px-1 font-bold text-left bg-error/30">
                               {totalGeralDoDia.toFixed(2)}
                             </td>
-                            <td className="font-bold text-right bg-info/10">
+                            <td className="py-0.5 px-1 font-bold text-right bg-info/10">
                               {totalRealDoDia.toFixed(2)}
                             </td>
                             {user && user.role === "admin" && (
-                              <td className="font-bold text-right bg-info/10">
+                              <td className="py-0.5 px-1 font-bold text-right bg-info/10">
                                 {totalPixDoDia.toFixed(2)}
                               </td>
                             )}
@@ -301,7 +302,7 @@ const PlanilhaDiaria = ({ r, totalValores }) => {
                 </div>
 
                 {/* Metragem Column */}
-                <div className="flex-1">
+                <div>
                   {metragem.length > 0 && (
                     <div className="overflow-x-auto rounded-box border border-warning bg-base-100">
                       <table className="table table-xs">
@@ -309,9 +310,6 @@ const PlanilhaDiaria = ({ r, totalValores }) => {
                           <tr>
                             <th className="text-center text-xs bg-warning-content/30">
                               {countUtilGreaterThanZero}
-                            </th>
-                            <th className="text-center text-xs bg-warning-content/30">
-                              {countPerdidaGreaterThanZero}
                             </th>
                           </tr>
                         </thead>
@@ -322,7 +320,6 @@ const PlanilhaDiaria = ({ r, totalValores }) => {
                               className="border-b border-warning"
                             >
                               <td className="text-center">{item.util}</td>
-                              <td className="text-center">{item.perdida}</td>
                             </tr>
                           ))}
                         </tbody>

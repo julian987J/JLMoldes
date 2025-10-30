@@ -10,13 +10,24 @@ import Edit from "../Edit";
 import Use from "models/utils";
 import { useWebSocket } from "../../../contexts/WebSocketContext.js"; // Ajuste o caminho
 
-const formatCurrency = (value) => {
+const round = (value) => {
   const number = parseFloat(value);
   if (isNaN(number)) {
-    return "0.00";
+    return 0;
   }
-  const rounded = Math.round((number + Number.EPSILON) * 100) / 100;
-  return rounded.toFixed(2);
+  return Math.round((number + Number.EPSILON) * 100) / 100;
+};
+
+const roundToHalf = (value) => {
+  const number = parseFloat(value);
+  if (isNaN(number)) {
+    return 0;
+  }
+  return Math.round(number / 0.5) * 0.5;
+};
+
+const formatCurrency = (value) => {
+  return round(value).toFixed(2);
 };
 
 const Coluna = ({ r }) => {
@@ -39,20 +50,31 @@ const Coluna = ({ r }) => {
       return;
     }
 
-    const dataToSend = {
+    const finalEditedData = {
       ...editedData,
+      papelreal: roundToHalf(editedData.papelreal),
+      papelpix: roundToHalf(editedData.papelpix),
+      encaixereal: roundToHalf(editedData.encaixereal),
+      encaixepix: roundToHalf(editedData.encaixepix),
+      papel: round(editedData.papel),
+      desperdicio: round(editedData.desperdicio),
+      util: round(editedData.util),
+      perdida: round(editedData.perdida),
+      multi: parseFloat(editedData.multi) || 0,
+      comissao: parseFloat(editedData.comissao) || 0,
+    };
+
+    const dataToSend = {
+      ...finalEditedData,
       papelreal_pago:
-        (parseFloat(originalItem.papelreal) || 0) -
-        (parseFloat(editedData.papelreal) || 0),
+        (parseFloat(originalItem.papelreal) || 0) - finalEditedData.papelreal,
       papelpix_pago:
-        (parseFloat(originalItem.papelpix) || 0) -
-        (parseFloat(editedData.papelpix) || 0),
+        (parseFloat(originalItem.papelpix) || 0) - finalEditedData.papelpix,
       encaixereal_pago:
         (parseFloat(originalItem.encaixereal) || 0) -
-        (parseFloat(editedData.encaixereal) || 0),
+        finalEditedData.encaixereal,
       encaixepix_pago:
-        (parseFloat(originalItem.encaixepix) || 0) -
-        (parseFloat(editedData.encaixepix) || 0),
+        (parseFloat(originalItem.encaixepix) || 0) - finalEditedData.encaixepix,
     };
 
     try {
@@ -334,7 +356,8 @@ const Coluna = ({ r }) => {
       ...item,
       nome: String(item.nome !== undefined ? item.nome : ""),
       multi: String(item.multi !== undefined ? item.multi : "0"),
-      papel: String(item.papel !== undefined ? item.papel : "1"),
+      comissao: String(item.comissao !== undefined ? item.comissao : "0"),
+      papel: formatCurrency(item.papel !== undefined ? item.papel : "1"),
       papelreal: formatCurrency(
         item.papelreal !== undefined ? item.papelreal : 0,
       ),
@@ -347,9 +370,9 @@ const Coluna = ({ r }) => {
       ),
       desperdicio: formatCurrency(
         item.desperdicio !== undefined ? item.desperdicio : 0,
-      ), // formatCurrency para consistência, embora o input seja number
-      util: String(item.util !== undefined ? item.util : "1"),
-      perdida: String(item.perdida !== undefined ? item.perdida : "0"),
+      ),
+      util: formatCurrency(item.util !== undefined ? item.util : "1"),
+      perdida: formatCurrency(item.perdida !== undefined ? item.perdida : "0"),
       comentarios: String(
         item.comentarios !== undefined ? item.comentarios : "",
       ),
