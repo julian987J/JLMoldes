@@ -1673,8 +1673,9 @@ async function updatePlotterC(updatedData) {
         data = $4,
         inicio = $5,
         fim = $6,
-        largura = $7
-      WHERE id = $8
+        largura = $7,
+        confirmado = $8
+      WHERE id = $9
       RETURNING *;
     `,
     values: [
@@ -1685,6 +1686,7 @@ async function updatePlotterC(updatedData) {
       updatedData.inicio,
       updatedData.fim,
       updatedData.largura,
+      updatedData.confirmado,
       updatedData.id,
     ],
   });

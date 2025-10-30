@@ -113,10 +113,10 @@ fn analyze_plt_file(path: &Path) -> io::Result<PlotAnalysis> {
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let rt = Runtime::new()?;
     // ambiente de desenvolvimento
-    //let api_url = "http://localhost:3000/api/v1/tables/c/plotter?r=1";
+    let api_url = "http://localhost:3000/api/v1/tables/c/plotter?r=1";
 
     // ambiente de teste
-    let api_url = "https://jl-moldes-git-update-julians-projects-33b8fcdf.vercel.app/api/v1/tables/c/plotter?r=1";
+    //let api_url = "https://jl-moldes-git-update-julians-projects-33b8fcdf.vercel.app/api/v1/tables/c/plotter?r=1";
 
     // --- ETAPA 1: Sincronizar history.ini com a API ---
     println!("--- Etapa 1: Sincronizando history.ini ---");
@@ -168,7 +168,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                             inicio: inicio_str.to_string(),
                             fim: fim_str.to_string(),
                             nome: file_name.clone(),
-                            plotter_nome: "P01".to_string(),
+                            plotter_nome: "P02".to_string(),
                             largura: None,
                         };
 

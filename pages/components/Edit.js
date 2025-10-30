@@ -1,6 +1,6 @@
 import React from "react";
 
-const EditM = ({ isEditing, onEdit, onSave, onCancel }) => {
+const EditM = ({ isEditing, onEdit, onSave, onCancel, disabled }) => {
   return (
     <>
       {isEditing ? (
@@ -14,7 +14,11 @@ const EditM = ({ isEditing, onEdit, onSave, onCancel }) => {
         </>
       ) : (
         <>
-          <button onClick={onEdit} className="btn btn-xs btn-soft btn-primary">
+          <button
+            onClick={onEdit}
+            className="btn btn-xs btn-soft btn-primary"
+            disabled={disabled}
+          >
             Editar
           </button>
         </>

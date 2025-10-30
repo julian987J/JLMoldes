@@ -218,9 +218,6 @@ const PlanilhaDiaria = ({ r, totalValores }) => {
           const countUtilGreaterThanZero = metragem.filter(
             (item) => (parseFloat(item.util) || 0) > 0,
           ).length;
-          const countPerdidaGreaterThanZero = metragem.filter(
-            (item) => (parseFloat(item.perdida) || 0) > 0,
-          ).length;
 
           return (
             <div
@@ -255,7 +252,9 @@ const PlanilhaDiaria = ({ r, totalValores }) => {
                               ).getTime()}`}
                               className="border-b border-info/30"
                             >
-                              <td className="py-0.5 px-1">{Use.formatarHora(item.data)}</td>
+                              <td className="py-0.5 px-1">
+                                {Use.formatarHora(item.data)}
+                              </td>
                               <td className="py-0.5 px-1">{item.nome}</td>
                               <td className="py-0.5 px-1 text-right">
                                 {Number(item.real).toFixed(2)}
@@ -309,11 +308,8 @@ const PlanilhaDiaria = ({ r, totalValores }) => {
                       <table className="table table-xs w-full table-fixed">
                         <thead>
                           <tr>
-                            <th className="w-1/2 text-center text-xs bg-warning-content/30">
+                            <th className="w-full text-center text-xs bg-warning-content/30">
                               {countUtilGreaterThanZero}
-                            </th>
-                            <th className="w-1/2 text-center text-xs bg-warning-content/30">
-                              {countPerdidaGreaterThanZero}
                             </th>
                           </tr>
                         </thead>
@@ -323,8 +319,9 @@ const PlanilhaDiaria = ({ r, totalValores }) => {
                               key={`metragem-${item.id}`}
                               className="border-b border-warning"
                             >
-                              <td className="w-1/2 text-center">{item.util}</td>
-                              <td className="w-1/2 text-center">{item.perdida}</td>
+                              <td className="w-full text-center">
+                                {item.util}
+                              </td>
                             </tr>
                           ))}
                         </tbody>

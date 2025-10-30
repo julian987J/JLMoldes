@@ -1,4 +1,10 @@
-import React, { useEffect, useState, useCallback, useRef } from "react";
+import React, {
+  useEffect,
+  useState,
+  useCallback,
+  useRef,
+  useMemo,
+} from "react";
 import Execute from "models/functions";
 import Edit from "../Edit";
 import { useWebSocket } from "../../../contexts/WebSocketContext";
@@ -16,6 +22,8 @@ const PlotterStatus = ({ r, plotterNome }) => {
   const [editedData, setEditedData] = useState({});
   const { lastMessage } = useWebSocket();
   const lastProcessedTimestampRef = useRef(null);
+
+  const desperdicioConfig = config ? parseFloat(config.d) || 0 : 0;
 
   const handleSave = async (editedData) => {
     try {
@@ -36,6 +44,7 @@ const PlotterStatus = ({ r, plotterNome }) => {
         ...editedData,
         sim: newSim,
         nao: newNao,
+        confirmado: true, // Garante que o campo confirmado seja true ao salvar
       };
       delete dataToSave.m1;
       delete dataToSave.m2;
@@ -49,14 +58,6 @@ const PlotterStatus = ({ r, plotterNome }) => {
       setEditingId(null);
     } catch (error) {
       console.error("Erro ao salvar:", error);
-    }
-  };
-
-  const handleSwap = async (item) => {
-    try {
-      await Execute.swapSimNaoPlotterC(item.id);
-    } catch (error) {
-      console.error("Erro ao trocar Sim e Não:", error);
     }
   };
 
@@ -168,74 +169,161 @@ const PlotterStatus = ({ r, plotterNome }) => {
       ...item,
       m1: formatNumber(m1Value),
       m2: formatNumber(m2Value),
+      confirmado: item.confirmado, // Adiciona o campo confirmado
     });
   };
+
+  const handleConfirm = async (item) => {
+    try {
+      const newSim = parseFloat(item.sim) + parseFloat(item.nao);
+      const newNao = 0;
+
+      const dataToSave = {
+        ...item,
+        sim: newSim,
+        nao: newNao,
+        confirmado: true,
+      };
+
+      const response = await fetch("/api/v1/tables/c/plotter", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(dataToSave),
+      });
+      if (!response.ok) throw new Error("Erro ao confirmar");
+    } catch (error) {
+      console.error("Erro ao confirmar:", error);
+    }
+  };
+
+  const handleReject = async (item) => {
+    try {
+      const newNao = parseFloat(item.nao) + parseFloat(item.sim);
+      const newSim = 0;
+
+      const dataToSave = {
+        ...item,
+        sim: newSim,
+        nao: newNao,
+        confirmado: false,
+      };
+
+      const response = await fetch("/api/v1/tables/c/plotter", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(dataToSave),
+      });
+      if (!response.ok) throw new Error("Erro ao rejeitar");
+    } catch (error) {
+      console.error("Erro ao rejeitar:", error);
+    }
+  };
+
+  const groupedDados = useMemo(() => {
+    return dados.reduce((acc, item) => {
+      const dateKey = item.data.substring(0, 10); // YYYY-MM-DD
+      acc[dateKey] = acc[dateKey] || [];
+      acc[dateKey].push(item);
+      return acc;
+    }, {});
+  }, [dados]);
 
   if (loading) {
     return <div className="text-center p-4">Carregando...</div>;
   }
 
-  const desperdicioConfig = config ? parseFloat(config.d) || 0 : 0;
+  let unconfirmedCount = 0;
 
   return (
     <div className="overflow-x-auto rounded-box border border-warning bg-base-100 p-1">
       <h2 className="p-1 text-center font-bold text-sm">{plotterNome}</h2>
-      <table className="table table-xs">
-        <tbody>
-          {dados.map((item) => {
-            const larguraTotal = parseFloat(item.largura) + desperdicioConfig;
-            const m1Value = ((parseFloat(item.sim) / 100) * larguraTotal) / 100;
-            const m2Value = ((parseFloat(item.nao) / 100) * larguraTotal) / 100;
+      {Object.entries(groupedDados)
+        .sort(([dateA], [dateB]) => new Date(dateB) - new Date(dateA))
+        .map(([date, items]) => (
+          <div key={date} className="mb-2">
+            <div className="font-bold text-sm bg-gray-200 text-center p-1">
+              {date}
+            </div>
+            <table className="table table-xs">
+              <tbody>
+                {items.map((item) => {
+                  const larguraTotal =
+                    parseFloat(item.largura) + desperdicioConfig;
+                  const m1Value =
+                    ((parseFloat(item.sim) / 100) * larguraTotal) / 100;
+                  const m2Value =
+                    ((parseFloat(item.nao) / 100) * larguraTotal) / 100;
 
-            return (
-              <tr key={item.id} className="border-b border-warning">
-                <td className="text-center bg-info/30">
-                  {editingId === item.id ? (
-                    <input
-                      type="number"
-                      placeholder="M1"
-                      value={editedData.m1}
-                      onChange={(e) => handleInputChange("m1", e.target.value)}
-                      className="input input-xs p-0 m-0 text-center w-20"
-                    />
-                  ) : (
-                    formatNumber(m1Value)
-                  )}
-                </td>
-                <td className="text-center bg-error/30">
-                  {editingId === item.id ? (
-                    <input
-                      type="number"
-                      placeholder="M2"
-                      value={editedData.m2}
-                      onChange={(e) => handleInputChange("m2", e.target.value)}
-                      className="input input-xs p-0 m-0 text-center w-20"
-                    />
-                  ) : (
-                    formatNumber(m2Value)
-                  )}
-                </td>
-                <td className="text-center bg-success/30">{item.nome}</td>
-                <td>
-                  <Edit
-                    isEditing={editingId === item.id}
-                    onEdit={() => startEditing(item)}
-                    onSave={() => handleSave(editedData)}
-                    onCancel={() => setEditingId(null)}
-                  />
-                  <button
-                    className={`btn btn-xs btn-soft btn-success ${editingId === item.id ? "hidden" : ""}`}
-                    onClick={() => handleSwap(item)}
-                  >
-                    <strong className="text-info">S</strong>/
-                    <strong className="text-error">N</strong>
-                  </button>
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
+                  return (
+                    <tr key={item.id} className="border-b border-warning">
+                      <td className="text-center bg-info/30">
+                        {editingId === item.id ? (
+                          <input
+                            type="number"
+                            placeholder="M1"
+                            value={editedData.m1}
+                            onChange={(e) =>
+                              handleInputChange("m1", e.target.value)
+                            }
+                            className="input input-xs p-0 m-0 text-center w-20"
+                          />
+                        ) : (
+                          formatNumber(m1Value)
+                        )}
+                      </td>
+                      <td className="text-center bg-error/30">
+                        {editingId === item.id ? (
+                          <input
+                            type="number"
+                            placeholder="M2"
+                            value={editedData.m2}
+                            onChange={(e) =>
+                              handleInputChange("m2", e.target.value)
+                            }
+                            className="input input-xs p-0 m-0 text-center w-20"
+                          />
+                        ) : (
+                          formatNumber(m2Value)
+                        )}
+                      </td>
+                      <td className="text-center bg-success/30">{item.nome}</td>
+                      <td className={!item.confirmado ? "bg-error" : ""}>
+                        <Edit
+                          isEditing={editingId === item.id}
+                          onEdit={() => startEditing(item)}
+                          onSave={() => handleSave(editedData)}
+                          onCancel={() => setEditingId(null)}
+                          disabled={parseFloat(formatNumber(m2Value)) <= 0}
+                        />
+                        {editingId !== item.id && ( // Apenas mostra os botões se não estiver editando
+                          <>
+                            <button
+                              className="btn btn-xs btn-info btn-soft ml-1"
+                              onClick={() => handleConfirm(item)}
+                            >
+                              S
+                            </button>
+                            <button
+                              className="btn btn-xs btn-secondary btn-soft ml-1"
+                              onClick={() => handleReject(item)}
+                            >
+                              N
+                            </button>
+                          </>
+                        )}
+                        {!item.confirmado && (
+                          <span className="badge badge-soft badge-error badge-xs badge-circle ml-1">
+                            {++unconfirmedCount}
+                          </span>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        ))}
     </div>
   );
 };

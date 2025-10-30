@@ -50,6 +50,7 @@ const Coluna3 = ({ r }) => {
         ...editedData,
         desperdicio: parseFloat(editedData.desperdicio) * 100,
         largura: parseFloat(editedData.largura) * 100,
+        confirmado: editedData.confirmado, // Adiciona o campo confirmado
       };
       const response = await fetch("/api/v1/tables/c/plotter", {
         method: "PUT",
@@ -251,6 +252,7 @@ const Coluna3 = ({ r }) => {
       nao: formatNumber(item.nao),
       desperdicio: formatNumber(item.desperdicio / 100),
       largura: formatNumber(item.largura / 100),
+      confirmado: item.confirmado, // Adiciona o campo confirmado
     });
   };
 
@@ -313,6 +315,8 @@ const Coluna3 = ({ r }) => {
 
   const totalMetragemM1 = totalM1_P01 + totalM1_P02;
   const totalMetragemM2 = totalM2_P01 + totalM2_P02;
+
+  let unconfirmedCount = 0;
 
   return (
     <div className="overflow-x-auto rounded-box border border-warning bg-base-100 p-4">
@@ -514,7 +518,7 @@ const Coluna3 = ({ r }) => {
                   {formatarHoraHHMMSS(item.fim)}
                 </td>
                 <td className="text-center bg-success/30">{item.nome}</td>
-                <td>
+                <td className={!item.confirmado ? "bg-error" : ""}>
                   <Edit
                     isEditing={editingId === item.id}
                     onEdit={() => startEditing(item)}
@@ -534,11 +538,16 @@ const Coluna3 = ({ r }) => {
                   >
                     Excluir
                   </button>
+                  {!item.confirmado && (
+                    <span className="badge badge-soft badge-error badge-circle ml-1">
+                      {++unconfirmedCount}
+                    </span>
+                  )}
                 </td>
               </tr>
             );
           })}
-        </tbody>
+        </tbody>{" "}
       </table>
     </div>
   );

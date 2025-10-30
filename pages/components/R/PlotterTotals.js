@@ -1,4 +1,10 @@
-import React, { useEffect, useState, useCallback, useRef } from "react";
+import React, {
+  useEffect,
+  useState,
+  useCallback,
+  useRef,
+  useMemo,
+} from "react";
 import Execute from "models/functions";
 import { useWebSocket } from "../../../contexts/WebSocketContext";
 
@@ -99,10 +105,6 @@ const PlotterTotals = ({ r }) => {
     }
   }, [lastMessage, r]);
 
-  if (loading) {
-    return <div className="text-center p-1">Carregando...</div>;
-  }
-
   const desperdicioConfig = config ? parseFloat(config.d) || 0 : 0;
 
   const dadosP01 = dados.filter((item) => item.plotter_nome === "P01");
@@ -135,6 +137,26 @@ const PlotterTotals = ({ r }) => {
 
   const countM1 = dados.filter((item) => parseFloat(item.sim) > 0).length;
   const countM2 = dados.filter((item) => parseFloat(item.nao) > 0).length;
+
+  const groupedConfirmedData = useMemo(() => {
+    const confirmed = dados.filter((item) => item.confirmado);
+    return confirmed.reduce((acc, item) => {
+      const dateKey = item.data.substring(0, 10); // YYYY-MM-DD
+      if (!acc[dateKey]) {
+        acc[dateKey] = { p01: [], p02: [] };
+      }
+      if (item.plotter_nome === "P01") {
+        acc[dateKey].p01.push(item);
+      } else if (item.plotter_nome === "P02") {
+        acc[dateKey].p02.push(item);
+      }
+      return acc;
+    }, {});
+  }, [dados]);
+
+  if (loading) {
+    return <div className="text-center p-1">Carregando...</div>;
+  }
 
   return (
     <div className="overflow-x-auto rounded-box border border-warning bg-base-100 p-1">
@@ -170,6 +192,83 @@ const PlotterTotals = ({ r }) => {
           </tr>
         </tbody>
       </table>
+      <div className="mt-4">
+        {Object.entries(groupedConfirmedData)
+          .sort(([dateA], [dateB]) => new Date(dateB) - new Date(dateA))
+          .map(([date, { p01, p02 }]) => (
+            <div key={date} className="mb-2">
+              <div className="font-bold text-sm bg-gray-200 text-center p-1">
+                {date}
+              </div>
+              <div className="flex">
+                <div className="w-1/2 pr-1">
+                  {p01.length > 0 && (
+                    <table className="table table-xs">
+                      <tbody>
+                        {p01.map((item) => {
+                          const larguraTotal =
+                            parseFloat(item.largura) + desperdicioConfig;
+                          const m1Value =
+                            ((parseFloat(item.sim) / 100) * larguraTotal) / 100;
+                          const m2Value =
+                            ((parseFloat(item.nao) / 100) * larguraTotal) / 100;
+                          return (
+                            <tr
+                              key={item.id}
+                              className="border-b border-warning"
+                            >
+                              <td className="text-center bg-info/30">
+                                {formatNumber(m1Value)}
+                              </td>
+                              <td className="text-center bg-error/30">
+                                {formatNumber(m2Value)}
+                              </td>
+                              <td className="text-center bg-success/30">
+                                {item.nome}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  )}
+                </div>
+                <div className="w-1/2 pl-1">
+                  {p02.length > 0 && (
+                    <table className="table table-xs">
+                      <tbody>
+                        {p02.map((item) => {
+                          const larguraTotal =
+                            parseFloat(item.largura) + desperdicioConfig;
+                          const m1Value =
+                            ((parseFloat(item.sim) / 100) * larguraTotal) / 100;
+                          const m2Value =
+                            ((parseFloat(item.nao) / 100) * larguraTotal) / 100;
+                          return (
+                            <tr
+                              key={item.id}
+                              className="border-b border-warning"
+                            >
+                              <td className="text-center bg-info/30">
+                                {formatNumber(m1Value)}
+                              </td>
+                              <td className="text-center bg-error/30">
+                                {formatNumber(m2Value)}
+                              </td>
+                              <td className="text-center bg-success/30">
+                                {item.nome}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  )}
+                </div>
+              </div>
+            </div>
+          ))}
+      </div>
     </div>
   );
 };
