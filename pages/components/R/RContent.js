@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import Calculadora from "./Calculadora.js";
 import Execute from "models/functions";
 import BSTA from "./BSATable.js";
@@ -121,17 +121,17 @@ const Rcontent = ({ codigoExterno, nomeExterno, r }) => {
     setData(item.data); // Atualiza a data também, se relevante
   };
 
-  const handleValoresChange = (valores) => {
+  const handleValoresChange = useCallback((valores) => {
     setTotalValores(valores);
-  };
+  }, []);
 
-  const handleBsaTotalsChange = (totals) => {
+  const handleBsaTotalsChange = useCallback((totals) => {
     setBsaTotals(totals);
-  };
+  }, []);
 
-  const handleDeveTotalsChange = (totals) => {
+  const handleDeveTotalsChange = useCallback((totals) => {
     setDeveTotals(totals);
-  };
+  }, []);
 
   return (
     <div>

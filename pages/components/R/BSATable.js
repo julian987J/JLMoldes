@@ -135,17 +135,20 @@ const BSA = ({ codigo, r, onTotalsChange }) => {
     { base: 0, sis: 0, alt: 0 },
   );
 
+  const total1M =
+    totalsBetweenOneAndTwoMonths.base +
+    totalsBetweenOneAndTwoMonths.sis +
+    totalsBetweenOneAndTwoMonths.alt;
+  const total2M = totalsOld.base + totalsOld.sis + totalsOld.alt;
+
   useEffect(() => {
     if (onTotalsChange) {
       onTotalsChange({
-        total1M:
-          totalsBetweenOneAndTwoMonths.base +
-          totalsBetweenOneAndTwoMonths.sis +
-          totalsBetweenOneAndTwoMonths.alt,
-        total2M: totalsOld.base + totalsOld.sis + totalsOld.alt,
+        total1M,
+        total2M,
       });
     }
-  }, [totalsBetweenOneAndTwoMonths, totalsOld, onTotalsChange]);
+  }, [total1M, total2M, onTotalsChange]);
 
   return (
     <div className="overflow-x-auto rounded-box border border-warning bg-base-100">
