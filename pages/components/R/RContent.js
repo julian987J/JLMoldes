@@ -136,9 +136,9 @@ const Rcontent = ({ codigoExterno, nomeExterno, r }) => {
   return (
     <div>
       <ValoresColuna r={r} onValoresChange={handleValoresChange} />
-      <div className="grid grid-cols-37 gap-1">
+      <div className="grid grid-cols-38 gap-1">
         <PlanilhaDiaria r={r} totalValores={totalValores} />
-        <div className="col-span-5">
+        <div className="col-span-6">
           <PlotterTotals r={r} />
         </div>
         <div className="col-span-9">

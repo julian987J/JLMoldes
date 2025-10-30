@@ -201,7 +201,7 @@ const PlotterTotals = ({ r }) => {
                 {date}
               </div>
               <div className="flex">
-                <div className="w-1/2 pr-1">
+                <div className="w-1/2">
                   {p01.length > 0 && (
                     <table className="table table-xs">
                       <tbody>
@@ -233,7 +233,7 @@ const PlotterTotals = ({ r }) => {
                     </table>
                   )}
                 </div>
-                <div className="w-1/2 pl-1">
+                <div className="w-1/2">
                   {p02.length > 0 && (
                     <table className="table table-xs">
                       <tbody>

@@ -35,6 +35,8 @@ struct PlotterData {
     nome: String,
     plotter_nome: String,
     largura: Option<f64>,
+    #[serde(default)]
+    confirmado: bool,
 }
 
 #[derive(Deserialize, Debug)]
@@ -168,8 +170,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                             inicio: inicio_str.to_string(),
                             fim: fim_str.to_string(),
                             nome: file_name.clone(),
-                            plotter_nome: "P02".to_string(),
+                            plotter_nome: "P01".to_string(),
                             largura: None,
+                            confirmado: false,
                         };
 
                         rt.block_on(async {

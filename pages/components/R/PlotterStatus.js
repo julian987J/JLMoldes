@@ -177,12 +177,13 @@ const PlotterStatus = ({ r, plotterNome }) => {
     try {
       const newSim = parseFloat(item.sim) + parseFloat(item.nao);
       const newNao = 0;
+      const shouldConfirm = newSim > 0;
 
       const dataToSave = {
         ...item,
         sim: newSim,
         nao: newNao,
-        confirmado: true,
+        confirmado: shouldConfirm,
       };
 
       const response = await fetch("/api/v1/tables/c/plotter", {
@@ -220,7 +221,8 @@ const PlotterStatus = ({ r, plotterNome }) => {
   };
 
   const groupedDados = useMemo(() => {
-    return dados.reduce((acc, item) => {
+    const unconfirmedDados = dados.filter((item) => item.confirmado === false);
+    return unconfirmedDados.reduce((acc, item) => {
       const dateKey = item.data.substring(0, 10); // YYYY-MM-DD
       acc[dateKey] = acc[dateKey] || [];
       acc[dateKey].push(item);
