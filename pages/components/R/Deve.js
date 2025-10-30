@@ -171,7 +171,7 @@ const Deve = ({ codigo, r, onTotalsChange, total1M, total2M }) => {
 
   return (
     <div className="overflow-x-auto rounded-box border border-neutral-content bg-base-100">
-      <table className="table table-xs">
+      <table className="table table-xs mb-20">
         <thead>
           <tr className="grid grid-cols-12">
             <th className="col-span-3">Data</th>
@@ -224,10 +224,7 @@ const Deve = ({ codigo, r, onTotalsChange, total1M, total2M }) => {
         </tbody>
       </table>
       {betweenOneAndTwoMonthsDados.length > 0 && (
-        <div className="mt-4">
-          <h3 className="text-center font-bold text-lg mb-2">
-            Registros com mais de 1 mês
-          </h3>
+        <div className="mt-2">
           <table className="table table-xs">
             <thead>
               <tr className="grid grid-cols-12">
@@ -298,12 +295,9 @@ const Deve = ({ codigo, r, onTotalsChange, total1M, total2M }) => {
             </tfoot>
           </table>
         </div>
-      )}{" "}
+      )}
       {oldDados.length > 0 && (
-        <div className="mt-4">
-          <h3 className="text-center font-bold text-lg mb-2">
-            Registros com mais de 2 meses
-          </h3>
+        <div className="mt-2">
           <table className="table table-xs">
             <thead>
               <tr className="grid grid-cols-12">
