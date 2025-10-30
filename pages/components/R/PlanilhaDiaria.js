@@ -302,13 +302,13 @@ const PlanilhaDiaria = ({ r, totalValores }) => {
                 </div>
 
                 {/* Metragem Column */}
-                <div className="flex-1">
+                <div>
                   {metragem.length > 0 && (
                     <div className="overflow-x-auto rounded-box border border-warning bg-base-100">
-                      <table className="table table-xs w-full table-fixed">
+                      <table className="table table-xs">
                         <thead>
                           <tr>
-                            <th className="w-full text-center text-xs bg-warning-content/30">
+                            <th className="text-center text-xs bg-warning-content/30">
                               {countUtilGreaterThanZero}
                             </th>
                           </tr>
@@ -319,9 +319,7 @@ const PlanilhaDiaria = ({ r, totalValores }) => {
                               key={`metragem-${item.id}`}
                               className="border-b border-warning"
                             >
-                              <td className="w-full text-center">
-                                {item.util}
-                              </td>
+                              <td className="text-center">{item.util}</td>
                             </tr>
                           ))}
                         </tbody>

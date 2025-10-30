@@ -229,9 +229,9 @@ const Deve = ({ codigo, r, onTotalsChange, total1M, total2M }) => {
             <thead>
               <tr className="grid grid-cols-12">
                 <th className="col-span-3 bg-secondary-content">Data</th>
-                <th className="col-span-1 bg-secondary-content">Valor</th>
+                <th className="col-span-1 bg-secondary-content px-0">Valor</th>
                 <th className="col-span-1 bg-secondary-content">Enc</th>
-                <th className="col-span-1 bg-secondary-content">Deve</th>
+                <th className="col-span-1 bg-secondary-content px-0">Deve</th>
                 <th className="col-span-1 bg-secondary-content">COD</th>
                 <th className="col-span-3 bg-secondary-content">Nome</th>
                 <th className="col-span-2 bg-secondary-content">Ações</th>
@@ -302,9 +302,9 @@ const Deve = ({ codigo, r, onTotalsChange, total1M, total2M }) => {
             <thead>
               <tr className="grid grid-cols-12">
                 <th className="col-span-3 bg-error/30">Data</th>
-                <th className="col-span-1 bg-error/30">Valor</th>
+                <th className="col-span-1 bg-error/30 px-0">Valor</th>
                 <th className="col-span-1 bg-error/30">Enc</th>
-                <th className="col-span-1 bg-error/30">Deve</th>
+                <th className="col-span-1 bg-error/30 px-0">Deve</th>
                 <th className="col-span-1 bg-error/30">COD</th>
                 <th className="col-span-3 bg-error/30">Nome</th>
                 <th className="col-span-2 bg-error/30">Ações</th>
