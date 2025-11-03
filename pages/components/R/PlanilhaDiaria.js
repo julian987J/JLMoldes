@@ -169,7 +169,7 @@ const PlanilhaDiaria = ({ r, totalValores, plotterTotals }) => {
     return combined;
   }, [pagamentosDados, metragemDados]);
 
-  const RightTotalValue = totalValores / 250;
+  const RightTotalValue = (totalValores + plotterTotals) / 250;
 
   if (loading) {
     return <div className="text-center p-4">Carregando...</div>;

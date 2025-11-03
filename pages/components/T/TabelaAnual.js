@@ -36,6 +36,15 @@ const Tabela = ({ titulo, cor, dados }) => {
       }
 
       try {
+        // Garante que a data esteja no formato YYYY-MM-DD
+        const dateParts = item.data.split("-");
+        if (dateParts.length !== 3) {
+          console.error(
+            `TabelaAnual: Formato de data inesperado (esperado YYYY-MM-DD):`,
+            item,
+          );
+          return;
+        }
         const date = new Date(item.data + "T00:00:00");
 
         if (isNaN(date.getTime())) {
@@ -46,8 +55,8 @@ const Tabela = ({ titulo, cor, dados }) => {
           return;
         }
 
-        const monthIndex = date.getMonth();
-        const day = date.getDate();
+        const monthIndex = date.getUTCMonth();
+        const day = date.getUTCDate();
 
         if (!lookup[monthIndex]) {
           lookup[monthIndex] = {};
