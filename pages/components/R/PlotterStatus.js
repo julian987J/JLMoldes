@@ -22,6 +22,15 @@ const PlotterStatus = ({ r, plotterNome }) => {
   const [editedData, setEditedData] = useState({});
   const { lastMessage } = useWebSocket();
   const lastProcessedTimestampRef = useRef(null);
+  const [currentTime, setCurrentTime] = useState(new Date());
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 60000); // Update every minute
+
+    return () => clearInterval(timer);
+  }, []);
 
   const desperdicioConfig = config ? parseFloat(config.d) || 0 : 0;
 
@@ -173,30 +182,6 @@ const PlotterStatus = ({ r, plotterNome }) => {
     });
   };
 
-  const handleConfirm = async (item) => {
-    try {
-      const newSim = parseFloat(item.sim) + parseFloat(item.nao);
-      const newNao = 0;
-      const shouldConfirm = newSim > 0;
-
-      const dataToSave = {
-        ...item,
-        sim: newSim,
-        nao: newNao,
-        confirmado: shouldConfirm,
-      };
-
-      const response = await fetch("/api/v1/tables/c/plotter", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(dataToSave),
-      });
-      if (!response.ok) throw new Error("Erro ao confirmar");
-    } catch (error) {
-      console.error("Erro ao confirmar:", error);
-    }
-  };
-
   const handleReject = async (item) => {
     try {
       const newNao = parseFloat(item.nao) + parseFloat(item.sim);
@@ -221,14 +206,34 @@ const PlotterStatus = ({ r, plotterNome }) => {
   };
 
   const groupedDados = useMemo(() => {
-    const unconfirmedDados = dados.filter((item) => item.confirmado === false);
-    return unconfirmedDados.reduce((acc, item) => {
+    const tenMinutesAgo = currentTime.getTime() - 10 * 60 * 1000;
+
+    const visibleDados = dados.filter((item) => {
+      // Keep item if it's not confirmed
+      if (item.confirmado === false) {
+        return true;
+      }
+
+      // For confirmed items, check if 'fim' is a valid date within the last 10 minutes
+      if (item.confirmado === true && item.fim) {
+        const itemTime = new Date(item.fim).getTime();
+        // Make sure itemTime is a valid number before comparing
+        if (!isNaN(itemTime)) {
+          return itemTime > tenMinutesAgo;
+        }
+      }
+
+      // Hide by default if the above conditions are not met
+      return false;
+    });
+
+    return visibleDados.reduce((acc, item) => {
       const dateKey = item.data.substring(0, 10); // YYYY-MM-DD
       acc[dateKey] = acc[dateKey] || [];
       acc[dateKey].push(item);
       return acc;
     }, {});
-  }, [dados]);
+  }, [dados, currentTime]);
 
   if (loading) {
     return <div className="text-center p-4">Carregando...</div>;
@@ -299,12 +304,6 @@ const PlotterStatus = ({ r, plotterNome }) => {
                         />
                         {editingId !== item.id && ( // Apenas mostra os botões se não estiver editando
                           <>
-                            <button
-                              className="btn btn-xs btn-info btn-soft ml-1"
-                              onClick={() => handleConfirm(item)}
-                            >
-                              S
-                            </button>
                             <button
                               className="btn btn-xs btn-secondary btn-soft ml-1"
                               onClick={() => handleReject(item)}

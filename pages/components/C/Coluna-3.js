@@ -27,6 +27,26 @@ const formatarHoraHHMMSS = (isoString) => {
   return `${hours}:${minutes}:${seconds}`;
 };
 
+const formatDateForInput = (isoDate) => {
+  if (!isoDate) return "";
+  const date = new Date(isoDate);
+  if (isNaN(date.getTime())) return "";
+  const year = date.getUTCFullYear();
+  const month = String(date.getUTCMonth() + 1).padStart(2, "0");
+  const day = String(date.getUTCDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
+const formatTimeForInput = (isoDate) => {
+  if (!isoDate) return "";
+  const date = new Date(isoDate);
+  if (isNaN(date.getTime())) return "";
+  const hours = String(date.getUTCHours()).padStart(2, "0");
+  const minutes = String(date.getUTCMinutes()).padStart(2, "0");
+  const seconds = String(date.getUTCSeconds()).padStart(2, "0");
+  return `${hours}:${minutes}:${seconds}`;
+};
+
 const formatNumber = (value) => {
   const number = parseFloat(value);
   return isNaN(number) ? "0.00" : number.toFixed(2);
@@ -46,11 +66,42 @@ const Coluna3 = ({ r }) => {
 
   const handleSave = async (editedData) => {
     try {
+      // Split date and time parts
+      const [year, month, day] = editedData.data.split("-").map(Number);
+      const [startHours, startMinutes, startSeconds] = editedData.inicio
+        .split(":")
+        .map(Number);
+      const [endHours, endMinutes, endSeconds] = editedData.fim
+        .split(":")
+        .map(Number);
+
+      // Create Date objects using local time, then convert to UTC ISO string
+      const newDataISO = new Date(year, month - 1, day).toISOString();
+      const newInicioISO = new Date(
+        year,
+        month - 1,
+        day,
+        startHours,
+        startMinutes,
+        startSeconds || 0,
+      ).toISOString();
+      const newFimISO = new Date(
+        year,
+        month - 1,
+        day,
+        endHours,
+        endMinutes,
+        endSeconds || 0,
+      ).toISOString();
+
       const dataToSave = {
         ...editedData,
+        data: newDataISO,
+        inicio: newInicioISO,
+        fim: newFimISO,
         desperdicio: parseFloat(editedData.desperdicio) * 100,
         largura: parseFloat(editedData.largura) * 100,
-        confirmado: editedData.confirmado, // Adiciona o campo confirmado
+        confirmado: editedData.confirmado,
       };
       const response = await fetch("/api/v1/tables/c/plotter", {
         method: "PUT",
@@ -252,7 +303,10 @@ const Coluna3 = ({ r }) => {
       nao: formatNumber(item.nao),
       desperdicio: formatNumber(item.desperdicio / 100),
       largura: formatNumber(item.largura / 100),
-      confirmado: item.confirmado, // Adiciona o campo confirmado
+      confirmado: item.confirmado,
+      data: formatDateForInput(item.data),
+      inicio: formatTimeForInput(item.inicio),
+      fim: formatTimeForInput(item.fim),
     });
   };
 
@@ -509,13 +563,46 @@ const Coluna3 = ({ r }) => {
                   )}
                 </td>
                 <td className="text-center bg-success/30">
-                  {formatarDataDDMMYYYY(item.data)}
+                  {editingId === item.id ? (
+                    <input
+                      type="date"
+                      value={editedData.data}
+                      onChange={(e) =>
+                        handleInputChange("data", e.target.value)
+                      }
+                      className="input input-xs p-0 m-0 text-center"
+                    />
+                  ) : (
+                    formatarDataDDMMYYYY(item.data)
+                  )}
                 </td>
                 <td className="text-center bg-success/30">
-                  {formatarHoraHHMMSS(item.inicio)}
+                  {editingId === item.id ? (
+                    <input
+                      type="time"
+                      step="1"
+                      value={editedData.inicio}
+                      onChange={(e) =>
+                        handleInputChange("inicio", e.target.value)
+                      }
+                      className="input input-xs p-0 m-0 text-center"
+                    />
+                  ) : (
+                    formatarHoraHHMMSS(item.inicio)
+                  )}
                 </td>
                 <td className="text-center bg-success/30">
-                  {formatarHoraHHMMSS(item.fim)}
+                  {editingId === item.id ? (
+                    <input
+                      type="time"
+                      step="1"
+                      value={editedData.fim}
+                      onChange={(e) => handleInputChange("fim", e.target.value)}
+                      className="input input-xs p-0 m-0 text-center"
+                    />
+                  ) : (
+                    formatarHoraHHMMSS(item.fim)
+                  )}
                 </td>
                 <td className="text-center bg-success/30">{item.nome}</td>
                 <td className={!item.confirmado ? "bg-error" : ""}>
