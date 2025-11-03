@@ -373,7 +373,7 @@ const Mcontent = ({ oficina, r }) => {
         </form>
         <Config />
       </div>
-      <div className="grid grid-cols-[2fr_2fr_1fr] gap-2">
+      <div className="grid grid-cols-[2fr_2fr_1fr] gap-2 items-start">
         <TabelaM
           oficina={oficina}
           r={r}

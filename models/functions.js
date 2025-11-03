@@ -680,6 +680,19 @@ async function receiveFromC(r) {
   }
 }
 
+async function receiveFromCFinalizado(r) {
+  try {
+    const response = await fetch(`/api/v1/tables/c/finalizado?r=${r}`);
+    if (!response.ok)
+      throw new Error("Falha ao buscar dados finalizados da tabela C");
+    const data = await response.json();
+    return Array.isArray(data) ? data : data.rows || [];
+  } catch (error) {
+    console.error("Erro ao buscar dados finalizados C:", error);
+    return [];
+  }
+}
+
 async function receiveAnualFromC() {
   try {
     const response = await fetch(`/api/v1/tables/anual/c`);
@@ -759,6 +772,19 @@ async function receiveFromPapelC(r) {
     return Array.isArray(data.rows) ? data.rows : [];
   } catch (error) {
     console.error("Erro ao buscar dados Papel:", error);
+    return [];
+  }
+}
+
+async function receiveFromPapelCFinalizado(r) {
+  try {
+    const response = await fetch(`/api/v1/tables/c/papel/finalizado?r=${r}`);
+    if (!response.ok)
+      throw new Error("Falha ao buscar dados finalizados da tabela PapelC");
+    const data = await response.json();
+    return Array.isArray(data) ? data : data.rows || [];
+  } catch (error) {
+    console.error("Erro ao buscar dados finalizados PapelC:", error);
     return [];
   }
 }
@@ -1384,6 +1410,18 @@ async function receiveFromPlotterC(r) {
   }
 }
 
+async function receiveFromPlotterCFinalizado(r) {
+  try {
+    const response = await fetch(`/api/v1/tables/c/plotter/finalizado?r=${r}`);
+    if (!response.ok)
+      throw new Error("Falha ao buscar dados finalizados da tabela PlotterC");
+    return await response.json();
+  } catch (error) {
+    console.error("Erro ao buscar dados finalizados PlotterC:", error);
+    return [];
+  }
+}
+
 async function removePlotterC(id) {
   const response = await fetch("/api/v1/tables/c/plotter", {
     method: "DELETE",
@@ -1413,6 +1451,7 @@ async function swapSimNaoPlotterC(id) {
 
 const execute = {
   receiveFromPlotterC,
+  receiveFromPlotterCFinalizado,
   removePlotterC,
   swapSimNaoPlotterC,
   sendTrueMR,
@@ -1433,6 +1472,7 @@ const execute = {
   receiveFromTemp,
   sendToTemp,
   receiveFromC,
+  receiveFromCFinalizado,
   receiveAnualFromC,
   receiveFromCGastos,
   receiveFromPessoal,
@@ -1449,6 +1489,7 @@ const execute = {
   receiveFromPapelByItem,
   receiveFromPapelCalculadora,
   receiveFromPapelC,
+  receiveFromPapelCFinalizado,
   receiveFromPapelCData,
   receiveFromRDeveDevo,
   receiveFromDeve,

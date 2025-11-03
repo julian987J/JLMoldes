@@ -1662,6 +1662,32 @@ async function getPlotterC(r) {
   return result;
 }
 
+async function getCFinalizado(r) {
+  const query = {
+    text: `SELECT id, codigo, dec, r, data, nome, sis, alt, base, real, pix, "DataFim" FROM "C" WHERE r = $1 ORDER BY id DESC;`,
+    values: [r],
+  };
+  const result = await database.query(query);
+  return result;
+}
+
+async function getPapelCFinalizado(r) {
+  const query = {
+    text: `SELECT id, codigo, deveid, r, data, nome, multi, papel, papelpix, papelreal, encaixepix, encaixereal, desperdicio, util, perdida, comentarios, comissao, "DataFim" FROM "PapelC" WHERE r = $1 ORDER BY id DESC;`,
+    values: [r],
+  };
+  const result = await database.query(query);
+  return result;
+}
+
+async function getPlotterCFinalizado(r) {
+  const result = await database.query({
+    text: `SELECT id, r, sim, nao, desperdicio, data, inicio, fim, nome, plotter_nome, largura, confirmado, "DataFim" FROM "PlotterC" WHERE r = $1 AND "DataFim" IS NOT NULL ORDER BY data DESC, inicio DESC;`,
+    values: [r],
+  });
+  return result;
+}
+
 async function updatePlotterC(updatedData) {
   const result = await database.query({
     text: `
@@ -1833,6 +1859,9 @@ const ordem = {
   verifyUserCredentials,
   getUsers,
   updateUser,
+  getCFinalizado,
+  getPapelCFinalizado,
+  getPlotterCFinalizado,
 };
 
 export default ordem;

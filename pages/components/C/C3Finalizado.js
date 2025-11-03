@@ -129,21 +129,17 @@ const Coluna3 = ({ r }) => {
     try {
       const workshop = "R" + r;
       const [plotterResults, configResult, papelResults] = await Promise.all([
-        Execute.receiveFromPlotterC(r),
+        Execute.receiveFromPlotterCFinalizado(r),
         Execute.receiveFromConfig(),
         Execute.receiveFromPapelByItem(workshop),
       ]);
 
-      const filteredResults = Array.isArray(plotterResults)
-        ? plotterResults.filter((item) => !item.datafim)
-        : [];
-
       setDados(
-        filteredResults.sort(
-          (a, b) =>
-            new Date(b.data) - new Date(a.data) ||
-            new Date(b.inicio) - new Date(a.inicio),
-        ),
+        Array.isArray(plotterResults)
+          ? plotterResults.sort(
+              (a, b) => new Date(b.datafim) - new Date(a.datafim),
+            )
+          : [],
       );
 
       if (Array.isArray(papelResults)) {
@@ -209,22 +205,22 @@ const Coluna3 = ({ r }) => {
 
           switch (type) {
             case "PLOTTER_C_NEW_ITEM":
-              if (!payload.datafim && itemIndex === -1) {
+              if (payload.datafim && itemIndex === -1) {
                 newDados.push(payload);
               }
               break;
             case "PLOTTER_C_UPDATED_ITEM":
               if (payload.datafim) {
                 if (itemIndex !== -1) {
-                  newDados = newDados.filter(
-                    (item) => String(item.id) !== String(payload.id),
-                  );
-                }
-              } else {
-                if (itemIndex !== -1) {
                   newDados[itemIndex] = payload;
                 } else {
                   newDados.push(payload);
+                }
+              } else {
+                if (itemIndex !== -1) {
+                  newDados = newDados.filter(
+                    (item) => String(item.id) !== String(payload.id),
+                  );
                 }
               }
               if (editingId === payload.id) setEditingId(null);
@@ -237,9 +233,7 @@ const Coluna3 = ({ r }) => {
               break;
           }
           return newDados.sort(
-            (a, b) =>
-              new Date(b.data) - new Date(a.data) ||
-              new Date(b.inicio) - new Date(a.inicio),
+            (a, b) => new Date(b.datafim) - new Date(a.datafim),
           );
         });
       }
@@ -357,39 +351,6 @@ const Coluna3 = ({ r }) => {
     return acc + m2Value;
   }, 0);
 
-  const handleFinalizarPapel = async () => {
-    if (oldestPapel) {
-      try {
-        // Finaliza todos os registros em aberto para a oficina 'r'
-        const response = await fetch("/api/v1/tables/c/plotter/finalizar", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ r }),
-        });
-
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.error || "Erro ao finalizar registros.");
-        }
-
-        // Atualização otimista da UI: remove os dados da tabela, pois foram finalizados
-        setDados([]);
-
-        // Remove o papel da lista
-        setPapeis((prevPapeis) =>
-          prevPapeis.filter((p) => p.id !== oldestPapel.id),
-        );
-
-        // Envia a requisição para remover o papel do banco de dados
-        await Execute.removePapel(oldestPapel.id);
-      } catch (error) {
-        console.error("Erro no processo de finalização:", error);
-        // Em caso de erro, recarrega os dados para garantir consistência
-        fetchData();
-      }
-    }
-  };
-
   // Apply multiplier
   const totalM1_P01_Multiplicado = totalM1_P01 * multiplicadorConfig;
   const totalM2_P01_Multiplicado = totalM2_P01 * multiplicadorConfig;
@@ -402,73 +363,19 @@ const Coluna3 = ({ r }) => {
   let unconfirmedCount = 0;
 
   return (
-    <div className="overflow-x-auto rounded-box border border-warning bg-base-100 p-4">
-      {newerPapeis.length > 0 && (
-        <div className="mb-4">
-          <h2 className="p-2 text-center font-bold">Papeis Recentes</h2>
-          <table className="table table-xs">
-            <thead className="text-center">
-              <tr>
-                <th className="text-center bg-info">Metragem Restante</th>
-                <th className="text-center bg-success">Papel</th>
-              </tr>
-            </thead>
-            <tbody className="text-center">
-              {newerPapeis.map((papel) => (
-                <tr key={papel.id}>
-                  <td className="text-center bg-info/30">
-                    {formatNumber(papel.metragem)}
-                  </td>
-                  <td className="text-center bg-success/30">{papel.gastos}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+    <div className="overflow-x-auto rounded-box border border-secondary bg-base-100">
       <table className="table table-xs">
         <thead>
           <tr>
-            {oldestPapel ? (
-              <th
-                colSpan={2}
-                key={oldestPapel.id}
-                className="text-center bg-success"
-              >
-                {oldestPapel.gastos}
-              </th>
-            ) : (
-              <th colSpan={2}></th>
-            )}
-            <th colSpan={4} className="bg-success"></th>
-            <th colSpan={2} rowSpan={2} className="bg-error">
-              {oldestPapel && (
-                <button
-                  className="btn btn-ghost btn-error rounded-none"
-                  onClick={handleFinalizarPapel}
-                >
-                  Finalizar
-                </button>
-              )}
+            <th colSpan={12}></th>
+            <th colSpan={2} rowSpan={2} className="bg-error text-center">
+              <button className="btn btn-xs btn-error">Excluir</button>
             </th>
-            <th colSpan={6}></th>
           </tr>
           <tr>
-            {oldestPapel ? (
-              <th
-                colSpan={2}
-                key={oldestPapel.id}
-                className="text-center bg-info/30"
-              >
-                {formatNumber(oldestPapel.metragem)}
-              </th>
-            ) : (
-              <th colSpan={2}></th>
-            )}
-            <th colSpan={4} className="text-center bg-info/30">
-              {formatNumber(totalMetragemM1 + totalMetragemM2)}
+            <th colSpan={12} className="text-center text-xs bg-info/30">
+              Metragem Total: {formatNumber(totalMetragemM1 + totalMetragemM2)}
             </th>
-            <th colSpan={6}></th>
           </tr>
           <tr>
             <th colSpan={2}></th>
@@ -478,7 +385,7 @@ const Coluna3 = ({ r }) => {
             <th colSpan={2} className="bg-secondary-content text-center">
               P02
             </th>
-            <th colSpan={7}></th>
+            <th colSpan={8}></th>
           </tr>
           <tr>
             <th colSpan={2}></th>
@@ -494,7 +401,7 @@ const Coluna3 = ({ r }) => {
             <th className="text-center bg-error/30">
               R$ {formatNumber(totalM2_P02_Multiplicado)}
             </th>
-            <th colSpan={7}></th>
+            <th colSpan={8}></th>
           </tr>
           <tr>
             <th className="hidden">ID</th>
@@ -516,12 +423,15 @@ const Coluna3 = ({ r }) => {
         <tbody>
           {dados.map((item) => {
             const larguraTotal = parseFloat(item.largura) + desperdicioConfig;
+
             const m1Value = ((parseFloat(item.sim) / 100) * larguraTotal) / 100;
+
             const m2Value = ((parseFloat(item.nao) / 100) * larguraTotal) / 100;
 
             return (
               <tr key={item.id} className="border-b border-warning">
                 <td className="hidden">{item.id}</td>
+
                 <td className="text-center bg-info/30">
                   {editingId === item.id ? (
                     <input
@@ -534,6 +444,7 @@ const Coluna3 = ({ r }) => {
                     `${formatNumber(item.sim)}%`
                   )}
                 </td>
+
                 <td className="text-center bg-error/30">
                   {editingId === item.id ? (
                     <input
@@ -548,17 +459,21 @@ const Coluna3 = ({ r }) => {
                 </td>
 
                 {/* P01 Columns */}
+
                 <td className="text-center bg-info/30">
                   {item.plotter_nome === "P01" ? formatNumber(m1Value) : ""}
                 </td>
+
                 <td className="text-center bg-error/30">
                   {item.plotter_nome === "P01" ? formatNumber(m2Value) : ""}
                 </td>
 
                 {/* P02 Columns */}
+
                 <td className="text-center bg-info/30">
                   {item.plotter_nome === "P02" ? formatNumber(m1Value) : ""}
                 </td>
+
                 <td className="text-center bg-error/30">
                   {item.plotter_nome === "P02" ? formatNumber(m2Value) : ""}
                 </td>
@@ -577,6 +492,7 @@ const Coluna3 = ({ r }) => {
                     formatNumber(item.desperdicio / 100)
                   )}
                 </td>
+
                 <td>
                   {editingId === item.id ? (
                     <input
@@ -591,6 +507,7 @@ const Coluna3 = ({ r }) => {
                     formatNumber(larguraTotal / 100)
                   )}
                 </td>
+
                 <td className="text-center bg-success/30">
                   {editingId === item.id ? (
                     <input
@@ -605,6 +522,7 @@ const Coluna3 = ({ r }) => {
                     formatarDataDDMMYYYY(item.data)
                   )}
                 </td>
+
                 <td className="text-center bg-success/30">
                   {editingId === item.id ? (
                     <input
@@ -620,6 +538,7 @@ const Coluna3 = ({ r }) => {
                     formatarHoraHHMMSS(item.inicio)
                   )}
                 </td>
+
                 <td className="text-center bg-success/30">
                   {editingId === item.id ? (
                     <input
@@ -633,7 +552,9 @@ const Coluna3 = ({ r }) => {
                     formatarHoraHHMMSS(item.fim)
                   )}
                 </td>
+
                 <td className="text-center bg-success/30">{item.nome}</td>
+
                 <td className={!item.confirmado ? "bg-error" : ""}>
                   <Edit
                     isEditing={editingId === item.id}
@@ -641,6 +562,7 @@ const Coluna3 = ({ r }) => {
                     onSave={() => handleSave(editedData)}
                     onCancel={() => setEditingId(null)}
                   />
+
                   <button
                     className={`btn btn-xs btn-soft btn-success ${editingId === item.id ? "hidden" : ""}`}
                     onClick={() => handleSwap(item)}
@@ -648,12 +570,14 @@ const Coluna3 = ({ r }) => {
                     <strong className="text-info">S</strong>/
                     <strong className="text-error">N</strong>
                   </button>
+
                   <button
                     className={`btn btn-xs btn-error ${editingId === item.id ? "hidden" : ""}`}
                     onClick={() => Execute.removePlotterC(item.id)}
                   >
                     Excluir
                   </button>
+
                   {!item.confirmado && (
                     <span className="badge badge-soft badge-error badge-circle ml-1">
                       {++unconfirmedCount}
