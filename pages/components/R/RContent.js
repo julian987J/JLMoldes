@@ -11,7 +11,12 @@ import ValoresColuna from "./ValoresColuna.js";
 import PlotterStatus from "./PlotterStatus.js";
 import PlotterTotals from "./PlotterTotals.js";
 
-const Rcontent = ({ codigoExterno, nomeExterno, r }) => {
+const Rcontent = ({
+  codigoExterno,
+  nomeExterno,
+  r,
+  onCombinedTotalsChange,
+}) => {
   const tablesToSearch = useRef(["R", "deve", "devo", "cadastro"]);
 
   // Se o codigoExterno for passado, não alteramos o estado de codigo
@@ -27,6 +32,8 @@ const Rcontent = ({ codigoExterno, nomeExterno, r }) => {
   const [bsaTotals, setBsaTotals] = useState({ total1M: 0, total2M: 0 });
   const [deveTotals, setDeveTotals] = useState({ total1M: 0, total2M: 0 });
   const [plotterTotals, setPlotterTotals] = useState(0);
+  const [combined1MTotal, setCombined1MTotal] = useState(0);
+  const [combined2MTotal, setCombined2MTotal] = useState(0);
 
   useEffect(() => {
     setCodigo(codigoExterno || "");
@@ -137,6 +144,17 @@ const Rcontent = ({ codigoExterno, nomeExterno, r }) => {
   const handlePlotterTotalsChange = useCallback((totals) => {
     setPlotterTotals(totals);
   }, []);
+
+  useEffect(() => {
+    setCombined1MTotal(bsaTotals.total1M + deveTotals.total1M);
+    setCombined2MTotal(bsaTotals.total2M + deveTotals.total2M);
+  }, [bsaTotals, deveTotals]);
+
+  useEffect(() => {
+    if (onCombinedTotalsChange) {
+      onCombinedTotalsChange(combined1MTotal, combined2MTotal);
+    }
+  }, [combined1MTotal, combined2MTotal, onCombinedTotalsChange]);
 
   return (
     <div>

@@ -78,6 +78,8 @@ const Calculadora = ({
   const [comentario, setComentario] = useState("");
   const [perdida, setPerdida] = useState("");
   const [comentarioCadastro, setComentarioCadastro] = useState("");
+  const [gastoOficina, setGastoOficina] = useState("");
+  const [valorOficina, setValorOficina] = useState("");
 
   const [allCadastroNames, setAllCadastroNames] = useState([]);
   const [filteredSuggestions, setFilteredSuggestions] = useState([]);
@@ -1530,39 +1532,23 @@ const Calculadora = ({
     }
   };
 
-  const handleSaveCommentWaste = async () => {
-    const activeValuesCount = values.filter((v) => Number(v) > 0).length;
-    const desperdicioCalculado = round(
-      (Number(desperdicio) || 0) * activeValuesCount,
-    );
-
-    const dataToSave = {
-      deveid: 0,
-      codigo: codigo || 0,
-      r,
-      data: Use.NowData(),
-      nome: nome || "Desperdício",
-      multi: 0,
-      comissao: 0,
-      papel: 0,
-      papelpix: 0,
-      papelreal: 0,
-      encaixepix: 0,
-      encaixereal: 0,
-      desperdicio: desperdicioCalculado,
-      util: 0,
-      perdida: Number(perdida) || 0,
-      comentario,
-    };
-
+  const handleEnviarGastoOficina = async () => {
+    if (!gastoOficina || !valorOficina) {
+      console.error("Gasto e Valor são obrigatórios.");
+      return;
+    }
     try {
-      await Execute.sendToPapelC(dataToSave);
-      handleUpdatePapel(); // A função agora calcula o consumo internamente
-
-      setComentario("");
-      setPerdida("");
+      await Execute.sendToSaidaO(
+        "A",
+        `R${r}`,
+        gastoOficina,
+        parseFloat(valorOficina) || 0,
+        Use.NowData(),
+      );
+      setGastoOficina("");
+      setValorOficina("");
     } catch (error) {
-      console.error("Erro ao salvar comentário e desperdício:", error);
+      console.error("Erro ao enviar gasto da oficina:", error);
     }
   };
 
@@ -1845,26 +1831,26 @@ const Calculadora = ({
         <div className="join items-end">
           <input
             type="text"
-            placeholder="Comentário"
-            className="input input-primary input-xs join-item" // Ajuste de largura
+            placeholder="Gasto"
+            className="input input-primary input-xs join-item"
             autoComplete="nope"
-            value={comentario}
-            onChange={(e) => setComentario(e.target.value)}
+            value={gastoOficina}
+            onChange={(e) => setGastoOficina(e.target.value)}
           />
           <input
             min="0"
             step={0.01}
             type="number"
-            placeholder="Desperdício"
+            placeholder="Valor"
             className="input input-primary input-xs join-item"
             autoComplete="nope"
-            value={perdida}
-            onChange={(e) => setPerdida(e.target.value)}
+            value={valorOficina}
+            onChange={(e) => setValorOficina(e.target.value)}
           />
           <button
             type="button"
-            className="btn btn-info btn-xs join-item" // Adjust styling as needed
-            onClick={handleSaveCommentWaste}
+            className="btn btn-info btn-xs join-item"
+            onClick={handleEnviarGastoOficina}
           >
             Enviar
           </button>

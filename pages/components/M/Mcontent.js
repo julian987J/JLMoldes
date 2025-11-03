@@ -8,6 +8,7 @@ import Config from "../Config.js";
 import Notes from "./Notes.js";
 import Alerta from "./Alertas.js";
 import { useWebSocket } from "../../../contexts/WebSocketContext.js";
+import Execute from "models/functions";
 
 const Mcontent = ({ oficina, r }) => {
   const componentId = useId();
@@ -21,8 +22,66 @@ const Mcontent = ({ oficina, r }) => {
   const [alt, setAlt] = useState("");
   const [showError, setErrorCode] = useState(false);
   const [filteredSuggestions, setFilteredSuggestions] = useState([]);
+  const [nomeInputClass, setNomeInputClass] = useState("input-info");
 
   const { lastMessage } = useWebSocket();
+
+  useEffect(() => {
+    const checkOldestDebt = async () => {
+      if (!codigo || !r) {
+        setNomeInputClass("input-info");
+        return;
+      }
+
+      try {
+        const [allDeveData, allRbsaData] = await Promise.all([
+          Execute.receiveFromDeve(r),
+          Execute.receiveFromR(r),
+        ]);
+
+        const userDeveData = allDeveData.filter(
+          (item) => item.codigo === codigo,
+        );
+        const userRbsaData = allRbsaData.filter(
+          (item) => item.codigo === codigo,
+        );
+
+        const combinedUserData = [...userDeveData, ...userRbsaData];
+
+        if (combinedUserData.length === 0) {
+          setNomeInputClass("input-info");
+          return;
+        }
+
+        const oldestDate = combinedUserData.reduce((oldest, current) => {
+          const currentDate = new Date(current.data);
+          return currentDate < oldest ? currentDate : oldest;
+        }, new Date(combinedUserData[0].data));
+
+        const oneMonthAgo = new Date();
+        oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
+        const twoMonthsAgo = new Date();
+        twoMonthsAgo.setMonth(twoMonthsAgo.getMonth() - 2);
+
+        if (oldestDate < twoMonthsAgo) {
+          setNomeInputClass("input-error bg-error/30");
+        } else if (oldestDate < oneMonthAgo) {
+          setNomeInputClass("input-secondary bg-secondary/30");
+        } else {
+          setNomeInputClass("input-info");
+        }
+      } catch (error) {
+        console.error("Erro ao verificar dívidas antigas:", error);
+        setNomeInputClass("input-info");
+      }
+    };
+
+    if (!codigo && !nome) {
+      setNomeInputClass("input-info");
+    } else {
+      checkOldestDebt();
+    }
+  }, [codigo, nome, r, lastMessage]);
 
   useEffect(() => {
     const fetchInitialCadastroData = async () => {
@@ -271,7 +330,7 @@ const Mcontent = ({ oficina, r }) => {
             <input
               type="text"
               placeholder="Nome"
-              className="input input-info input-xs"
+              className={`input ${nomeInputClass} input-xs`}
               value={nome}
               autoComplete="off"
               list={`m-name-suggestions-${componentId}`}
