@@ -26,6 +26,7 @@ const Rcontent = ({ codigoExterno, nomeExterno, r }) => {
   const [totalValores, setTotalValores] = useState(0);
   const [bsaTotals, setBsaTotals] = useState({ total1M: 0, total2M: 0 });
   const [deveTotals, setDeveTotals] = useState({ total1M: 0, total2M: 0 });
+  const [plotterTotals, setPlotterTotals] = useState(0);
 
   useEffect(() => {
     setCodigo(codigoExterno || "");
@@ -133,13 +134,21 @@ const Rcontent = ({ codigoExterno, nomeExterno, r }) => {
     setDeveTotals(totals);
   }, []);
 
+  const handlePlotterTotalsChange = useCallback((totals) => {
+    setPlotterTotals(totals);
+  }, []);
+
   return (
     <div>
       <ValoresColuna r={r} onValoresChange={handleValoresChange} />
       <div className="grid grid-cols-39 gap-1">
-        <PlanilhaDiaria r={r} totalValores={totalValores} />
+        <PlanilhaDiaria
+          r={r}
+          totalValores={totalValores}
+          plotterTotals={plotterTotals}
+        />
         <div className="col-span-6">
-          <PlotterTotals r={r} />
+          <PlotterTotals r={r} onTotalsChange={handlePlotterTotalsChange} />
         </div>
         <div className="col-span-9">
           <BSTA codigo={codigo} r={r} onTotalsChange={handleBsaTotalsChange} />

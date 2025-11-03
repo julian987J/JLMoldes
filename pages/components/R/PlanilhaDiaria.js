@@ -13,7 +13,7 @@ import { useAuth } from "../../../contexts/AuthContext.js";
 const sortDadosByDate = (dataArray) =>
   [...dataArray].sort((a, b) => new Date(b.data) - new Date(a.data));
 
-const PlanilhaDiaria = ({ r, totalValores }) => {
+const PlanilhaDiaria = ({ r, totalValores, plotterTotals }) => {
   const [pagamentosDados, setPagamentosDados] = useState([]);
   const [metragemDados, setMetragemDados] = useState([]);
   const [devoPorDia, setDevoPorDia] = useState({});
@@ -185,7 +185,7 @@ const PlanilhaDiaria = ({ r, totalValores }) => {
                 <thead>
                   <tr>
                     <th className="text-center text-xs bg-warning-content/30">
-                      {totalValores.toFixed(2)}
+                      {(totalValores + plotterTotals).toFixed(2)}
                     </th>
                     <th className="text-center text-xs bg-warning-content/30">
                       {RightTotalValue.toFixed(2)}

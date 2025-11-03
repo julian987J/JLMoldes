@@ -1745,7 +1745,7 @@ const Calculadora = ({
             placeholder="Total"
             value={typeof total === "number" ? total.toFixed(2) : ""}
             autoComplete="nope"
-            className="input input-warning input-xs z-3 text-center text-warning font-bold"
+            className="input input-warning input-xs z-3 text-center text-warning font-bold w-full"
             readOnly
           />
         </div>
@@ -1755,7 +1755,7 @@ const Calculadora = ({
             placeholder="SOMA TOTAL"
             value={displayTotalGeral}
             autoComplete="nope"
-            className={`input ${somaTotalInputClass} input-xl z-3 text-center mt-0.5 font-bold`}
+            className={`input ${somaTotalInputClass} input-xl z-3 text-center mt-0.5 font-bold w-full`}
             readOnly
           />
         </div>
@@ -1803,7 +1803,7 @@ const Calculadora = ({
               step="0.5"
               type="number"
               placeholder="Troco Real"
-              className="input input-info input-lg z-2 text-center text-info font-bold"
+              className="input input-info input-lg z-2 text-center text-info font-bold w-full"
               value={trocoReal}
               onChange={handleHalfStepChange(setTrocoReal)}
               onBlur={(e) =>

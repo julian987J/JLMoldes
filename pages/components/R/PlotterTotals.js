@@ -13,7 +13,7 @@ const formatNumber = (value) => {
   return isNaN(number) ? "0.00" : number.toFixed(2);
 };
 
-const PlotterTotals = ({ r }) => {
+const PlotterTotals = ({ r, onTotalsChange }) => {
   const [dados, setDados] = useState([]);
   const [config, setConfig] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -131,6 +131,12 @@ const PlotterTotals = ({ r }) => {
     const m2Value = (parseFloat(item.nao) / 100) * (larguraTotalCm / 100);
     return acc + m2Value;
   }, 0);
+
+  useEffect(() => {
+    if (onTotalsChange) {
+      onTotalsChange(totalM2_P01 + totalM2_P02);
+    }
+  }, [totalM2_P01, totalM2_P02, onTotalsChange]);
 
   const totalP01 = totalM1_P01 + totalM2_P01;
   const totalP02 = totalM1_P02 + totalM2_P02;
