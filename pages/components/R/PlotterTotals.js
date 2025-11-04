@@ -28,14 +28,19 @@ const PlotterTotals = ({ r, onTotalsChange }) => {
         Execute.receiveFromPlotterC(r),
         Execute.receiveFromConfig(),
       ]);
+      const cutoffDate = new Date("2025-01-01");
 
       setDados(
         Array.isArray(plotterResults)
-          ? plotterResults.sort(
-              (a, b) =>
-                new Date(b.data) - new Date(a.data) ||
-                new Date(b.inicio) - new Date(a.inicio),
-            )
+          ? plotterResults
+              .filter(
+                (item) => !item.DataFim || new Date(item.DataFim) >= cutoffDate,
+              )
+              .sort(
+                (a, b) =>
+                  new Date(b.data) - new Date(a.data) ||
+                  new Date(b.inicio) - new Date(a.inicio),
+              )
           : [],
       );
 
@@ -69,17 +74,33 @@ const PlotterTotals = ({ r, onTotalsChange }) => {
         payload &&
         String(payload.r) === String(r)
       ) {
+        const cutoffDate = new Date("2025-01-01");
         setDados((prevDados) => {
           let newDados = [...prevDados];
           const itemIndex = newDados.findIndex(
             (item) => String(item.id) === String(payload.id),
           );
 
-          if (itemIndex !== -1) {
-            newDados[itemIndex] = payload;
+          const shouldDisplay =
+            !payload.DataFim || new Date(payload.DataFim) >= cutoffDate;
+
+          if (shouldDisplay) {
+            if (itemIndex !== -1) {
+              newDados[itemIndex] = payload;
+            } else {
+              newDados.push(payload);
+            }
           } else {
-            newDados.push(payload);
+            if (itemIndex !== -1) {
+              newDados = newDados.filter(
+                (item) => String(item.id) !== String(payload.id),
+              );
+            }
           }
+
+          if (editingId === payload.id) setEditingId(null);
+
+          if (editingId === payload.id) setEditingId(null);
 
           return newDados.sort(
             (a, b) =>
@@ -145,7 +166,12 @@ const PlotterTotals = ({ r, onTotalsChange }) => {
   const countM2 = dados.filter((item) => parseFloat(item.nao) > 0).length;
 
   const groupedConfirmedData = useMemo(() => {
-    const confirmed = dados.filter((item) => item.confirmado);
+    const cutoffDate = new Date("2025-01-01");
+    const confirmed = dados.filter(
+      (item) =>
+        item.confirmado &&
+        (!item.DataFim || new Date(item.DataFim) >= cutoffDate),
+    );
     return confirmed.reduce((acc, item) => {
       const dateKey = item.data.substring(0, 10); // YYYY-MM-DD
       if (!acc[dateKey]) {

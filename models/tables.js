@@ -1830,7 +1830,60 @@ async function finalizePorR(r) {
   }
 }
 
+async function archivePorR(r) {
+  const client = await database.getNewClient();
+  const archiveDate = "2000-01-01T00:00:00.000Z";
+  try {
+    await client.query("BEGIN");
+
+    const updateCQuery = {
+      text: `UPDATE "C" SET "DataFim" = $1 WHERE r = $2 AND "DataFim" IS NOT NULL RETURNING *;`,
+      values: [archiveDate, r],
+    };
+    const cResult = await client.query(updateCQuery);
+
+    const updatePapelCQuery = {
+      text: `UPDATE "PapelC" SET "DataFim" = $1 WHERE r = $2 AND "DataFim" IS NOT NULL RETURNING *;`,
+      values: [archiveDate, r],
+    };
+    const papelCResult = await client.query(updatePapelCQuery);
+
+    const updatePlotterCQuery = {
+      text: `UPDATE "PlotterC" SET "DataFim" = $1 WHERE r = $2 AND "DataFim" IS NOT NULL RETURNING *;`,
+      values: [archiveDate, r],
+    };
+    const plotterCResult = await client.query(updatePlotterCQuery);
+
+    await client.query("COMMIT");
+
+    const notify = (type, rows) => {
+      if (rows.length > 0) {
+        rows.forEach((row) => {
+          notifyWebSocketServer({ type, payload: row });
+        });
+      }
+    };
+
+    notify("C_UPDATED_ITEM", cResult.rows);
+    notify("PAPELC_UPDATED_ITEM", papelCResult.rows);
+    notify("PLOTTER_C_UPDATED_ITEM", plotterCResult.rows);
+
+    return {
+      c: cResult.rows,
+      papelC: papelCResult.rows,
+      plotterC: plotterCResult.rows,
+    };
+  } catch (error) {
+    await client.query("ROLLBACK");
+    console.error("Erro na transação archivePorR:", error);
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
 const ordem = {
+  archivePorR,
   finalizePorR,
   getPlotterC,
   createPlotterC,

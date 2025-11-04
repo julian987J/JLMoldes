@@ -41,10 +41,13 @@ const Coluna = ({ r }) => {
         if (typeof r === "undefined" || r === null) return;
         const results = await Execute.receiveFromCFinalizado(r);
         const existsData = await Execute.receiveFromR(r);
+        const cutoffDate = new Date("2025-01-01");
 
         setDados(
           Array.isArray(results)
-            ? results.sort((a, b) => new Date(b.DataFim) - new Date(a.DataFim))
+            ? results
+                .filter((item) => new Date(item.DataFim) >= cutoffDate)
+                .sort((a, b) => new Date(b.DataFim) - new Date(a.DataFim))
             : [],
         );
         setExists(Array.isArray(existsData) ? existsData : []);
@@ -77,6 +80,7 @@ const Coluna = ({ r }) => {
           String(payload.r) === String(r)) ||
         (type === "C_DELETED_ITEM" && payload && payload.id !== undefined)
       ) {
+        const cutoffDate = new Date("2025-01-01");
         setDados((prevDadosC) => {
           let newDadosC = [...prevDadosC];
           const itemIndex =
@@ -86,23 +90,23 @@ const Coluna = ({ r }) => {
                 )
               : -1;
 
+          const shouldDisplay =
+            payload.DataFim && new Date(payload.DataFim) >= cutoffDate;
+
           switch (type) {
             case "C_NEW_ITEM":
-              // Adiciona apenas se tiver DataFim e não existir
-              if (payload.DataFim && itemIndex === -1) {
+              if (shouldDisplay && itemIndex === -1) {
                 newDadosC.push(payload);
               }
               break;
             case "C_UPDATED_ITEM":
-              if (payload.DataFim) {
-                // Se tiver DataFim, atualiza ou adiciona
+              if (shouldDisplay) {
                 if (itemIndex !== -1) {
                   newDadosC[itemIndex] = payload;
                 } else {
                   newDadosC.push(payload);
                 }
               } else {
-                // Se não tiver mais DataFim, remove
                 if (itemIndex !== -1) {
                   newDadosC = newDadosC.filter(
                     (item) => String(item.id) !== String(payload.id),
@@ -112,14 +116,12 @@ const Coluna = ({ r }) => {
               if (editingId === payload.id) setEditingId(null);
               break;
             case "C_DELETED_ITEM":
-              // Permanece o mesmo, apenas remove se for deletado
               newDadosC = newDadosC.filter(
                 (item) => String(item.id) !== String(payload.id),
               );
               if (editingId === payload.id) setEditingId(null);
               break;
           }
-          // Ordena por DataFim
           return newDadosC.sort(
             (a, b) => new Date(b.DataFim) - new Date(a.DataFim),
           );

@@ -120,11 +120,14 @@ const Coluna3 = ({ r }) => {
         Execute.receiveFromPlotterCFinalizado(r),
         Execute.receiveFromConfig(),
       ]);
+      const cutoffDate = new Date("2025-01-01");
 
       setDados(
         Array.isArray(plotterResults)
           ? plotterResults
-              .filter((item) => item.DataFim)
+              .filter(
+                (item) => item.DataFim && new Date(item.DataFim) >= cutoffDate,
+              )
               .sort((a, b) => new Date(b.DataFim) - new Date(a.DataFim))
           : [],
       );
@@ -162,6 +165,7 @@ const Coluna3 = ({ r }) => {
           payload &&
           payload.id !== undefined)
       ) {
+        const cutoffDate = new Date("2025-01-01");
         setDados((prevDados) => {
           let newDados = [...prevDados];
           const itemIndex =
@@ -171,14 +175,17 @@ const Coluna3 = ({ r }) => {
                 )
               : -1;
 
+          const shouldDisplay =
+            payload.DataFim && new Date(payload.DataFim) >= cutoffDate;
+
           switch (type) {
             case "PLOTTER_C_NEW_ITEM":
-              if (payload.DataFim && itemIndex === -1) {
+              if (shouldDisplay && itemIndex === -1) {
                 newDados.push(payload);
               }
               break;
             case "PLOTTER_C_UPDATED_ITEM":
-              if (payload.DataFim) {
+              if (shouldDisplay) {
                 if (itemIndex !== -1) {
                   newDados[itemIndex] = payload;
                 } else {
@@ -286,7 +293,12 @@ const Coluna3 = ({ r }) => {
           <tr>
             <th colSpan={12}></th>
             <th colSpan={2} rowSpan={2} className="bg-error text-center">
-              <button className="btn btn-xs btn-error">Excluir</button>
+              <button
+                className="btn btn-xs btn-error"
+                onClick={() => Execute.archiveAllFinalizado(r)}
+              >
+                EXCLUIR
+              </button>
             </th>
           </tr>
           <tr>

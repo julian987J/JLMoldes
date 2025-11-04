@@ -97,10 +97,13 @@ const Coluna = ({ r }) => {
       const results = await Execute.receiveFromPapelCFinalizado(r);
       const existsData = await Execute.receiveFromDeve(r);
       const configurationsData = await Execute.receiveFromConfig();
+      const cutoffDate = new Date("2025-01-01");
 
       setDados(
         Array.isArray(results)
-          ? results.sort((a, b) => new Date(b.DataFim) - new Date(a.DataFim))
+          ? results
+              .filter((item) => new Date(item.DataFim) >= cutoffDate)
+              .sort((a, b) => new Date(b.DataFim) - new Date(a.DataFim))
           : [],
       );
       setExists(Array.isArray(existsData) ? existsData : []);
@@ -138,6 +141,7 @@ const Coluna = ({ r }) => {
           String(payload.r) === String(r)) ||
         (type === "PAPELC_DELETED_ITEM" && payload && payload.id !== undefined)
       ) {
+        const cutoffDate = new Date("2025-01-01");
         setDados((prevDados) => {
           let newDados = [...prevDados];
           const itemIndex =
@@ -147,14 +151,17 @@ const Coluna = ({ r }) => {
                 )
               : -1;
 
+          const shouldDisplay =
+            payload.DataFim && new Date(payload.DataFim) >= cutoffDate;
+
           switch (type) {
             case "PAPELC_NEW_ITEM":
-              if (payload.DataFim && itemIndex === -1) {
+              if (shouldDisplay && itemIndex === -1) {
                 newDados.push(payload);
               }
               break;
             case "PAPELC_UPDATED_ITEM":
-              if (payload.DataFim) {
+              if (shouldDisplay) {
                 if (itemIndex !== -1) {
                   newDados[itemIndex] = payload;
                 } else {
@@ -191,8 +198,29 @@ const Coluna = ({ r }) => {
         String(payload.r) === String(r)
       ) {
         setExists((prevExists) => {
-          // Lógica para 'exists' permanece a mesma
-          return prevExists;
+          let newExists = [...prevExists];
+          const itemIndex = newExists.findIndex(
+            (item) => String(item.deveid) === String(payload.deveid),
+          );
+
+          switch (type) {
+            case "DEVE_NEW_ITEM":
+              if (itemIndex === -1) newExists.push(payload);
+              break;
+            case "DEVE_UPDATED_ITEM":
+              if (itemIndex !== -1) {
+                newExists[itemIndex] = { ...newExists[itemIndex], ...payload };
+              } else {
+                newExists.push(payload);
+              }
+              break;
+            case "DEVE_DELETED_ITEM":
+              newExists = newExists.filter(
+                (item) => String(item.deveid) !== String(payload.deveid),
+              );
+              break;
+          }
+          return newExists;
         });
       }
 

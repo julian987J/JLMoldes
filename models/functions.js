@@ -680,6 +680,24 @@ async function receiveFromC(r) {
   }
 }
 
+async function receiveFromCActive(r) {
+  try {
+    const response = await fetch(`/api/v1/tables/c?r=${r}`);
+    if (!response.ok) throw new Error("Erro ao carregar os dados");
+    const data = await response.json();
+    const cutoffDate = new Date("2025-01-01");
+    const activeData = Array.isArray(data.rows)
+      ? data.rows.filter(
+          (item) => !item.DataFim || new Date(item.DataFim) >= cutoffDate,
+        )
+      : [];
+    return activeData;
+  } catch (error) {
+    console.error("Erro ao buscar dados C ativos:", error);
+    return [];
+  }
+}
+
 async function receiveFromCFinalizado(r) {
   try {
     const response = await fetch(`/api/v1/tables/c/finalizado?r=${r}`);
@@ -772,6 +790,23 @@ async function receiveFromPapelC(r) {
     return Array.isArray(data.rows) ? data.rows : [];
   } catch (error) {
     console.error("Erro ao buscar dados Papel:", error);
+    return [];
+  }
+}
+
+async function receiveFromPapelCActive(r) {
+  try {
+    const response = await fetch(`/api/v1/tables/c/papel?r=${r}`);
+    if (!response.ok) throw new Error("Erro ao carregar os dados");
+    const data = await response.json();
+    const cutoffDate = new Date("2025-01-01");
+    return Array.isArray(data.rows)
+      ? data.rows.filter(
+          (item) => !item.DataFim || new Date(item.DataFim) >= cutoffDate,
+        )
+      : [];
+  } catch (error) {
+    console.error("Erro ao buscar dados PapelC ativos:", error);
     return [];
   }
 }
@@ -1403,7 +1438,12 @@ async function receiveFromPlotterC(r) {
     const response = await fetch(`/api/v1/tables/c/plotter?r=${r}`);
     if (!response.ok) throw new Error("Erro ao carregar os dados de PlotterC");
     const data = await response.json();
-    return Array.isArray(data.rows) ? data.rows : [];
+    const cutoffDate = new Date("2025-01-01");
+    return Array.isArray(data.rows)
+      ? data.rows.filter(
+          (item) => !item.DataFim || new Date(item.DataFim) >= cutoffDate,
+        )
+      : [];
   } catch (error) {
     console.error("Erro ao buscar dados PlotterC:", error);
     return [];
@@ -1449,7 +1489,26 @@ async function swapSimNaoPlotterC(id) {
   }
 }
 
+async function archiveAllFinalizado(r) {
+  try {
+    const response = await fetch("/api/v1/tables/c/plotter/archive", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ r }),
+    });
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || "Erro ao arquivar registros.");
+    }
+    return await response.json();
+  } catch (error) {
+    console.error("Erro em archiveAllFinalizado:", error);
+    throw error;
+  }
+}
+
 const execute = {
+  archiveAllFinalizado,
   receiveFromPlotterC,
   receiveFromPlotterCFinalizado,
   removePlotterC,
@@ -1472,6 +1531,7 @@ const execute = {
   receiveFromTemp,
   sendToTemp,
   receiveFromC,
+  receiveFromCActive,
   receiveFromCFinalizado,
   receiveAnualFromC,
   receiveFromCGastos,
@@ -1489,6 +1549,7 @@ const execute = {
   receiveFromPapelByItem,
   receiveFromPapelCalculadora,
   receiveFromPapelC,
+  receiveFromPapelCActive,
   receiveFromPapelCFinalizado,
   receiveFromPapelCData,
   receiveFromRDeveDevo,

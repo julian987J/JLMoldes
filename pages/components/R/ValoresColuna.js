@@ -14,7 +14,7 @@ const ValoresColuna = ({ r, onValoresChange }) => {
     const fetchData = async () => {
       if (typeof r === "undefined" || r === null) return;
       try {
-        const results = await Execute.receiveFromPapelC(r);
+        const results = await Execute.receiveFromPapelCActive(r);
         setDados(Array.isArray(results) ? sortDadosByDate(results) : []);
       } catch (error) {
         console.error("Erro:", error);
@@ -39,23 +39,30 @@ const ValoresColuna = ({ r, onValoresChange }) => {
         payload &&
         String(payload.r) === String(r)
       ) {
+        const cutoffDate = new Date("2025-01-01");
         setDados((prev) => {
           const itemIndex = prev.findIndex(
             (item) => String(item.id) === String(payload.id),
           );
-          if (type === "PAPELC_NEW_ITEM" && itemIndex === -1) {
-            return sortDadosByDate([...prev, payload]);
-          }
-          if (type === "PAPELC_UPDATED_ITEM") {
+          const shouldDisplay =
+            !payload.DataFim || new Date(payload.DataFim) >= cutoffDate;
+
+          let newDados = [...prev];
+
+          if (shouldDisplay) {
             if (itemIndex !== -1) {
-              const newDados = [...prev];
-              newDados[itemIndex] = { ...newDados[itemIndex], ...payload };
-              return sortDadosByDate(newDados);
+              newDados[itemIndex] = payload;
             } else {
-              return sortDadosByDate([...prev, payload]);
+              newDados.push(payload);
+            }
+          } else {
+            if (itemIndex !== -1) {
+              newDados = newDados.filter(
+                (item) => String(item.id) !== String(payload.id),
+              );
             }
           }
-          return prev;
+          return sortDadosByDate(newDados);
         });
       }
       if (

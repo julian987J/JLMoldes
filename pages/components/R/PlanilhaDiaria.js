@@ -16,6 +16,7 @@ const sortDadosByDate = (dataArray) =>
 const PlanilhaDiaria = ({ r, totalValores, plotterTotals }) => {
   const [pagamentosDados, setPagamentosDados] = useState([]);
   const [metragemDados, setMetragemDados] = useState([]);
+  const [cDados, setCDados] = useState([]);
   const [devoPorDia, setDevoPorDia] = useState({});
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
@@ -26,20 +27,23 @@ const PlanilhaDiaria = ({ r, totalValores, plotterTotals }) => {
     if (typeof r === "undefined" || r === null) return;
     setLoading(true);
     try {
-      const [pagamentos, metragem, devo] = await Promise.all([
+      const [pagamentos, metragem, devo, cData] = await Promise.all([
         Execute.receiveFromPagamentos(r),
-        Execute.receiveFromPapelC(r),
+        Execute.receiveFromPapelCActive(r),
         Execute.receiveFromDevo(r),
+        Execute.receiveFromCActive(r),
       ]);
 
-      setPagamentosDados(sortDadosByDate(pagamentos));
-      setMetragemDados(
-        Array.isArray(metragem)
-          ? metragem
-              .filter((item) => !item.DataFim)
-              .sort((a, b) => new Date(b.data) - new Date(a.data))
-          : [],
+      const activeMetragemIds = new Set(metragem.map((item) => item.id));
+      const activeCIds = new Set(cData.map((item) => item.id));
+
+      const filteredPagamentos = pagamentos.filter(
+        (p) => activeMetragemIds.has(p.id) || activeCIds.has(p.id),
       );
+
+      setPagamentosDados(sortDadosByDate(filteredPagamentos));
+      setMetragemDados(sortDadosByDate(metragem));
+      setCDados(sortDadosByDate(cData));
 
       const groupedDevo = devo.reduce((acc, item) => {
         const dateKey = item.data.substring(0, 10);
@@ -101,28 +105,23 @@ const PlanilhaDiaria = ({ r, totalValores, plotterTotals }) => {
           const itemIndex = prev.findIndex(
             (item) => String(item.id) === String(payload.id),
           );
-          if (type === "PAPELC_NEW_ITEM" && itemIndex === -1) {
-            if (!payload.DataFim) {
+          const cutoffDate = new Date("2025-01-01");
+          const shouldDisplay =
+            !payload.DataFim || new Date(payload.DataFim) >= cutoffDate;
+
+          if (shouldDisplay) {
+            if (itemIndex !== -1) {
+              const newDados = [...prev];
+              newDados[itemIndex] = { ...newDados[itemIndex], ...payload };
+              return sortDadosByDate(newDados);
+            } else {
               return sortDadosByDate([...prev, payload]);
             }
+          } else {
+            return sortDadosByDate(
+              prev.filter((item) => String(item.id) !== String(payload.id)),
+            );
           }
-          if (type === "PAPELC_UPDATED_ITEM") {
-            if (!payload.DataFim) {
-              if (itemIndex !== -1) {
-                const newDados = [...prev];
-                newDados[itemIndex] = { ...newDados[itemIndex], ...payload };
-                return sortDadosByDate(newDados);
-              } else {
-                return sortDadosByDate([...prev, payload]);
-              }
-            } else {
-              // Se o item foi atualizado e agora tem DataFim, remove-o da lista
-              return sortDadosByDate(
-                prev.filter((item) => String(item.id) !== String(payload.id)),
-              );
-            }
-          }
-          return prev;
         });
       }
       if (
@@ -142,6 +141,43 @@ const PlanilhaDiaria = ({ r, totalValores, plotterTotals }) => {
         fetchData(); // Refetch all data for simplicity
       }
 
+      // C WebSocket logic
+      if (
+        (type === "C_NEW_ITEM" || type === "C_UPDATED_ITEM") &&
+        payload &&
+        String(payload.r) === String(r)
+      ) {
+        setCDados((prev) => {
+          const itemIndex = prev.findIndex(
+            (item) => String(item.id) === String(payload.id),
+          );
+          const cutoffDate = new Date("2025-01-01");
+          const shouldDisplay =
+            !payload.DataFim || new Date(payload.DataFim) >= cutoffDate;
+
+          if (shouldDisplay) {
+            if (itemIndex !== -1) {
+              const newDados = [...prev];
+              newDados[itemIndex] = { ...newDados[itemIndex], ...payload };
+              return sortDadosByDate(newDados);
+            } else {
+              return sortDadosByDate([...prev, payload]);
+            }
+          } else {
+            return sortDadosByDate(
+              prev.filter((item) => String(item.id) !== String(payload.id)),
+            );
+          }
+        });
+      }
+      if (type === "C_DELETED_ITEM" && payload && payload.id !== undefined) {
+        setCDados((prev) =>
+          sortDadosByDate(
+            prev.filter((item) => String(item.id) !== String(payload.id)),
+          ),
+        );
+      }
+
       lastProcessedTimestampRef.current = lastMessage.timestamp;
     }
   }, [lastMessage, r, fetchData]);
@@ -159,6 +195,7 @@ const PlanilhaDiaria = ({ r, totalValores, plotterTotals }) => {
     const allDates = new Set([
       ...pagamentosDados.map((p) => p.data.substring(0, 10)),
       ...metragemDados.map((m) => m.data.substring(0, 10)),
+      ...cDados.map((c) => c.data.substring(0, 10)),
     ]);
 
     const combined = {};
@@ -170,15 +207,17 @@ const PlanilhaDiaria = ({ r, totalValores, plotterTotals }) => {
       const metragemDoDia = metragemDados.filter(
         (m) => m.data.substring(0, 10) === dateKey,
       );
+      const cDoDia = cDados.filter((c) => c.data.substring(0, 10) === dateKey);
 
       combined[dateKey] = {
         pagamentos: pagamentosDoDia,
         metragem: metragemDoDia,
+        cData: cDoDia,
       };
     });
 
     return combined;
-  }, [pagamentosDados, metragemDados]);
+  }, [pagamentosDados, metragemDados, cDados]);
 
   const RightTotalValue = (totalValores + plotterTotals) / 250;
 
