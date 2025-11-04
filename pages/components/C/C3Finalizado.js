@@ -116,7 +116,6 @@ const Coluna3 = ({ r }) => {
     if (typeof r === "undefined" || r === null) return;
     setLoading(true);
     try {
-      
       const [plotterResults, configResult] = await Promise.all([
         Execute.receiveFromPlotterCFinalizado(r),
         Execute.receiveFromConfig(),
@@ -124,9 +123,9 @@ const Coluna3 = ({ r }) => {
 
       setDados(
         Array.isArray(plotterResults)
-          ? plotterResults.filter(item => item.DataFim).sort(
-              (a, b) => new Date(b.DataFim) - new Date(a.DataFim),
-            )
+          ? plotterResults
+              .filter((item) => item.DataFim)
+              .sort((a, b) => new Date(b.DataFim) - new Date(a.DataFim))
           : [],
       );
 

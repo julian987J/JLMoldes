@@ -80,9 +80,6 @@ const Coluna = ({ r }) => {
         // Condição para C_DELETED_ITEM: requer apenas 'id' no payload
         (type === "C_DELETED_ITEM" && payload && payload.id !== undefined)
       ) {
-        console.log(
-          `Coluna-1: Mensagem C-type recebida. Type: ${type}, Payload.r: ${payload?.r}, Component r: ${r}`,
-        );
         setDados((prevDadosC) => {
           let newDadosC = [...prevDadosC];
 
@@ -95,21 +92,21 @@ const Coluna = ({ r }) => {
 
           switch (type) {
             case "C_NEW_ITEM":
-              console.log(
-                `Coluna-1: Processando C_NEW_ITEM. ItemIndex: ${itemIndex}`,
-              );
               if (itemIndex === -1) newDadosC.push(payload);
               break;
             case "C_UPDATED_ITEM":
-              console.log(
-                `Coluna-1: Processando C_UPDATED_ITEM. ItemIndex: ${itemIndex}`,
-              );
-              if (itemIndex !== -1) {
-                newDadosC[itemIndex] = payload; // Substitui o item completo pelo payload
+              if (payload.DataFim) {
+                newDadosC = newDadosC.filter(
+                  (item) => String(item.id) !== String(payload.id),
+                );
               } else {
-                newDadosC.push(payload); // Adiciona se não existir (fallback)
+                if (itemIndex !== -1) {
+                  newDadosC[itemIndex] = payload;
+                } else {
+                  newDadosC.push(payload);
+                }
               }
-              if (editingId === payload.id) setEditingId(null); // Fecha edição
+              if (editingId === payload.id) setEditingId(null);
               break;
             case "C_DELETED_ITEM":
               newDadosC = newDadosC.filter(
@@ -123,7 +120,6 @@ const Coluna = ({ r }) => {
             const dateB = new Date(b.date).getTime();
             return dateB - dateA;
           });
-          console.log(`Coluna-1: Novo estado de dados (sorted):`, sortedDados);
           return sortedDados;
         });
       }

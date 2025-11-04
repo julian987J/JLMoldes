@@ -1764,7 +1764,74 @@ async function swapSimNaoPlotterC(id) {
   return result;
 }
 
+async function finalizePorR(r) {
+  const client = await database.getNewClient();
+  try {
+    await client.query("BEGIN");
+
+    const updateCQuery = {
+      text: `UPDATE "C" SET "DataFim" = NOW() WHERE r = $1 AND "DataFim" IS NULL RETURNING *;`,
+      values: [r],
+    };
+    const cResult = await client.query(updateCQuery);
+
+    const updatePapelCQuery = {
+      text: `UPDATE "PapelC" SET "DataFim" = NOW() WHERE r = $1 AND "DataFim" IS NULL RETURNING *;`,
+      values: [r],
+    };
+    const papelCResult = await client.query(updatePapelCQuery);
+
+    const updatePlotterCQuery = {
+      text: `UPDATE "PlotterC" SET "DataFim" = NOW() WHERE r = $1 AND "DataFim" IS NULL RETURNING *;`,
+      values: [r],
+    };
+    const plotterCResult = await client.query(updatePlotterCQuery);
+
+    await client.query("COMMIT");
+
+    if (cResult.rows.length > 0) {
+      cResult.rows.forEach((row) => {
+        notifyWebSocketServer({
+          type: "C_UPDATED_ITEM",
+          payload: row,
+        });
+      });
+    }
+
+    if (papelCResult.rows.length > 0) {
+      papelCResult.rows.forEach((row) => {
+        notifyWebSocketServer({
+          type: "PAPELC_UPDATED_ITEM",
+          payload: row,
+        });
+      });
+    }
+
+    if (plotterCResult.rows.length > 0) {
+      plotterCResult.rows.forEach((row) => {
+        notifyWebSocketServer({
+          type: "PLOTTER_C_UPDATED_ITEM",
+          payload: row,
+        });
+      });
+    }
+
+    return {
+      c: cResult.rows,
+      papelC: papelCResult.rows,
+      plotterC: plotterCResult.rows,
+    };
+  } catch (error) {
+    await client.query("ROLLBACK");
+    console.error("Erro na transação finalizePorR:", error);
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
 const ordem = {
+  finalizePorR,
   getPlotterC,
   createPlotterC,
   updatePlotterC,

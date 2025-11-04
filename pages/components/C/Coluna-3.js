@@ -633,7 +633,7 @@ const Coluna3 = ({ r }) => {
                     onSave={() => handleSave(editedData)}
                     onCancel={() => setEditingId(null)}
                   />
-                 
+
                   <button
                     className={`btn btn-xs btn-error ${editingId === item.id ? "hidden" : ""}`}
                     onClick={() => Execute.removePlotterC(item.id)}

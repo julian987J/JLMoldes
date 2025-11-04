@@ -132,7 +132,6 @@ const Coluna = ({ r }) => {
       }
 
       const { type, payload } = lastMessage.data;
-      console.log("WebSocket message received:", type, payload);
 
       // --- Lida com atualizações na tabela PapelC (dados principais) ---
       if (
@@ -154,27 +153,26 @@ const Coluna = ({ r }) => {
 
           switch (type) {
             case "PAPELC_NEW_ITEM":
-              console.log("PAPELC_NEW_ITEM: Adding new item", payload);
               if (itemIndex === -1) newDadosPapelC.push(payload);
               break;
             case "PAPELC_UPDATED_ITEM":
-              console.log("PAPELC_UPDATED_ITEM: Updating item", payload);
-              if (itemIndex !== -1) {
-                newDadosPapelC[itemIndex] = {
-                  ...newDadosPapelC[itemIndex],
-                  ...payload,
-                };
-              } else {
-                console.warn(
-                  "PAPELC_UPDATED_ITEM: Item not found for update, adding as new.",
-                  payload,
+              if (payload.DataFim) {
+                newDadosPapelC = newDadosPapelC.filter(
+                  (item) => String(item.id) !== String(payload.id),
                 );
-                newDadosPapelC.push(payload);
+              } else {
+                if (itemIndex !== -1) {
+                  newDadosPapelC[itemIndex] = {
+                    ...newDadosPapelC[itemIndex],
+                    ...payload,
+                  };
+                } else {
+                  newDadosPapelC.push(payload);
+                }
               }
               if (editingId === payload.id) setEditingId(null);
               break;
             case "PAPELC_DELETED_ITEM":
-              console.log("PAPELC_DELETED_ITEM: Deleting item", payload);
               newDadosPapelC = newDadosPapelC.filter(
                 (item) => String(item.id) !== String(payload.id),
               );
@@ -226,15 +224,10 @@ const Coluna = ({ r }) => {
 
             switch (type) {
               case "DEVE_NEW_ITEM":
-                console.log("DEVE_NEW_ITEM: Adding new item", payload);
                 if (itemIndex === -1) {
                   newExists.push(payload); // Adiciona se realmente novo
                 } else {
                   // Se já existe (ex: mensagem duplicada ou chegou fora de ordem), atualiza
-                  console.warn(
-                    "DEVE_NEW_ITEM: Item already exists, updating instead of adding.",
-                    payload,
-                  );
                   newExists[itemIndex] = {
                     ...newExists[itemIndex],
                     ...payload,
@@ -242,12 +235,7 @@ const Coluna = ({ r }) => {
                 }
                 break;
               case "DEVE_UPDATED_ITEM":
-                console.log("DEVE_UPDATED_ITEM: Updating item", payload);
                 if (parseFloat(payload.valor) <= 0) {
-                  console.log(
-                    "DEVE_UPDATED_ITEM: Removing item from exists (valor <= 0)",
-                    payload,
-                  );
                   newExists = newExists.filter(
                     (item) => String(item.deveid) !== String(payload.deveid),
                   );
@@ -257,12 +245,6 @@ const Coluna = ({ r }) => {
                     ...payload,
                   };
                 } else {
-                  console.warn(
-                    "DEVE_UPDATED_ITEM: Item not found in 'exists' state for payload, adding as new:",
-                    payload,
-                    "Current exists state:",
-                    prevExists,
-                  );
                   newExists.push(payload);
                 }
                 break;
@@ -274,7 +256,6 @@ const Coluna = ({ r }) => {
           return prevExists; // Retorna o estado anterior se o payload for nulo (segurança)
         });
       } else if (type === "DEVE_DELETED_ITEM" && payload) {
-        console.log("DEVE_DELETED_ITEM: Deleting item", payload);
         setExists((prevExists) => {
           let newExists = [...prevExists];
           const pId = payload.id; // Payload de DEVE_DELETED_ITEM pode não ter 'id' vindo do backend atual
@@ -311,10 +292,6 @@ const Coluna = ({ r }) => {
             pId === undefined &&
             pDeveId === undefined
           ) {
-            console.warn(
-              "DEVE_DELETED_ITEM: Payload without 'codigo', 'id' or 'deveid' to identify item to be deleted",
-              payload,
-            );
           }
           return newExists.sort((a, b) => new Date(b.data) - new Date(a.data)); // Ordena se necessário
         });
