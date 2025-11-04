@@ -54,7 +54,6 @@ const formatNumber = (value) => {
 
 const Coluna3 = ({ r }) => {
   const [dados, setDados] = useState([]);
-  const [papeis, setPapeis] = useState([]);
   const [config, setConfig] = useState(null);
   const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState(null);
@@ -113,41 +112,23 @@ const Coluna3 = ({ r }) => {
     }
   };
 
-  const handleSwap = async (item) => {
-    try {
-      await Execute.swapSimNaoPlotterC(item.id);
-    } catch (error) {
-      console.error("Erro ao trocar Sim e Não:", error);
-    }
-  };
-
   const fetchData = useCallback(async () => {
     if (typeof r === "undefined" || r === null) return;
     setLoading(true);
     try {
-      const workshop = "R" + r;
-      const [plotterResults, configResult, papelResults] = await Promise.all([
+      
+      const [plotterResults, configResult] = await Promise.all([
         Execute.receiveFromPlotterCFinalizado(r),
         Execute.receiveFromConfig(),
-        Execute.receiveFromPapelByItem(workshop),
       ]);
 
       setDados(
         Array.isArray(plotterResults)
-          ? plotterResults.sort(
+          ? plotterResults.filter(item => item.DataFim).sort(
               (a, b) => new Date(b.DataFim) - new Date(a.DataFim),
             )
           : [],
       );
-
-      if (Array.isArray(papelResults)) {
-        const filteredPapeis = papelResults
-          .filter((p) => p.gastos && p.gastos.startsWith("PAPEL-"))
-          .sort((a, b) => a.id - b.id); // Sort ascending by ID
-        setPapeis(filteredPapeis);
-      } else {
-        setPapeis([]);
-      }
 
       if (Array.isArray(configResult) && configResult.length > 0) {
         setConfig(configResult[0]);
@@ -224,57 +205,6 @@ const Coluna3 = ({ r }) => {
             (a, b) => new Date(b.DataFim) - new Date(a.DataFim),
           );
         });
-      }
-
-      const workshop = "R" + r;
-      if (payload && payload.item === workshop) {
-        switch (type) {
-          case "PAPEL_NEW_ITEM":
-            if (payload.gastos && payload.gastos.startsWith("PAPEL-")) {
-              setPapeis((prev) =>
-                [...prev, payload].sort((a, b) => a.id - b.id),
-              );
-            }
-            break;
-          case "PAPEL_UPDATED_ITEM":
-            setPapeis((prev) => {
-              const isPapel =
-                payload.gastos && payload.gastos.startsWith("PAPEL-");
-              const itemExists = prev.some(
-                (item) => String(item.id) === String(payload.id),
-              );
-
-              let newPapeis;
-
-              if (isPapel) {
-                if (itemExists) {
-                  newPapeis = prev.map((item) =>
-                    String(item.id) === String(payload.id) ? payload : item,
-                  );
-                } else {
-                  newPapeis = [...prev, payload];
-                }
-              } else {
-                newPapeis = prev.filter(
-                  (item) => String(item.id) !== String(payload.id),
-                );
-              }
-
-              return newPapeis.sort((a, b) => a.id - b.id);
-            });
-            break;
-        }
-      }
-
-      // Handle PAPEL_DELETED_ITEM separately as it may not have the 'item' property
-      if (
-        type === "PAPEL_DELETED_ITEM" &&
-        payload &&
-        payload.id !== undefined
-      ) {
-        setPapeis((prev) =>
-          prev.filter((item) => String(item.id) !== String(payload.id)),
-        );
       }
 
       if (type === "CONFIG_UPDATED_ITEM" && payload) {

@@ -115,14 +115,6 @@ const Coluna3 = ({ r }) => {
     }
   };
 
-  const handleSwap = async (item) => {
-    try {
-      await Execute.swapSimNaoPlotterC(item.id);
-    } catch (error) {
-      console.error("Erro ao trocar Sim e Não:", error);
-    }
-  };
-
   const fetchData = useCallback(async () => {
     if (typeof r === "undefined" || r === null) return;
     setLoading(true);
@@ -641,13 +633,7 @@ const Coluna3 = ({ r }) => {
                     onSave={() => handleSave(editedData)}
                     onCancel={() => setEditingId(null)}
                   />
-                  {/* <button
-                    className={`btn btn-xs btn-soft btn-success ${editingId === item.id ? "hidden" : ""}`}
-                    onClick={() => handleSwap(item)}
-                  >
-                    <strong className="text-info">S</strong>/
-                    <strong className="text-error">N</strong>
-                  </button> */}
+                 
                   <button
                     className={`btn btn-xs btn-error ${editingId === item.id ? "hidden" : ""}`}
                     onClick={() => Execute.removePlotterC(item.id)}
