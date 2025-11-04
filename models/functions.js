@@ -680,6 +680,20 @@ async function receiveFromC(r) {
   }
 }
 
+async function receiveAllFromC(r) {
+  try {
+    const response = await fetch(
+      `/api/v1/tables/c?r=${r}&includeFinished=true`,
+    );
+    if (!response.ok) throw new Error("Erro ao carregar todos os dados de C");
+    const data = await response.json();
+    return Array.isArray(data.rows) ? data.rows : [];
+  } catch (error) {
+    console.error("Erro ao buscar todos os dados de C:", error);
+    return [];
+  }
+}
+
 async function receiveFromCActive(r) {
   try {
     const response = await fetch(`/api/v1/tables/c?r=${r}`);
@@ -1531,6 +1545,7 @@ const execute = {
   receiveFromTemp,
   sendToTemp,
   receiveFromC,
+  receiveAllFromC,
   receiveFromCActive,
   receiveFromCFinalizado,
   receiveAnualFromC,

@@ -48,8 +48,13 @@ async function postHandler(request, response) {
 }
 
 async function getHandler(request, response) {
-  const { r } = request.query;
-  const result = await ordem.getC(r);
+  const { r, includeFinished } = request.query;
+  let result;
+  if (includeFinished === "true") {
+    result = await ordem.getAllC(r);
+  } else {
+    result = await ordem.getC(r);
+  }
   return response.status(200).json(result);
 }
 

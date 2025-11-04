@@ -98,10 +98,6 @@ const PlotterTotals = ({ r, onTotalsChange }) => {
             }
           }
 
-          if (editingId === payload.id) setEditingId(null);
-
-          if (editingId === payload.id) setEditingId(null);
-
           return newDados.sort(
             (a, b) =>
               new Date(b.data) - new Date(a.data) ||

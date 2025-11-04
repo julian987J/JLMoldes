@@ -32,20 +32,27 @@ export const WebSocketProvider = ({ children, url }) => {
 
     ws.onmessage = (event) => {
       try {
-        const message = JSON.parse(event.data);
-        console.log("Mensagem recebida do WebSocket:", message);
-        setLastMessage({ data: message, timestamp: new Date().getTime() });
+        const messageData = JSON.parse(event.data);
+        console.log("Mensagem recebida do WebSocket:", messageData);
+        const message = {
+          id: `${new Date().getTime()}-${Math.random()}`, // ID único
+          data: messageData,
+          timestamp: new Date().getTime(),
+        };
+        setLastMessage(message);
       } catch (error) {
         console.error(
           "Erro ao processar mensagem WebSocket:",
           event.data,
           error,
         );
-        setLastMessage({
+        const message = {
+          id: `${new Date().getTime()}-${Math.random()}`, // ID único
           data: event.data,
           timestamp: new Date().getTime(),
           error: true,
-        });
+        };
+        setLastMessage(message);
       }
     };
 

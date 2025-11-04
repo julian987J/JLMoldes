@@ -1155,6 +1155,14 @@ async function getC(r) {
   return result;
 }
 
+async function getAllC(r) {
+  const result = await database.query({
+    text: `SELECT * FROM "C" WHERE r = $1;`,
+    values: [r],
+  });
+  return result;
+}
+
 async function getDec(r) {
   const result = await database.query({
     text: `SELECT * FROM "Dec" WHERE r = $1;`,
@@ -1856,18 +1864,6 @@ async function archivePorR(r) {
 
     await client.query("COMMIT");
 
-    const notify = (type, rows) => {
-      if (rows.length > 0) {
-        rows.forEach((row) => {
-          notifyWebSocketServer({ type, payload: row });
-        });
-      }
-    };
-
-    notify("C_UPDATED_ITEM", cResult.rows);
-    notify("PAPELC_UPDATED_ITEM", papelCResult.rows);
-    notify("PLOTTER_C_UPDATED_ITEM", plotterCResult.rows);
-
     return {
       c: cResult.rows,
       papelC: papelCResult.rows,
@@ -1915,6 +1911,7 @@ const ordem = {
   getOficina,
   getValorOficinas,
   getC,
+  getAllC,
   getDec,
   getAnualC,
   getNotas,

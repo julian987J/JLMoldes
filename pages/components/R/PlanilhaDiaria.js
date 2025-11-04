@@ -21,7 +21,7 @@ const PlanilhaDiaria = ({ r, totalValores, plotterTotals }) => {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const { lastMessage } = useWebSocket();
-  const lastProcessedTimestampRef = useRef(null);
+  const lastProcessedMessageIdRef = useRef(null);
 
   const fetchData = useCallback(async () => {
     if (typeof r === "undefined" || r === null) return;
@@ -63,14 +63,7 @@ const PlanilhaDiaria = ({ r, totalValores, plotterTotals }) => {
   }, [fetchData]);
 
   useEffect(() => {
-    if (lastMessage && lastMessage.data && lastMessage.timestamp) {
-      if (
-        lastProcessedTimestampRef.current &&
-        lastMessage.timestamp <= lastProcessedTimestampRef.current
-      ) {
-        return;
-      }
-
+    if (lastMessage && lastMessage.id !== lastProcessedMessageIdRef.current) {
       const { type, payload } = lastMessage.data;
 
       // Pagamentos WebSocket logic
@@ -178,7 +171,7 @@ const PlanilhaDiaria = ({ r, totalValores, plotterTotals }) => {
         );
       }
 
-      lastProcessedTimestampRef.current = lastMessage.timestamp;
+      lastProcessedMessageIdRef.current = lastMessage.id;
     }
   }, [lastMessage, r, fetchData]);
 

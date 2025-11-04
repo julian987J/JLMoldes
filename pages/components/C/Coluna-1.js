@@ -17,7 +17,7 @@ const Coluna = ({ r }) => {
   const [editingId, setEditingId] = useState(null);
   const [editedData, setEditedData] = useState({});
   const { lastMessage } = useWebSocket();
-  const lastProcessedTimestampRef = useRef(null);
+  const lastProcessedMessageIdRef = useRef(null);
 
   const handleSave = async (editedData) => {
     try {
@@ -39,13 +39,11 @@ const Coluna = ({ r }) => {
     const fetchData = async () => {
       try {
         if (typeof r === "undefined" || r === null) return;
-        const results = await Execute.receiveFromC(r);
+        const results = await Execute.receiveAllFromC(r);
         const existsData = await Execute.receiveFromR(r);
         setDados(
           Array.isArray(results)
-            ? results
-                .filter((item) => !item.DataFim)
-                .sort((a, b) => new Date(b.date) - new Date(a.date))
+            ? results.sort((a, b) => new Date(b.data) - new Date(a.data))
             : [],
         );
         setExists(Array.isArray(existsData) ? existsData : []);
@@ -61,14 +59,7 @@ const Coluna = ({ r }) => {
 
   // Efeito para lidar com mensagens WebSocket
   useEffect(() => {
-    if (lastMessage && lastMessage.data && lastMessage.timestamp) {
-      if (
-        lastProcessedTimestampRef.current &&
-        lastMessage.timestamp <= lastProcessedTimestampRef.current
-      ) {
-        return; // Ignora mensagem já processada
-      }
-
+    if (lastMessage && lastMessage.id !== lastProcessedMessageIdRef.current) {
       const { type, payload } = lastMessage.data;
 
       // --- Lida com atualizações na tabela C (dados principais) ---
@@ -116,8 +107,8 @@ const Coluna = ({ r }) => {
               break;
           }
           const sortedDados = newDadosC.sort((a, b) => {
-            const dateA = new Date(a.date).getTime();
-            const dateB = new Date(b.date).getTime();
+            const dateA = new Date(a.data).getTime();
+            const dateB = new Date(b.data).getTime();
             return dateB - dateA;
           });
           return sortedDados;
@@ -160,14 +151,14 @@ const Coluna = ({ r }) => {
         }
       }
 
-      lastProcessedTimestampRef.current = lastMessage.timestamp;
+      lastProcessedMessageIdRef.current = lastMessage.id;
     }
   }, [lastMessage, r, editingId, setDados, setExists]); // Adicionado setDados e setExists
 
   const groupedResults = useMemo(() => {
     return dados.reduce((acc, item) => {
-      const dateKey = item.date.substring(0, 10); // YYYY-MM-DD
-      const dateObj = new Date(item.date);
+      const dateKey = item.data.substring(0, 10); // YYYY-MM-DD
+      const dateObj = new Date(item.data);
       const horas = String(dateObj.getHours()).padStart(2, "0");
       const minutos = String(dateObj.getMinutes()).padStart(2, "0");
       const horaFormatada = `${horas}:${minutos}`;
@@ -290,7 +281,7 @@ const Coluna = ({ r }) => {
                           (e) =>
                             String(e.codigo) === String(item.codigo) && // Comparar como string
                             Use.formatarData(e.data) ===
-                              Use.formatarData(item.date), // Comparar datas formatadas
+                              Use.formatarData(item.data), // Comparar datas formatadas
                         )
                           ? "bg-error/70"
                           : ""

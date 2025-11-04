@@ -287,12 +287,6 @@ const Coluna = ({ r }) => {
             );
           }
 
-          if (
-            pCodigo === undefined &&
-            pId === undefined &&
-            pDeveId === undefined
-          ) {
-          }
           return newExists.sort((a, b) => new Date(b.data) - new Date(a.data)); // Ordena se necessário
         });
       }
