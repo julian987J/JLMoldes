@@ -343,9 +343,7 @@ const Coluna = ({ r }) => {
                   {/* Linha com os totais de cada coluna */}
                   <tr>
                     <th colSpan={2}></th>
-                    <th className="text-center text-xs bg-warning/30">
-                      Metragem
-                    </th>
+                    <th className="text-center text-xs bg-warning/30">Met</th>
                     <th className="text-center text-xs bg-warning/30">
                       {formatCurrency(totalPapel)}
                     </th>
@@ -397,7 +395,7 @@ const Coluna = ({ r }) => {
                     <th className="bg-warning-content/50">Des</th>
                     <th className="bg-warning-content/50">Util</th>
                     <th className="bg-warning-content/50">Perda</th>
-                    <th>Comentarios</th>
+                    {/* <th>Comentarios</th> */}
                     <th>Ações</th>
                   </tr>
                 </thead>
@@ -583,7 +581,7 @@ const Coluna = ({ r }) => {
                           formatCurrency(item.perdida)
                         )}
                       </td>
-                      <td>
+                      {/* <td>
                         {editingId === item.id ? (
                           <input
                             type="text"
@@ -596,7 +594,7 @@ const Coluna = ({ r }) => {
                         ) : (
                           item.comentarios
                         )}
-                      </td>
+                      </td> */}
                       <td>
                         <Edit
                           isEditing={editingId === item.id}

@@ -1149,7 +1149,7 @@ async function updateDeve(updatedData) {
 
 async function getC(r) {
   const result = await database.query({
-    text: `SELECT * FROM "C" WHERE r = $1;`,
+    text: `SELECT * FROM "C" WHERE r = $1 AND "DataFim" IS NULL;`,
     values: [r],
   });
   return result;
@@ -1664,7 +1664,7 @@ async function getPlotterC(r) {
 
 async function getCFinalizado(r) {
   const query = {
-    text: `SELECT id, codigo, dec, r, data, nome, sis, alt, base, real, pix, "DataFim" FROM "C" WHERE r = $1 ORDER BY id DESC;`,
+    text: `SELECT id, codigo, dec, r, data, nome, sis, alt, base, real, pix, "DataFim" FROM "C" WHERE r = $1 AND "DataFim" IS NOT NULL ORDER BY id DESC;`,
     values: [r],
   };
   const result = await database.query(query);
@@ -1673,7 +1673,7 @@ async function getCFinalizado(r) {
 
 async function getPapelCFinalizado(r) {
   const query = {
-    text: `SELECT id, codigo, deveid, r, data, nome, multi, papel, papelpix, papelreal, encaixepix, encaixereal, desperdicio, util, perdida, comentarios, comissao, "DataFim" FROM "PapelC" WHERE r = $1 ORDER BY id DESC;`,
+    text: `SELECT id, codigo, deveid, r, data, nome, multi, papel, papelpix, papelreal, encaixepix, encaixereal, desperdicio, util, perdida, comentarios, comissao, "DataFim" FROM "PapelC" WHERE r = $1 AND "DataFim" IS NOT NULL ORDER BY id DESC;`,
     values: [r],
   };
   const result = await database.query(query);

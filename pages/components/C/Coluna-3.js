@@ -135,7 +135,7 @@ const Coluna3 = ({ r }) => {
       ]);
 
       const filteredResults = Array.isArray(plotterResults)
-        ? plotterResults.filter((item) => !item.datafim)
+        ? plotterResults.filter((item) => !item.DataFim)
         : [];
 
       setDados(
@@ -641,13 +641,13 @@ const Coluna3 = ({ r }) => {
                     onSave={() => handleSave(editedData)}
                     onCancel={() => setEditingId(null)}
                   />
-                  <button
+                  {/* <button
                     className={`btn btn-xs btn-soft btn-success ${editingId === item.id ? "hidden" : ""}`}
                     onClick={() => handleSwap(item)}
                   >
                     <strong className="text-info">S</strong>/
                     <strong className="text-error">N</strong>
-                  </button>
+                  </button> */}
                   <button
                     className={`btn btn-xs btn-error ${editingId === item.id ? "hidden" : ""}`}
                     onClick={() => Execute.removePlotterC(item.id)}

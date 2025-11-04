@@ -55,8 +55,6 @@ const formatNumber = (value) => {
 const Coluna3 = ({ r }) => {
   const [dados, setDados] = useState([]);
   const [papeis, setPapeis] = useState([]);
-  const [oldestPapel, setOldestPapel] = useState(null);
-  const [newerPapeis, setNewerPapeis] = useState([]);
   const [config, setConfig] = useState(null);
   const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState(null);
@@ -137,7 +135,7 @@ const Coluna3 = ({ r }) => {
       setDados(
         Array.isArray(plotterResults)
           ? plotterResults.sort(
-              (a, b) => new Date(b.datafim) - new Date(a.datafim),
+              (a, b) => new Date(b.DataFim) - new Date(a.DataFim),
             )
           : [],
       );
@@ -164,16 +162,6 @@ const Coluna3 = ({ r }) => {
   useEffect(() => {
     fetchData();
   }, [fetchData]);
-
-  useEffect(() => {
-    if (papeis && papeis.length > 0) {
-      setOldestPapel(papeis[0]);
-      setNewerPapeis(papeis.slice(1));
-    } else {
-      setOldestPapel(null);
-      setNewerPapeis([]);
-    }
-  }, [papeis]);
 
   useEffect(() => {
     if (lastMessage && lastMessage.data && lastMessage.timestamp) {
@@ -205,12 +193,12 @@ const Coluna3 = ({ r }) => {
 
           switch (type) {
             case "PLOTTER_C_NEW_ITEM":
-              if (payload.datafim && itemIndex === -1) {
+              if (payload.DataFim && itemIndex === -1) {
                 newDados.push(payload);
               }
               break;
             case "PLOTTER_C_UPDATED_ITEM":
-              if (payload.datafim) {
+              if (payload.DataFim) {
                 if (itemIndex !== -1) {
                   newDados[itemIndex] = payload;
                 } else {
@@ -233,7 +221,7 @@ const Coluna3 = ({ r }) => {
               break;
           }
           return newDados.sort(
-            (a, b) => new Date(b.datafim) - new Date(a.datafim),
+            (a, b) => new Date(b.DataFim) - new Date(a.DataFim),
           );
         });
       }
@@ -563,13 +551,13 @@ const Coluna3 = ({ r }) => {
                     onCancel={() => setEditingId(null)}
                   />
 
-                  <button
+                  {/* <button
                     className={`btn btn-xs btn-soft btn-success ${editingId === item.id ? "hidden" : ""}`}
                     onClick={() => handleSwap(item)}
                   >
                     <strong className="text-info">S</strong>/
                     <strong className="text-error">N</strong>
-                  </button>
+                  </button> */}
 
                   <button
                     className={`btn btn-xs btn-error ${editingId === item.id ? "hidden" : ""}`}

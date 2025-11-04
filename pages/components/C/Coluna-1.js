@@ -43,7 +43,9 @@ const Coluna = ({ r }) => {
         const existsData = await Execute.receiveFromR(r);
         setDados(
           Array.isArray(results)
-            ? results.sort((a, b) => new Date(b.date) - new Date(a.date))
+            ? results
+                .filter((item) => !item.DataFim)
+                .sort((a, b) => new Date(b.date) - new Date(a.date))
             : [],
         );
         setExists(Array.isArray(existsData) ? existsData : []);

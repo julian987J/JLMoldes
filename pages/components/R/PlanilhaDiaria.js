@@ -35,7 +35,9 @@ const PlanilhaDiaria = ({ r, totalValores, plotterTotals }) => {
       setPagamentosDados(sortDadosByDate(pagamentos));
       setMetragemDados(
         Array.isArray(metragem)
-          ? metragem.sort((a, b) => new Date(b.data) - new Date(a.data))
+          ? metragem
+              .filter((item) => !item.DataFim)
+              .sort((a, b) => new Date(b.data) - new Date(a.data))
           : [],
       );
 
@@ -100,15 +102,24 @@ const PlanilhaDiaria = ({ r, totalValores, plotterTotals }) => {
             (item) => String(item.id) === String(payload.id),
           );
           if (type === "PAPELC_NEW_ITEM" && itemIndex === -1) {
-            return sortDadosByDate([...prev, payload]);
+            if (!payload.DataFim) {
+              return sortDadosByDate([...prev, payload]);
+            }
           }
           if (type === "PAPELC_UPDATED_ITEM") {
-            if (itemIndex !== -1) {
-              const newDados = [...prev];
-              newDados[itemIndex] = { ...newDados[itemIndex], ...payload };
-              return sortDadosByDate(newDados);
+            if (!payload.DataFim) {
+              if (itemIndex !== -1) {
+                const newDados = [...prev];
+                newDados[itemIndex] = { ...newDados[itemIndex], ...payload };
+                return sortDadosByDate(newDados);
+              } else {
+                return sortDadosByDate([...prev, payload]);
+              }
             } else {
-              return sortDadosByDate([...prev, payload]);
+              // Se o item foi atualizado e agora tem DataFim, remove-o da lista
+              return sortDadosByDate(
+                prev.filter((item) => String(item.id) !== String(payload.id)),
+              );
             }
           }
           return prev;
