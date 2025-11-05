@@ -158,59 +158,14 @@ const Coluna3 = ({ r }) => {
       const { type, payload } = lastMessage.data;
 
       if (
-        ((type === "PLOTTER_C_NEW_ITEM" || type === "PLOTTER_C_UPDATED_ITEM") &&
+        (type.startsWith("PLOTTER_C_") &&
           payload &&
           String(payload.r) === String(r)) ||
         (type === "PLOTTER_C_DELETED_ITEM" &&
           payload &&
           payload.id !== undefined)
       ) {
-        const cutoffDate = new Date("2025-01-01");
-        setDados((prevDados) => {
-          let newDados = [...prevDados];
-          const itemIndex =
-            payload.id !== undefined
-              ? newDados.findIndex(
-                  (item) => String(item.id) === String(payload.id),
-                )
-              : -1;
-
-          const shouldDisplay =
-            payload.DataFim && new Date(payload.DataFim) >= cutoffDate;
-
-          switch (type) {
-            case "PLOTTER_C_NEW_ITEM":
-              if (shouldDisplay && itemIndex === -1) {
-                newDados.push(payload);
-              }
-              break;
-            case "PLOTTER_C_UPDATED_ITEM":
-              if (shouldDisplay) {
-                if (itemIndex !== -1) {
-                  newDados[itemIndex] = payload;
-                } else {
-                  newDados.push(payload);
-                }
-              } else {
-                if (itemIndex !== -1) {
-                  newDados = newDados.filter(
-                    (item) => String(item.id) !== String(payload.id),
-                  );
-                }
-              }
-              if (editingId === payload.id) setEditingId(null);
-              break;
-            case "PLOTTER_C_DELETED_ITEM":
-              newDados = newDados.filter(
-                (item) => String(item.id) !== String(payload.id),
-              );
-              if (editingId === payload.id) setEditingId(null);
-              break;
-          }
-          return newDados.sort(
-            (a, b) => new Date(b.DataFim) - new Date(a.DataFim),
-          );
-        });
+        fetchData(); // Simplesmente busca os dados novamente para garantir consistência
       }
 
       if (type === "CONFIG_UPDATED_ITEM" && payload) {

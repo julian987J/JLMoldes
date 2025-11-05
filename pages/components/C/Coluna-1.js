@@ -39,7 +39,7 @@ const Coluna = ({ r }) => {
     const fetchData = async () => {
       try {
         if (typeof r === "undefined" || r === null) return;
-        const results = await Execute.receiveAllFromC(r);
+        const results = await Execute.receiveFromCActive(r);
         const existsData = await Execute.receiveFromR(r);
         setDados(
           Array.isArray(results)

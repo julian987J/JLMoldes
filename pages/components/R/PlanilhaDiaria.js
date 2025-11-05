@@ -98,22 +98,21 @@ const PlanilhaDiaria = ({ r, totalValores, plotterTotals }) => {
           const itemIndex = prev.findIndex(
             (item) => String(item.id) === String(payload.id),
           );
-          const cutoffDate = new Date("2025-01-01");
-          const shouldDisplay =
-            !payload.DataFim || new Date(payload.DataFim) >= cutoffDate;
 
-          if (shouldDisplay) {
-            if (itemIndex !== -1) {
-              const newDados = [...prev];
-              newDados[itemIndex] = { ...newDados[itemIndex], ...payload };
-              return sortDadosByDate(newDados);
-            } else {
-              return sortDadosByDate([...prev, payload]);
-            }
-          } else {
+          // Lógica unificada: se DataFim existir, o item é considerado "finalizado" e removido.
+          if (payload.DataFim) {
             return sortDadosByDate(
               prev.filter((item) => String(item.id) !== String(payload.id)),
             );
+          }
+
+          // Se não, atualiza ou adiciona o item.
+          if (itemIndex !== -1) {
+            const newDados = [...prev];
+            newDados[itemIndex] = { ...newDados[itemIndex], ...payload };
+            return sortDadosByDate(newDados);
+          } else {
+            return sortDadosByDate([...prev, payload]);
           }
         });
       }
@@ -134,6 +133,11 @@ const PlanilhaDiaria = ({ r, totalValores, plotterTotals }) => {
         fetchData(); // Refetch all data for simplicity
       }
 
+      // PlotterC WebSocket logic - Adicionado para reagir a arquivamentos
+      if (type.startsWith("PLOTTER_C_")) {
+        fetchData();
+      }
+
       // C WebSocket logic
       if (
         (type === "C_NEW_ITEM" || type === "C_UPDATED_ITEM") &&
@@ -144,22 +148,21 @@ const PlanilhaDiaria = ({ r, totalValores, plotterTotals }) => {
           const itemIndex = prev.findIndex(
             (item) => String(item.id) === String(payload.id),
           );
-          const cutoffDate = new Date("2025-01-01");
-          const shouldDisplay =
-            !payload.DataFim || new Date(payload.DataFim) >= cutoffDate;
 
-          if (shouldDisplay) {
-            if (itemIndex !== -1) {
-              const newDados = [...prev];
-              newDados[itemIndex] = { ...newDados[itemIndex], ...payload };
-              return sortDadosByDate(newDados);
-            } else {
-              return sortDadosByDate([...prev, payload]);
-            }
-          } else {
+          // Lógica unificada: se DataFim existir, o item é considerado "finalizado" e removido.
+          if (payload.DataFim) {
             return sortDadosByDate(
               prev.filter((item) => String(item.id) !== String(payload.id)),
             );
+          }
+
+          // Se não, atualiza ou adiciona o item.
+          if (itemIndex !== -1) {
+            const newDados = [...prev];
+            newDados[itemIndex] = { ...newDados[itemIndex], ...payload };
+            return sortDadosByDate(newDados);
+          } else {
+            return sortDadosByDate([...prev, payload]);
           }
         });
       }
