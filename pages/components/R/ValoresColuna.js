@@ -14,8 +14,12 @@ const ValoresColuna = ({ r, onValoresChange }) => {
     const fetchData = async () => {
       if (typeof r === "undefined" || r === null) return;
       try {
-        const results = await Execute.receiveFromPapelCActive(r);
-        setDados(Array.isArray(results) ? sortDadosByDate(results) : []);
+        const results = await Execute.receiveFromPapelC(r);
+        setDados(
+          Array.isArray(results)
+            ? sortDadosByDate(results.filter((item) => !item.dtfim))
+            : [],
+        );
       } catch (error) {
         console.error("Erro:", error);
       }

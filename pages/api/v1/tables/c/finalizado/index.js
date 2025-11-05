@@ -10,6 +10,6 @@ export default router.handler(controller.errorHandlers);
 
 async function getHandler(request, response) {
   const { r } = request.query;
-  const result = await ordem.getCFinalizado(r);
+  const result = await ordem.getAllC(r);
   return response.status(200).json(result.rows);
 }

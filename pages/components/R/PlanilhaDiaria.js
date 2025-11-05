@@ -27,12 +27,15 @@ const PlanilhaDiaria = ({ r, totalValores, plotterTotals }) => {
     if (typeof r === "undefined" || r === null) return;
     setLoading(true);
     try {
-      const [pagamentos, metragem, devo, cData] = await Promise.all([
+      const [pagamentos, metragemRaw, devo, cDataRaw] = await Promise.all([
         Execute.receiveFromPagamentos(r),
-        Execute.receiveFromPapelCActive(r),
+        Execute.receiveFromPapelC(r),
         Execute.receiveFromDevo(r),
-        Execute.receiveFromCActive(r),
+        Execute.receiveFromC(r),
       ]);
+
+      const metragem = metragemRaw.filter((item) => !item.dtfim);
+      const cData = cDataRaw.filter((item) => !item.dtfim);
 
       const activeMetragemIds = new Set(metragem.map((item) => item.id));
       const activeCIds = new Set(cData.map((item) => item.id));

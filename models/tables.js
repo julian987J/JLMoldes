@@ -1157,7 +1157,7 @@ async function getC(r) {
 
 async function getAllC(r) {
   const result = await database.query({
-    text: `SELECT * FROM "C" WHERE r = $1;`,
+    text: `SELECT * FROM "C" WHERE r = $1 ORDER BY id DESC;`,
     values: [r],
   });
   return result;
@@ -1302,7 +1302,7 @@ async function getPapelData(codigo, data) {
 
 async function getPapelC(r) {
   const result = await database.query({
-    text: `SELECT * FROM "PapelC" WHERE r = $1;`,
+    text: `SELECT * FROM "PapelC" WHERE r = $1 ORDER BY id DESC;`,
     values: [r],
   });
   return result;
@@ -1670,32 +1670,6 @@ async function getPlotterC(r) {
   return result;
 }
 
-async function getCFinalizado(r) {
-  const query = {
-    text: `SELECT id, codigo, dec, r, data, nome, sis, alt, base, real, pix, "dtfim" FROM "C" WHERE r = $1 AND "dtfim" IS NOT NULL ORDER BY id DESC;`,
-    values: [r],
-  };
-  const result = await database.query(query);
-  return result;
-}
-
-async function getPapelCFinalizado(r) {
-  const query = {
-    text: `SELECT id, codigo, deveid, r, data, nome, multi, papel, papelpix, papelreal, encaixepix, encaixereal, desperdicio, util, perdida, comentarios, comissao, "dtfim" FROM "PapelC" WHERE r = $1 AND "dtfim" IS NOT NULL ORDER BY id DESC;`,
-    values: [r],
-  };
-  const result = await database.query(query);
-  return result;
-}
-
-async function getPlotterCFinalizado(r) {
-  const result = await database.query({
-    text: `SELECT id, r, sim, nao, desperdicio, data, inicio, fim, nome, plotter_nome, largura, confirmado, "dtfim" FROM "PlotterC" WHERE r = $1 AND "dtfim" IS NOT NULL ORDER BY data DESC, inicio DESC;`,
-    values: [r],
-  });
-  return result;
-}
-
 async function updatePlotterC(updatedData) {
   const result = await database.query({
     text: `
@@ -1976,9 +1950,6 @@ const ordem = {
   verifyUserCredentials,
   getUsers,
   updateUser,
-  getCFinalizado,
-  getPapelCFinalizado,
-  getPlotterCFinalizado,
 };
 
 export default ordem;

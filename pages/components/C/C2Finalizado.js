@@ -94,7 +94,7 @@ const Coluna = ({ r }) => {
   const fetchData = async () => {
     if (typeof r === "undefined" || r === null) return;
     try {
-      const results = await Execute.receiveFromPapelCFinalizado(r);
+      const results = await Execute.receiveFromPapelC(r);
       const existsData = await Execute.receiveFromDeve(r);
       const configurationsData = await Execute.receiveFromConfig();
       const cutoffDate = new Date("2025-01-01");
@@ -102,7 +102,9 @@ const Coluna = ({ r }) => {
       setDados(
         Array.isArray(results)
           ? results
-              .filter((item) => new Date(item.dtfim) >= cutoffDate)
+              .filter(
+                (item) => item.dtfim && new Date(item.dtfim) >= cutoffDate,
+              )
               .sort((a, b) => new Date(b.dtfim) - new Date(a.dtfim))
           : [],
       );

@@ -10,6 +10,6 @@ export default router.handler(controller.errorHandlers);
 
 async function getHandler(request, response) {
   const { r } = request.query;
-  const result = await ordem.getPlotterCFinalizado(r);
+  const result = await ordem.getPlotterC(r);
   return response.status(200).json(result.rows);
 }

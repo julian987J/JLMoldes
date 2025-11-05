@@ -668,63 +668,6 @@ async function receiveFromDec(r) {
   }
 }
 
-async function receiveFromC(r) {
-  try {
-    const response = await fetch(`/api/v1/tables/c?r=${r}`);
-    if (!response.ok) throw new Error("Erro ao carregar os dados");
-    const data = await response.json();
-    return Array.isArray(data.rows) ? data.rows : [];
-  } catch (error) {
-    console.error("Erro ao buscar dados C:", error);
-    return [];
-  }
-}
-
-async function receiveAllFromC(r) {
-  try {
-    const response = await fetch(
-      `/api/v1/tables/c?r=${r}&includeFinished=true`,
-    );
-    if (!response.ok) throw new Error("Erro ao carregar todos os dados de C");
-    const data = await response.json();
-    return Array.isArray(data.rows) ? data.rows : [];
-  } catch (error) {
-    console.error("Erro ao buscar todos os dados de C:", error);
-    return [];
-  }
-}
-
-async function receiveFromCActive(r) {
-  try {
-    const response = await fetch(`/api/v1/tables/c?r=${r}`);
-    if (!response.ok) throw new Error("Erro ao carregar os dados");
-    const data = await response.json();
-    const cutoffDate = new Date("2025-01-01");
-    const activeData = Array.isArray(data.rows)
-      ? data.rows.filter(
-          (item) => !item.dtfim || new Date(item.dtfim) >= cutoffDate,
-        )
-      : [];
-    return activeData;
-  } catch (error) {
-    console.error("Erro ao buscar dados C ativos:", error);
-    return [];
-  }
-}
-
-async function receiveFromCFinalizado(r) {
-  try {
-    const response = await fetch(`/api/v1/tables/c/finalizado?r=${r}`);
-    if (!response.ok)
-      throw new Error("Falha ao buscar dados finalizados da tabela C");
-    const data = await response.json();
-    return Array.isArray(data) ? data : data.rows || [];
-  } catch (error) {
-    console.error("Erro ao buscar dados finalizados C:", error);
-    return [];
-  }
-}
-
 async function receiveAnualFromC() {
   try {
     const response = await fetch(`/api/v1/tables/anual/c`);
@@ -804,36 +747,6 @@ async function receiveFromPapelC(r) {
     return Array.isArray(data.rows) ? data.rows : [];
   } catch (error) {
     console.error("Erro ao buscar dados Papel:", error);
-    return [];
-  }
-}
-
-async function receiveFromPapelCActive(r) {
-  try {
-    const response = await fetch(`/api/v1/tables/c/papel?r=${r}`);
-    if (!response.ok) throw new Error("Erro ao carregar os dados");
-    const data = await response.json();
-    const cutoffDate = new Date("2025-01-01");
-    return Array.isArray(data.rows)
-      ? data.rows.filter(
-          (item) => !item.dtfim || new Date(item.dtfim) >= cutoffDate,
-        )
-      : [];
-  } catch (error) {
-    console.error("Erro ao buscar dados PapelC ativos:", error);
-    return [];
-  }
-}
-
-async function receiveFromPapelCFinalizado(r) {
-  try {
-    const response = await fetch(`/api/v1/tables/c/papel/finalizado?r=${r}`);
-    if (!response.ok)
-      throw new Error("Falha ao buscar dados finalizados da tabela PapelC");
-    const data = await response.json();
-    return Array.isArray(data) ? data : data.rows || [];
-  } catch (error) {
-    console.error("Erro ao buscar dados finalizados PapelC:", error);
     return [];
   }
 }
@@ -1447,31 +1360,29 @@ async function updateUser(userData) {
   }
 }
 
+async function receiveFromC(r) {
+  try {
+    // Este endpoint agora busca todos os itens, ativos e finalizados.
+    const response = await fetch(
+      `/api/v1/tables/c?r=${r}&includeFinished=true`,
+    );
+    if (!response.ok) throw new Error("Erro ao carregar todos os dados de C");
+    const data = await response.json();
+    return Array.isArray(data.rows) ? data.rows : [];
+  } catch (error) {
+    console.error("Erro ao buscar todos os dados de C:", error);
+    return [];
+  }
+}
+
 async function receiveFromPlotterC(r) {
   try {
     const response = await fetch(`/api/v1/tables/c/plotter?r=${r}`);
     if (!response.ok) throw new Error("Erro ao carregar os dados de PlotterC");
     const data = await response.json();
-    const cutoffDate = new Date("2025-01-01");
-    return Array.isArray(data.rows)
-      ? data.rows.filter(
-          (item) => !item.dtfim || new Date(item.dtfim) >= cutoffDate,
-        )
-      : [];
+    return Array.isArray(data.rows) ? data.rows : [];
   } catch (error) {
     console.error("Erro ao buscar dados PlotterC:", error);
-    return [];
-  }
-}
-
-async function receiveFromPlotterCFinalizado(r) {
-  try {
-    const response = await fetch(`/api/v1/tables/c/plotter/finalizado?r=${r}`);
-    if (!response.ok)
-      throw new Error("Falha ao buscar dados finalizados da tabela PlotterC");
-    return await response.json();
-  } catch (error) {
-    console.error("Erro ao buscar dados finalizados PlotterC:", error);
     return [];
   }
 }
@@ -1524,7 +1435,6 @@ async function archiveAllFinalizado(r) {
 const execute = {
   archiveAllFinalizado,
   receiveFromPlotterC,
-  receiveFromPlotterCFinalizado,
   removePlotterC,
   swapSimNaoPlotterC,
   sendTrueMR,
@@ -1545,9 +1455,6 @@ const execute = {
   receiveFromTemp,
   sendToTemp,
   receiveFromC,
-  receiveAllFromC,
-  receiveFromCActive,
-  receiveFromCFinalizado,
   receiveAnualFromC,
   receiveFromCGastos,
   receiveFromPessoal,
@@ -1564,8 +1471,6 @@ const execute = {
   receiveFromPapelByItem,
   receiveFromPapelCalculadora,
   receiveFromPapelC,
-  receiveFromPapelCActive,
-  receiveFromPapelCFinalizado,
   receiveFromPapelCData,
   receiveFromRDeveDevo,
   receiveFromDeve,

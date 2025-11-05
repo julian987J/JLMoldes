@@ -39,11 +39,13 @@ const Coluna = ({ r }) => {
     const fetchData = async () => {
       try {
         if (typeof r === "undefined" || r === null) return;
-        const results = await Execute.receiveFromCActive(r);
+        const results = await Execute.receiveFromC(r);
         const existsData = await Execute.receiveFromR(r);
         setDados(
           Array.isArray(results)
-            ? results.sort((a, b) => new Date(b.data) - new Date(a.data))
+            ? results
+                .filter((item) => !item.dtfim)
+                .sort((a, b) => new Date(b.data) - new Date(a.data))
             : [],
         );
         setExists(Array.isArray(existsData) ? existsData : []);

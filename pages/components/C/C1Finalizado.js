@@ -39,14 +39,16 @@ const Coluna = ({ r }) => {
     const fetchData = async () => {
       try {
         if (typeof r === "undefined" || r === null) return;
-        const results = await Execute.receiveFromCFinalizado(r);
+        const results = await Execute.receiveFromC(r);
         const existsData = await Execute.receiveFromR(r);
         const cutoffDate = new Date("2025-01-01");
 
         setDados(
           Array.isArray(results)
             ? results
-                .filter((item) => new Date(item.dtfim) >= cutoffDate)
+                .filter(
+                  (item) => item.dtfim && new Date(item.dtfim) >= cutoffDate,
+                )
                 .sort((a, b) => new Date(b.dtfim) - new Date(a.dtfim))
             : [],
         );

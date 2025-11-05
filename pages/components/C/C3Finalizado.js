@@ -117,7 +117,7 @@ const Coluna3 = ({ r }) => {
     setLoading(true);
     try {
       const [plotterResults, configResult] = await Promise.all([
-        Execute.receiveFromPlotterCFinalizado(r),
+        Execute.receiveFromPlotterC(r),
         Execute.receiveFromConfig(),
       ]);
       const cutoffDate = new Date("2025-01-01");
