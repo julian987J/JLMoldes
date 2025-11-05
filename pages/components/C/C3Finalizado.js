@@ -156,7 +156,6 @@ const Coluna3 = ({ r }) => {
       }
 
       const { type, payload } = lastMessage.data;
-
       if (
         (type.startsWith("PLOTTER_C_") &&
           payload &&

@@ -69,58 +69,27 @@ const PlotterTotals = ({ r, onTotalsChange }) => {
 
       const { type, payload } = lastMessage.data;
 
+      // Se uma atualização relevante para PLOTTER_C ocorrer, busca os dados novamente.
       if (
-        (type === "PLOTTER_C_NEW_ITEM" || type === "PLOTTER_C_UPDATED_ITEM") &&
-        payload &&
-        String(payload.r) === String(r)
+        (type.startsWith("PLOTTER_C_") &&
+          payload &&
+          String(payload.r) === String(r)) ||
+        // Adicionado para garantir que a deleção também acione a busca
+        (type === "PLOTTER_C_DELETED_ITEM" &&
+          payload &&
+          payload.id !== undefined)
       ) {
-        const cutoffDate = new Date("2025-01-01");
-        setDados((prevDados) => {
-          let newDados = [...prevDados];
-          const itemIndex = newDados.findIndex(
-            (item) => String(item.id) === String(payload.id),
-          );
-
-          const shouldDisplay =
-            !payload.dtfim || new Date(payload.dtfim) >= cutoffDate;
-
-          if (shouldDisplay) {
-            if (itemIndex !== -1) {
-              newDados[itemIndex] = payload;
-            } else {
-              newDados.push(payload);
-            }
-          } else {
-            if (itemIndex !== -1) {
-              newDados = newDados.filter(
-                (item) => String(item.id) !== String(payload.id),
-              );
-            }
-          }
-
-          return newDados.sort(
-            (a, b) =>
-              new Date(b.data) - new Date(a.data) ||
-              new Date(b.inicio) - new Date(a.inicio),
-          );
-        });
-      } else if (
-        type === "PLOTTER_C_DELETED_ITEM" &&
-        payload &&
-        payload.id !== undefined
-      ) {
-        setDados((prevDados) =>
-          prevDados.filter((item) => String(item.id) !== String(payload.id)),
-        );
+        fetchData();
       }
 
+      // Se uma atualização de configuração ocorrer, atualiza o estado de config.
       if (type === "CONFIG_UPDATED_ITEM" && payload) {
         setConfig(payload);
       }
 
       lastProcessedTimestampRef.current = lastMessage.timestamp;
     }
-  }, [lastMessage, r]);
+  }, [lastMessage, r, fetchData]);
 
   const desperdicioConfig = config ? parseFloat(config.d) || 0 : 0;
 
