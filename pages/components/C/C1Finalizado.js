@@ -92,7 +92,8 @@ const Coluna = ({ r }) => {
                 )
               : -1;
 
-                    const shouldDisplay = payload.dtfim && new Date(payload.dtfim) >= cutoffDate;
+          const shouldDisplay =
+            payload.dtfim && new Date(payload.dtfim) >= cutoffDate;
 
           switch (type) {
             case "C_NEW_ITEM":

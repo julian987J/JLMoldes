@@ -100,10 +100,10 @@ const Coluna = ({ r }) => {
 
       setDados(
         Array.isArray(results)
-            ? results
-                .filter((item) => !item.dtfim)
-                .sort((a, b) => new Date(b.data) - new Date(a.data))
-            : [],
+          ? results
+              .filter((item) => !item.dtfim)
+              .sort((a, b) => new Date(b.data) - new Date(a.data))
+          : [],
       );
       setExists(Array.isArray(existsData) ? existsData : []);
       if (configurationsData && configurationsData.length > 0) {
