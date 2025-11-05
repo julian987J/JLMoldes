@@ -173,7 +173,7 @@ const Coluna3 = ({ r }) => {
 
       lastProcessedTimestampRef.current = lastMessage.timestamp;
     }
-  }, [lastMessage, editingId, r]);
+  }, [lastMessage, editingId, r, fetchData]);
 
   const handleInputChange = (field, value) => {
     setEditedData((prev) => ({ ...prev, [field]: value }));
