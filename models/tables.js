@@ -1149,7 +1149,7 @@ async function updateDeve(updatedData) {
 
 async function getC(r) {
   const result = await database.query({
-    text: `SELECT * FROM "C" WHERE r = $1 AND "DataFim" IS NULL;`,
+    text: `SELECT * FROM "C" WHERE r = $1 AND "dtfim" IS NULL;`,
     values: [r],
   });
   return result;
@@ -1672,7 +1672,7 @@ async function getPlotterC(r) {
 
 async function getCFinalizado(r) {
   const query = {
-    text: `SELECT id, codigo, dec, r, data, nome, sis, alt, base, real, pix, "DataFim" FROM "C" WHERE r = $1 AND "DataFim" IS NOT NULL ORDER BY id DESC;`,
+    text: `SELECT id, codigo, dec, r, data, nome, sis, alt, base, real, pix, "dtfim" FROM "C" WHERE r = $1 AND "dtfim" IS NOT NULL ORDER BY id DESC;`,
     values: [r],
   };
   const result = await database.query(query);
@@ -1681,7 +1681,7 @@ async function getCFinalizado(r) {
 
 async function getPapelCFinalizado(r) {
   const query = {
-    text: `SELECT id, codigo, deveid, r, data, nome, multi, papel, papelpix, papelreal, encaixepix, encaixereal, desperdicio, util, perdida, comentarios, comissao, "DataFim" FROM "PapelC" WHERE r = $1 AND "DataFim" IS NOT NULL ORDER BY id DESC;`,
+    text: `SELECT id, codigo, deveid, r, data, nome, multi, papel, papelpix, papelreal, encaixepix, encaixereal, desperdicio, util, perdida, comentarios, comissao, "dtfim" FROM "PapelC" WHERE r = $1 AND "dtfim" IS NOT NULL ORDER BY id DESC;`,
     values: [r],
   };
   const result = await database.query(query);
@@ -1690,7 +1690,7 @@ async function getPapelCFinalizado(r) {
 
 async function getPlotterCFinalizado(r) {
   const result = await database.query({
-    text: `SELECT id, r, sim, nao, desperdicio, data, inicio, fim, nome, plotter_nome, largura, confirmado, "DataFim" FROM "PlotterC" WHERE r = $1 AND "DataFim" IS NOT NULL ORDER BY data DESC, inicio DESC;`,
+    text: `SELECT id, r, sim, nao, desperdicio, data, inicio, fim, nome, plotter_nome, largura, confirmado, "dtfim" FROM "PlotterC" WHERE r = $1 AND "dtfim" IS NOT NULL ORDER BY data DESC, inicio DESC;`,
     values: [r],
   });
   return result;
@@ -1778,19 +1778,19 @@ async function finalizePorR(r) {
     await client.query("BEGIN");
 
     const updateCQuery = {
-      text: `UPDATE "C" SET "DataFim" = NOW() WHERE r = $1 AND "DataFim" IS NULL RETURNING *;`,
+      text: `UPDATE "C" SET "dtfim" = NOW() WHERE r = $1 AND "dtfim" IS NULL RETURNING *;`,
       values: [r],
     };
     const cResult = await client.query(updateCQuery);
 
     const updatePapelCQuery = {
-      text: `UPDATE "PapelC" SET "DataFim" = NOW() WHERE r = $1 AND "DataFim" IS NULL RETURNING *;`,
+      text: `UPDATE "PapelC" SET "dtfim" = NOW() WHERE r = $1 AND "dtfim" IS NULL RETURNING *;`,
       values: [r],
     };
     const papelCResult = await client.query(updatePapelCQuery);
 
     const updatePlotterCQuery = {
-      text: `UPDATE "PlotterC" SET "DataFim" = NOW() WHERE r = $1 AND "DataFim" IS NULL RETURNING *;`,
+      text: `UPDATE "PlotterC" SET "dtfim" = NOW() WHERE r = $1 AND "dtfim" IS NULL RETURNING *;`,
       values: [r],
     };
     const plotterCResult = await client.query(updatePlotterCQuery);
@@ -1845,19 +1845,19 @@ async function archivePorR(r) {
     await client.query("BEGIN");
 
     const updateCQuery = {
-      text: `UPDATE "C" SET "DataFim" = $1 WHERE r = $2 AND "DataFim" IS NOT NULL RETURNING *;`,
+      text: `UPDATE "C" SET "dtfim" = $1 WHERE r = $2 AND "dtfim" IS NOT NULL RETURNING *;`,
       values: [archiveDate, r],
     };
     const cResult = await client.query(updateCQuery);
 
     const updatePapelCQuery = {
-      text: `UPDATE "PapelC" SET "DataFim" = $1 WHERE r = $2 AND "DataFim" IS NOT NULL RETURNING *;`,
+      text: `UPDATE "PapelC" SET "dtfim" = $1 WHERE r = $2 AND "dtfim" IS NOT NULL RETURNING *;`,
       values: [archiveDate, r],
     };
     const papelCResult = await client.query(updatePapelCQuery);
 
     const updatePlotterCQuery = {
-      text: `UPDATE "PlotterC" SET "DataFim" = $1 WHERE r = $2 AND "DataFim" IS NOT NULL RETURNING *;`,
+      text: `UPDATE "PlotterC" SET "dtfim" = $1 WHERE r = $2 AND "dtfim" IS NOT NULL RETURNING *;`,
       values: [archiveDate, r],
     };
     const plotterCResult = await client.query(updatePlotterCQuery);

@@ -102,8 +102,8 @@ const Coluna = ({ r }) => {
       setDados(
         Array.isArray(results)
           ? results
-              .filter((item) => new Date(item.DataFim) >= cutoffDate)
-              .sort((a, b) => new Date(b.DataFim) - new Date(a.DataFim))
+              .filter((item) => new Date(item.dtfim) >= cutoffDate)
+              .sort((a, b) => new Date(b.dtfim) - new Date(a.dtfim))
           : [],
       );
       setExists(Array.isArray(existsData) ? existsData : []);
@@ -152,7 +152,7 @@ const Coluna = ({ r }) => {
               : -1;
 
           const shouldDisplay =
-            payload.DataFim && new Date(payload.DataFim) >= cutoffDate;
+            payload.dtfim && new Date(payload.dtfim) >= cutoffDate;
 
           switch (type) {
             case "PAPELC_NEW_ITEM":
@@ -183,9 +183,7 @@ const Coluna = ({ r }) => {
               if (editingId === payload.id) setEditingId(null);
               break;
           }
-          return newDados.sort(
-            (a, b) => new Date(b.DataFim) - new Date(a.DataFim),
-          );
+          return newDados.sort((a, b) => new Date(b.dtfim) - new Date(a.dtfim));
         });
       }
 
@@ -230,9 +228,8 @@ const Coluna = ({ r }) => {
 
   const groupedResults = useMemo(() => {
     return dados.reduce((acc, item) => {
-      if (!item.DataFim) return acc;
-      const dateKey = item.DataFim.substring(0, 10); // YYYY-MM-DD
-
+      if (!item.dtfim) return acc;
+      const dateKey = item.dtfim.substring(0, 10); // YYYY-MM-DD
       acc[dateKey] = acc[dateKey] || [];
       acc[dateKey].push({
         ...item,

@@ -46,8 +46,8 @@ const Coluna = ({ r }) => {
         setDados(
           Array.isArray(results)
             ? results
-                .filter((item) => new Date(item.DataFim) >= cutoffDate)
-                .sort((a, b) => new Date(b.DataFim) - new Date(a.DataFim))
+                .filter((item) => new Date(item.dtfim) >= cutoffDate)
+                .sort((a, b) => new Date(b.dtfim) - new Date(a.dtfim))
             : [],
         );
         setExists(Array.isArray(existsData) ? existsData : []);
@@ -91,7 +91,7 @@ const Coluna = ({ r }) => {
               : -1;
 
           const shouldDisplay =
-            payload.DataFim && new Date(payload.DataFim) >= cutoffDate;
+            payload.dtfim && new Date(payload.dtfim) >= cutoffDate;
 
           switch (type) {
             case "C_NEW_ITEM":
@@ -123,7 +123,7 @@ const Coluna = ({ r }) => {
               break;
           }
           return newDadosC.sort(
-            (a, b) => new Date(b.DataFim) - new Date(a.DataFim),
+            (a, b) => new Date(b.dtfim) - new Date(a.dtfim),
           );
         });
       }
@@ -170,9 +170,9 @@ const Coluna = ({ r }) => {
 
   const groupedResults = useMemo(() => {
     return dados.reduce((acc, item) => {
-      if (!item.DataFim) return acc; // Checagem de segurança
-      const dateKey = item.DataFim.substring(0, 10); // YYYY-MM-DD
-      const dateObj = new Date(item.date);
+      if (!item.dtfim) return acc; // Checagem de segurança
+      const dateKey = item.dtfim.substring(0, 10); // YYYY-MM-DD
+      const dateObj = new Date(item.data);
       const horas = String(dateObj.getHours()).padStart(2, "0");
       const minutos = String(dateObj.getMinutes()).padStart(2, "0");
       const horaFormatada = `${horas}:${minutos}`;

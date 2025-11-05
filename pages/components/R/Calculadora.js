@@ -1563,7 +1563,7 @@ const Calculadora = ({
     base: 0,
     real: roundedReal,
     pix: roundedPix,
-    DataFim: null,
+    dtfim: null,
   };
 
   const activeValuesCount = values.filter((v) => Number(v) > 0).length;

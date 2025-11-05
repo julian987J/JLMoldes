@@ -99,8 +99,8 @@ const PlanilhaDiaria = ({ r, totalValores, plotterTotals }) => {
             (item) => String(item.id) === String(payload.id),
           );
 
-          // Lógica unificada: se DataFim existir, o item é considerado "finalizado" e removido.
-          if (payload.DataFim) {
+          // Lógica unificada: se dtfim existir, o item é considerado "finalizado" e removido.
+          if (payload.dtfim) {
             return sortDadosByDate(
               prev.filter((item) => String(item.id) !== String(payload.id)),
             );
@@ -149,8 +149,8 @@ const PlanilhaDiaria = ({ r, totalValores, plotterTotals }) => {
             (item) => String(item.id) === String(payload.id),
           );
 
-          // Lógica unificada: se DataFim existir, o item é considerado "finalizado" e removido.
-          if (payload.DataFim) {
+          // Lógica unificada: se dtfim existir, o item é considerado "finalizado" e removido.
+          if (payload.dtfim) {
             return sortDadosByDate(
               prev.filter((item) => String(item.id) !== String(payload.id)),
             );

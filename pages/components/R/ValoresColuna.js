@@ -45,7 +45,7 @@ const ValoresColuna = ({ r, onValoresChange }) => {
             (item) => String(item.id) === String(payload.id),
           );
           const shouldDisplay =
-            !payload.DataFim || new Date(payload.DataFim) >= cutoffDate;
+            !payload.dtfim || new Date(payload.dtfim) >= cutoffDate;
 
           let newDados = [...prev];
 

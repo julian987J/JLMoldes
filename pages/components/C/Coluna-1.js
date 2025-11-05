@@ -86,7 +86,7 @@ const Coluna = ({ r }) => {
               if (itemIndex === -1) newDadosC.push(payload);
               break;
             case "C_UPDATED_ITEM":
-              if (payload.DataFim) {
+              if (payload.dtfim) {
                 newDadosC = newDadosC.filter(
                   (item) => String(item.id) !== String(payload.id),
                 );

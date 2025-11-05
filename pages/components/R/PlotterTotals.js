@@ -34,7 +34,7 @@ const PlotterTotals = ({ r, onTotalsChange }) => {
         Array.isArray(plotterResults)
           ? plotterResults
               .filter(
-                (item) => !item.DataFim || new Date(item.DataFim) >= cutoffDate,
+                (item) => !item.dtfim || new Date(item.dtfim) >= cutoffDate,
               )
               .sort(
                 (a, b) =>
@@ -82,7 +82,7 @@ const PlotterTotals = ({ r, onTotalsChange }) => {
           );
 
           const shouldDisplay =
-            !payload.DataFim || new Date(payload.DataFim) >= cutoffDate;
+            !payload.dtfim || new Date(payload.dtfim) >= cutoffDate;
 
           if (shouldDisplay) {
             if (itemIndex !== -1) {
@@ -165,8 +165,7 @@ const PlotterTotals = ({ r, onTotalsChange }) => {
     const cutoffDate = new Date("2025-01-01");
     const confirmed = dados.filter(
       (item) =>
-        item.confirmado &&
-        (!item.DataFim || new Date(item.DataFim) >= cutoffDate),
+        item.confirmado && (!item.dtfim || new Date(item.dtfim) >= cutoffDate),
     );
     return confirmed.reduce((acc, item) => {
       const dateKey = item.data.substring(0, 10); // YYYY-MM-DD

@@ -126,9 +126,9 @@ const Coluna3 = ({ r }) => {
         Array.isArray(plotterResults)
           ? plotterResults
               .filter(
-                (item) => item.DataFim && new Date(item.DataFim) >= cutoffDate,
+                (item) => item.dtfim && new Date(item.dtfim) >= cutoffDate,
               )
-              .sort((a, b) => new Date(b.DataFim) - new Date(a.DataFim))
+              .sort((a, b) => new Date(b.dtfim) - new Date(a.dtfim))
           : [],
       );
 

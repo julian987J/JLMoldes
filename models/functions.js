@@ -702,7 +702,7 @@ async function receiveFromCActive(r) {
     const cutoffDate = new Date("2025-01-01");
     const activeData = Array.isArray(data.rows)
       ? data.rows.filter(
-          (item) => !item.DataFim || new Date(item.DataFim) >= cutoffDate,
+          (item) => !item.dtfim || new Date(item.dtfim) >= cutoffDate,
         )
       : [];
     return activeData;
@@ -816,7 +816,7 @@ async function receiveFromPapelCActive(r) {
     const cutoffDate = new Date("2025-01-01");
     return Array.isArray(data.rows)
       ? data.rows.filter(
-          (item) => !item.DataFim || new Date(item.DataFim) >= cutoffDate,
+          (item) => !item.dtfim || new Date(item.dtfim) >= cutoffDate,
         )
       : [];
   } catch (error) {
@@ -1455,7 +1455,7 @@ async function receiveFromPlotterC(r) {
     const cutoffDate = new Date("2025-01-01");
     return Array.isArray(data.rows)
       ? data.rows.filter(
-          (item) => !item.DataFim || new Date(item.DataFim) >= cutoffDate,
+          (item) => !item.dtfim || new Date(item.dtfim) >= cutoffDate,
         )
       : [];
   } catch (error) {

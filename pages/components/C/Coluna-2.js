@@ -101,7 +101,7 @@ const Coluna = ({ r }) => {
       setDados(
         Array.isArray(results)
           ? results
-              .filter((item) => !item.DataFim)
+              .filter((item) => !item.dtfim)
               .sort((a, b) => new Date(b.data) - new Date(a.data))
           : [],
       );
@@ -156,7 +156,7 @@ const Coluna = ({ r }) => {
               if (itemIndex === -1) newDadosPapelC.push(payload);
               break;
             case "PAPELC_UPDATED_ITEM":
-              if (payload.DataFim) {
+              if (payload.dtfim) {
                 newDadosPapelC = newDadosPapelC.filter(
                   (item) => String(item.id) !== String(payload.id),
                 );

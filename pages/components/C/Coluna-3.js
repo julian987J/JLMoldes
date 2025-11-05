@@ -127,7 +127,7 @@ const Coluna3 = ({ r }) => {
       ]);
 
       const filteredResults = Array.isArray(plotterResults)
-        ? plotterResults.filter((item) => !item.DataFim)
+        ? plotterResults.filter((item) => !item.dtfim)
         : [];
 
       setDados(
@@ -201,12 +201,12 @@ const Coluna3 = ({ r }) => {
 
           switch (type) {
             case "PLOTTER_C_NEW_ITEM":
-              if (!payload.datafim && itemIndex === -1) {
+              if (!payload.dtfim && itemIndex === -1) {
                 newDados.push(payload);
               }
               break;
             case "PLOTTER_C_UPDATED_ITEM":
-              if (payload.datafim) {
+              if (payload.dtfim) {
                 if (itemIndex !== -1) {
                   newDados = newDados.filter(
                     (item) => String(item.id) !== String(payload.id),
