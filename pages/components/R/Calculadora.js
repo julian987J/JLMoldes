@@ -168,11 +168,13 @@ const Calculadora = ({
 
         setPlotterData(
           Array.isArray(plotterResults)
-            ? plotterResults.sort(
-                (a, b) =>
-                  new Date(b.data) - new Date(a.data) ||
-                  new Date(b.inicio) - new Date(a.inicio),
-              )
+            ? plotterResults
+                .filter((item) => !item.dtfim)
+                .sort(
+                  (a, b) =>
+                    new Date(b.data) - new Date(a.data) ||
+                    new Date(b.inicio) - new Date(a.inicio),
+                )
             : [],
         );
 
@@ -545,17 +547,39 @@ const Calculadora = ({
         if (type.startsWith("PLOTTER_C_")) {
           setPlotterData((prev) => {
             let newData = [...prev];
-            const index = newData.findIndex(
-              (item) => String(item.id) === String(payload.id),
-            );
-            if (type === "PLOTTER_C_NEW_ITEM" && index === -1) {
-              newData.push(payload);
-            } else if (type === "PLOTTER_C_UPDATED_ITEM" && index !== -1) {
-              newData[index] = payload;
-            } else if (type === "PLOTTER_C_DELETED_ITEM") {
-              newData = newData.filter(
-                (item) => String(item.id) !== String(payload.id),
-              );
+            const index =
+              payload.id !== undefined
+                ? newData.findIndex(
+                    (item) => String(item.id) === String(payload.id),
+                  )
+                : -1;
+
+            switch (type) {
+              case "PLOTTER_C_NEW_ITEM":
+                if (!payload.dtfim && index === -1) {
+                  newData.push(payload);
+                }
+                break;
+              case "PLOTTER_C_UPDATED_ITEM":
+                if (payload.dtfim) {
+                  if (index !== -1) {
+                    newData = newData.filter(
+                      (item) => String(item.id) !== String(payload.id),
+                    );
+                  }
+                } else {
+                  if (index !== -1) {
+                    newData[index] = payload;
+                  } else {
+                    newData.push(payload);
+                  }
+                }
+                break;
+              case "PLOTTER_C_DELETED_ITEM":
+                newData = newData.filter(
+                  (item) => String(item.id) !== String(payload.id),
+                );
+                break;
             }
             return newData.sort(
               (a, b) =>
@@ -594,12 +618,58 @@ const Calculadora = ({
   const handleFinalizarPapel = async () => {
     if (oldestPapel) {
       try {
+        // Finaliza todos os registros em aberto para a oficina 'r'
+        const response = await fetch("/api/v1/tables/c/plotter/finalizar", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ r }),
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || "Erro ao finalizar registros.");
+        }
+
+        // Atualização otimista da UI: remove os dados do plotter, pois foram finalizados
+        setPlotterData([]);
+
+        // Remove o papel da lista
         setPapeis((prevPapeis) =>
           prevPapeis.filter((p) => p.id !== oldestPapel.id),
         );
+
+        // Envia a requisição para remover o papel do banco de dados
         await Execute.removePapel(oldestPapel.id);
       } catch (error) {
-        console.error("Erro ao finalizar papel:", error);
+        console.error("Erro no processo de finalização:", error);
+        // Em caso de erro, recarrega os dados para garantir consistência
+        const fetchData = async () => {
+          const workshop = "R" + r;
+          const [plotterResults, papelResults] = await Promise.all([
+            Execute.receiveFromPlotterC(r),
+            Execute.receiveFromPapelByItem(workshop),
+          ]);
+
+          setPlotterData(
+            Array.isArray(plotterResults)
+              ? plotterResults
+                  .filter((item) => !item.dtfim)
+                  .sort(
+                    (a, b) =>
+                      new Date(b.data) - new Date(a.data) ||
+                      new Date(b.inicio) - new Date(a.inicio),
+                  )
+              : [],
+          );
+
+          if (Array.isArray(papelResults)) {
+            const filteredPapeis = papelResults
+              .filter((p) => p.gastos && p.gastos.startsWith("PAPEL-"))
+              .sort((a, b) => a.id - b.id);
+            setPapeis(filteredPapeis);
+          }
+        };
+        fetchData();
       }
     }
   };
