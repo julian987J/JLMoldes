@@ -61,7 +61,8 @@ const Calculadora = ({
   }, [errorCode]);
 
   const [dadosR, setDadosR] = useState(0);
-  const [idsArray, setIdsArray] = useState(0);
+  const [idsArray, setIdsArray] = useState([]);
+  const [rBsaUidsArray, setRBsaUidsArray] = useState([]);
   const [decGroups, setDecGroups] = useState([]);
 
   const [valorDevo, setValorDevo] = useState(0);
@@ -471,12 +472,15 @@ const Calculadora = ({
               sis: Number(group.total_sis) || 0,
               alt: Number(group.total_alt) || 0,
               ids: group.ids || [],
+              uids: group.uids || [],
             }));
+
             setDecGroups(groups);
             setDadosR(
               groups.reduce((sum, g) => sum + g.base + g.sis + g.alt, 0),
             );
             setIdsArray(groups.flatMap((g) => g.ids));
+            setRBsaUidsArray(groups.flatMap((g) => g.uids));
           } catch (error) {
             console.error("Erro ao recarregar dados de R:", error);
           }
@@ -1489,9 +1493,9 @@ const Calculadora = ({
     sis: 0, // Valores serão ajustados
     alt: 0,
     base: 0,
-    real: roundedReal,
-    pix: roundedPix,
-    dtfim: null,
+    real: Number(real),
+    pix: Number(pix),
+    r_bsa_ids: rBsaUidsArray, // Adicionado para rastreamento
   };
 
   const activeValuesCount = values.filter((v) => Number(v) > 0).length;

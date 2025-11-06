@@ -573,34 +573,6 @@ async function updateConfig(updatedData) {
   return result;
 }
 
-async function updateCBSA(codigo, data, r, dec, newValues) {
-  return await database.query({
-    text: `UPDATE "C"
-           SET
-             sis  = sis  + $5,
-             alt  = alt  + $6,
-             base = base + $7,
-             real = real + $8,
-             pix  = pix  + $9
-           WHERE codigo = $1
-             AND data   = $2
-             AND r      = $3
-             AND dec    = $4
-           RETURNING *;`,
-    values: [
-      codigo,
-      data,
-      r,
-      dec,
-      newValues.sis,
-      newValues.alt,
-      newValues.base,
-      newValues.real,
-      newValues.pix,
-    ],
-  });
-}
-
 async function updatePapelC(updatedData) {
   const result = await database.query({
     text: `
@@ -1982,7 +1954,6 @@ const ordem = {
   updateC,
   updateDec,
   updateNota,
-  updateCBSA,
   updatePessoal,
   updateSaidaP,
   updateSaidaO,
