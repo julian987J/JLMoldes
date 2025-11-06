@@ -67,7 +67,9 @@ const Coluna = ({ r }) => {
       // --- Lida com atualizações na tabela C (dados principais) ---
       if (
         // Condição para C_NEW_ITEM e C_UPDATED_ITEM: requer 'r' no payload
-        ((type === "C_NEW_ITEM" || type === "C_UPDATED_ITEM") &&
+        ((type === "C_NEW_ITEM" ||
+          type === "C_UPDATED_ITEM" ||
+          type === "C_FINALIZED_ITEM") && // Adicionado C_FINALIZED_ITEM
           payload &&
           String(payload.r) === String(r)) ||
         // Condição para C_DELETED_ITEM: requer apenas 'id' no payload
@@ -87,6 +89,7 @@ const Coluna = ({ r }) => {
             case "C_NEW_ITEM":
               if (itemIndex === -1) newDadosC.push(payload);
               break;
+            case "C_FINALIZED_ITEM": // Novo caso para finalização
             case "C_UPDATED_ITEM":
               if (payload.dtfim) {
                 newDadosC = newDadosC.filter(

@@ -135,53 +135,48 @@ const Coluna = ({ r }) => {
 
       // --- Lida com atualizações na tabela PapelC (dados principais) ---
       if (
-        // Condição para PAPELC_NEW_ITEM e PAPELC_UPDATED_ITEM: requer 'r' no payload
-        ((type === "PAPELC_NEW_ITEM" || type === "PAPELC_UPDATED_ITEM") &&
-          payload &&
-          String(payload.r) === String(r)) ||
-        // Condição para PAPELC_DELETED_ITEM: requer apenas 'id' no payload
-        (type === "PAPELC_DELETED_ITEM" && payload && payload.id !== undefined)
+        payload &&
+        type.startsWith("PAPELC_") &&
+        String(payload.r) === String(r)
       ) {
-        setDados((prevDadosPapelC) => {
-          let newDadosPapelC = [...prevDadosPapelC];
-          const itemIndex =
-            payload.id !== undefined
-              ? newDadosPapelC.findIndex(
-                  (item) => String(item.id) === String(payload.id),
-                )
-              : -1;
+        setDados((prevDados) => {
+          let newDados = [...prevDados];
+          const itemIndex = newDados.findIndex(
+            (item) => String(item.id) === String(payload.id),
+          );
 
           switch (type) {
             case "PAPELC_NEW_ITEM":
-              if (itemIndex === -1) newDadosPapelC.push(payload);
+              if (itemIndex === -1 && !payload.dtfim) {
+                newDados.push(payload);
+              }
               break;
             case "PAPELC_UPDATED_ITEM":
+            case "PAPELC_FINALIZED_ITEM":
               if (payload.dtfim) {
-                newDadosPapelC = newDadosPapelC.filter(
-                  (item) => String(item.id) !== String(payload.id),
-                );
+                if (itemIndex !== -1) {
+                  newDados = newDados.filter(
+                    (item) => String(item.id) !== String(payload.id),
+                  );
+                }
               } else {
                 if (itemIndex !== -1) {
-                  newDadosPapelC[itemIndex] = {
-                    ...newDadosPapelC[itemIndex],
-                    ...payload,
-                  };
+                  newDados[itemIndex] = { ...newDados[itemIndex], ...payload };
                 } else {
-                  newDadosPapelC.push(payload);
+                  newDados.push(payload);
                 }
               }
-              if (editingId === payload.id) setEditingId(null);
               break;
             case "PAPELC_DELETED_ITEM":
-              newDadosPapelC = newDadosPapelC.filter(
-                (item) => String(item.id) !== String(payload.id),
-              );
-              if (editingId === payload.id) setEditingId(null);
+              if (itemIndex !== -1) {
+                newDados = newDados.filter(
+                  (item) => String(item.id) !== String(payload.id),
+                );
+              }
               break;
           }
-          return newDadosPapelC.sort(
-            (a, b) => new Date(b.data) - new Date(a.data),
-          );
+          if (editingId === payload.id) setEditingId(null);
+          return newDados.sort((a, b) => new Date(b.data) - new Date(a.data));
         });
       }
 

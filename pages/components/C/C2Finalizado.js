@@ -138,55 +138,12 @@ const Coluna = ({ r }) => {
 
       // --- Lida com atualizações na tabela PapelC (dados principais) ---
       if (
-        ((type === "PAPELC_NEW_ITEM" || type === "PAPELC_UPDATED_ITEM") &&
+        (type.startsWith("PAPELC_") &&
           payload &&
           String(payload.r) === String(r)) ||
         (type === "PAPELC_DELETED_ITEM" && payload && payload.id !== undefined)
       ) {
-        const cutoffDate = new Date("2025-01-01");
-        setDados((prevDados) => {
-          let newDados = [...prevDados];
-          const itemIndex =
-            payload.id !== undefined
-              ? newDados.findIndex(
-                  (item) => String(item.id) === String(payload.id),
-                )
-              : -1;
-
-          const shouldDisplay =
-            payload.dtfim && new Date(payload.dtfim) >= cutoffDate;
-
-          switch (type) {
-            case "PAPELC_NEW_ITEM":
-              if (shouldDisplay && itemIndex === -1) {
-                newDados.push(payload);
-              }
-              break;
-            case "PAPELC_UPDATED_ITEM":
-              if (shouldDisplay) {
-                if (itemIndex !== -1) {
-                  newDados[itemIndex] = payload;
-                } else {
-                  newDados.push(payload);
-                }
-              } else {
-                if (itemIndex !== -1) {
-                  newDados = newDados.filter(
-                    (item) => String(item.id) !== String(payload.id),
-                  );
-                }
-              }
-              if (editingId === payload.id) setEditingId(null);
-              break;
-            case "PAPELC_DELETED_ITEM":
-              newDados = newDados.filter(
-                (item) => String(item.id) !== String(payload.id),
-              );
-              if (editingId === payload.id) setEditingId(null);
-              break;
-          }
-          return newDados.sort((a, b) => new Date(b.dtfim) - new Date(a.dtfim));
-        });
+        memoizedFetchData();
       }
 
       // --- Lida com atualizações na tabela Deve (dados 'exists') ---

@@ -1,4 +1,10 @@
-import React, { useEffect, useState, useRef, useMemo } from "react";
+import React, {
+  useEffect,
+  useState,
+  useRef,
+  useMemo,
+  useCallback,
+} from "react";
 import Execute from "models/functions";
 import Edit from "../Edit";
 import Use from "models/utils";
@@ -35,33 +41,33 @@ const Coluna = ({ r }) => {
     }
   };
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        if (typeof r === "undefined" || r === null) return;
-        const results = await Execute.receiveFromC(r);
-        const existsData = await Execute.receiveFromR(r);
-        const cutoffDate = new Date("2025-01-01");
+  const fetchData = useCallback(async () => {
+    try {
+      if (typeof r === "undefined" || r === null) return;
+      const results = await Execute.receiveFromC(r);
+      const existsData = await Execute.receiveFromR(r);
+      const cutoffDate = new Date("2025-01-01");
 
-        setDados(
-          Array.isArray(results)
-            ? results
-                .filter(
-                  (item) => item.dtfim && new Date(item.dtfim) >= cutoffDate,
-                )
-                .sort((a, b) => new Date(b.dtfim) - new Date(a.dtfim))
-            : [],
-        );
-        setExists(Array.isArray(existsData) ? existsData : []);
-      } catch (error) {
-        console.error("Erro em C1Finalizado fetchData:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
+      setDados(
+        Array.isArray(results)
+          ? results
+              .filter(
+                (item) => item.dtfim && new Date(item.dtfim) >= cutoffDate,
+              )
+              .sort((a, b) => new Date(b.dtfim) - new Date(a.dtfim))
+          : [],
+      );
+      setExists(Array.isArray(existsData) ? existsData : []);
+    } catch (error) {
+      console.error("Erro em C1Finalizado fetchData:", error);
+    } finally {
+      setLoading(false);
+    }
   }, [r]);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
   // Efeito para lidar com mensagens WebSocket
   useEffect(() => {
@@ -77,57 +83,10 @@ const Coluna = ({ r }) => {
 
       // --- Lida com atualizações na tabela C (dados principais) ---
       if (
-        ((type === "C_NEW_ITEM" || type === "C_UPDATED_ITEM") &&
-          payload &&
-          String(payload.r) === String(r)) ||
+        (type.startsWith("C_") && payload && String(payload.r) === String(r)) ||
         (type === "C_DELETED_ITEM" && payload && payload.id !== undefined)
       ) {
-        const cutoffDate = new Date("2025-01-01");
-        setDados((prevDadosC) => {
-          let newDadosC = [...prevDadosC];
-          const itemIndex =
-            payload.id !== undefined
-              ? newDadosC.findIndex(
-                  (item) => String(item.id) === String(payload.id),
-                )
-              : -1;
-
-          const shouldDisplay =
-            payload.dtfim && new Date(payload.dtfim) >= cutoffDate;
-
-          switch (type) {
-            case "C_NEW_ITEM":
-              if (shouldDisplay && itemIndex === -1) {
-                newDadosC.push(payload);
-              }
-              break;
-            case "C_UPDATED_ITEM":
-              if (shouldDisplay) {
-                if (itemIndex !== -1) {
-                  newDadosC[itemIndex] = payload;
-                } else {
-                  newDadosC.push(payload);
-                }
-              } else {
-                if (itemIndex !== -1) {
-                  newDadosC = newDadosC.filter(
-                    (item) => String(item.id) !== String(payload.id),
-                  );
-                }
-              }
-              if (editingId === payload.id) setEditingId(null);
-              break;
-            case "C_DELETED_ITEM":
-              newDadosC = newDadosC.filter(
-                (item) => String(item.id) !== String(payload.id),
-              );
-              if (editingId === payload.id) setEditingId(null);
-              break;
-          }
-          return newDadosC.sort(
-            (a, b) => new Date(b.dtfim) - new Date(a.dtfim),
-          );
-        });
+        fetchData();
       }
 
       // --- Lida com atualizações na tabela R (dados 'exists') ---

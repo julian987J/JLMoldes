@@ -156,6 +156,7 @@ const Coluna3 = ({ r }) => {
       }
 
       const { type, payload } = lastMessage.data;
+
       if (
         (type.startsWith("PLOTTER_C_") &&
           payload &&
@@ -164,7 +165,7 @@ const Coluna3 = ({ r }) => {
           payload &&
           payload.id !== undefined)
       ) {
-        fetchData(); // Simplesmente busca os dados novamente para garantir consistência
+        fetchData();
       }
 
       if (type === "CONFIG_UPDATED_ITEM" && payload) {

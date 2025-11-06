@@ -1750,7 +1750,7 @@ async function finalizePorR(r) {
     if (cResult.rows.length > 0) {
       cResult.rows.forEach((row) => {
         notifyWebSocketServer({
-          type: "C_UPDATED_ITEM",
+          type: "C_FINALIZED_ITEM",
           payload: row,
         });
       });
@@ -1759,7 +1759,7 @@ async function finalizePorR(r) {
     if (papelCResult.rows.length > 0) {
       papelCResult.rows.forEach((row) => {
         notifyWebSocketServer({
-          type: "PAPELC_UPDATED_ITEM",
+          type: "PAPELC_FINALIZED_ITEM",
           payload: row,
         });
       });
@@ -1768,7 +1768,7 @@ async function finalizePorR(r) {
     if (plotterCResult.rows.length > 0) {
       plotterCResult.rows.forEach((row) => {
         notifyWebSocketServer({
-          type: "PLOTTER_C_UPDATED_ITEM",
+          type: "PLOTTER_C_FINALIZED_ITEM",
           payload: row,
         });
       });
@@ -1813,6 +1813,34 @@ async function archivePorR(r) {
     const plotterCResult = await client.query(updatePlotterCQuery);
 
     await client.query("COMMIT");
+
+    // Enviar notificações WebSocket após o commit bem-sucedido
+    if (cResult.rows.length > 0) {
+      cResult.rows.forEach((row) => {
+        notifyWebSocketServer({
+          type: "C_UPDATED_ITEM",
+          payload: row,
+        });
+      });
+    }
+
+    if (papelCResult.rows.length > 0) {
+      papelCResult.rows.forEach((row) => {
+        notifyWebSocketServer({
+          type: "PAPELC_UPDATED_ITEM",
+          payload: row,
+        });
+      });
+    }
+
+    if (plotterCResult.rows.length > 0) {
+      plotterCResult.rows.forEach((row) => {
+        notifyWebSocketServer({
+          type: "PLOTTER_C_UPDATED_ITEM",
+          payload: row,
+        });
+      });
+    }
 
     return {
       c: cResult.rows,

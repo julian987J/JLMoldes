@@ -34,15 +34,23 @@ const PlanilhaDiaria = ({ r, totalValores, plotterTotals }) => {
         Execute.receiveFromC(r),
       ]);
 
-      const metragem = metragemRaw.filter((item) => !item.dtfim);
-      const cData = cDataRaw.filter((item) => !item.dtfim);
+      const archiveDate = new Date("2001-01-01");
 
-      const activeMetragemIds = new Set(metragem.map((item) => item.id));
-      const activeCIds = new Set(cData.map((item) => item.id));
-
-      const filteredPagamentos = pagamentos.filter(
-        (p) => activeMetragemIds.has(p.id) || activeCIds.has(p.id),
+      const metragem = metragemRaw.filter(
+        (item) => !item.dtfim || new Date(item.dtfim) > archiveDate,
       );
+      const cData = cDataRaw.filter(
+        (item) => !item.dtfim || new Date(item.dtfim) > archiveDate,
+      );
+
+      // Criar um conjunto de IDs ativos a partir de metragem e cData
+      const activeIds = new Set([
+        ...metragem.map((item) => item.id),
+        ...cData.map((item) => item.id),
+      ]);
+
+      // Filtrar pagamentos para incluir apenas aqueles associados a IDs ativos
+      const filteredPagamentos = pagamentos.filter((p) => activeIds.has(p.id));
 
       setPagamentosDados(sortDadosByDate(filteredPagamentos));
       setMetragemDados(sortDadosByDate(metragem));
@@ -69,112 +77,25 @@ const PlanilhaDiaria = ({ r, totalValores, plotterTotals }) => {
     if (lastMessage && lastMessage.id !== lastProcessedMessageIdRef.current) {
       const { type, payload } = lastMessage.data;
 
-      // Pagamentos WebSocket logic
-      if (
-        type.startsWith("PAGAMENTOS_") &&
-        payload &&
-        String(payload.r) === String(r)
-      ) {
-        setPagamentosDados((prev) => {
-          if (type === "PAGAMENTOS_NEW_ITEM") {
-            return sortDadosByDate([...prev, payload]);
-          }
-          if (type === "PAGAMENTOS_DELETED_ITEM") {
-            return sortDadosByDate(
-              prev.filter((item) => String(item.id) !== String(payload.id)),
-            );
-          }
-          return prev;
-        });
-      }
-      if (type === "PAGAMENTOS_TABLE_CLEARED") {
-        setPagamentosDados([]);
-      }
+      // Lista de tipos de mensagem que devem acionar a atualização de dados
+      const relevantTypes = [
+        "PAGAMENTOS_",
+        "PAPELC_",
+        "DEVO_",
+        "C_",
+        "PLOTTER_C_", // Mantido para consistência
+      ];
 
-      // Metragem (PapelC) WebSocket logic
-      if (
-        (type === "PAPELC_NEW_ITEM" || type === "PAPELC_UPDATED_ITEM") &&
-        payload &&
-        String(payload.r) === String(r)
-      ) {
-        setMetragemDados((prev) => {
-          const itemIndex = prev.findIndex(
-            (item) => String(item.id) === String(payload.id),
-          );
+      // Verifica se o tipo da mensagem é relevante para este componente
+      const isRelevant = relevantTypes.some((prefix) =>
+        type.startsWith(prefix),
+      );
 
-          // Lógica unificada: se dtfim existir, o item é considerado "finalizado" e removido.
-          if (payload.dtfim) {
-            return sortDadosByDate(
-              prev.filter((item) => String(item.id) !== String(payload.id)),
-            );
-          }
-
-          // Se não, atualiza ou adiciona o item.
-          if (itemIndex !== -1) {
-            const newDados = [...prev];
-            newDados[itemIndex] = { ...newDados[itemIndex], ...payload };
-            return sortDadosByDate(newDados);
-          } else {
-            return sortDadosByDate([...prev, payload]);
-          }
-        });
-      }
-      if (
-        type === "PAPELC_DELETED_ITEM" &&
-        payload &&
-        payload.id !== undefined
-      ) {
-        setMetragemDados((prev) =>
-          sortDadosByDate(
-            prev.filter((item) => String(item.id) !== String(payload.id)),
-          ),
-        );
-      }
-
-      // Devo WebSocket logic
-      if (type.startsWith("DEVO_")) {
-        fetchData(); // Refetch all data for simplicity
-      }
-
-      // PlotterC WebSocket logic - Adicionado para reagir a arquivamentos
-      if (type.startsWith("PLOTTER_C_")) {
+      // Ignora explicitamente as mensagens de finalização para manter os dados na planilha
+      if (isRelevant && !type.endsWith("_FINALIZED_ITEM")) {
+        // Se a mensagem for relevante, simplesmente busca todos os dados novamente
+        // para garantir a consistência total.
         fetchData();
-      }
-
-      // C WebSocket logic
-      if (
-        (type === "C_NEW_ITEM" || type === "C_UPDATED_ITEM") &&
-        payload &&
-        String(payload.r) === String(r)
-      ) {
-        setCDados((prev) => {
-          const itemIndex = prev.findIndex(
-            (item) => String(item.id) === String(payload.id),
-          );
-
-          // Lógica unificada: se dtfim existir, o item é considerado "finalizado" e removido.
-          if (payload.dtfim) {
-            return sortDadosByDate(
-              prev.filter((item) => String(item.id) !== String(payload.id)),
-            );
-          }
-
-          // Se não, atualiza ou adiciona o item.
-          if (itemIndex !== -1) {
-            const newDados = [...prev];
-            newDados[itemIndex] = { ...newDados[itemIndex], ...payload };
-            return sortDadosByDate(newDados);
-          } else {
-            return sortDadosByDate([...prev, payload]);
-          }
-        });
-      }
-      if (type === "C_DELETED_ITEM" && payload && payload.id !== undefined) {
-        setCDados((prev) =>
-          sortDadosByDate(
-            prev.filter((item) => String(item.id) !== String(payload.id)),
-          ),
-        );
       }
 
       lastProcessedMessageIdRef.current = lastMessage.id;

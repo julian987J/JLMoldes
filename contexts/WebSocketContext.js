@@ -63,29 +63,31 @@ export const WebSocketProvider = ({ children, url }) => {
     ws.onclose = (event) => {
       console.log("WebSocket desconectado:", event.reason, "Code:", event.code);
       setIsConnected(false);
-      setSocket(null);
+      // Tentativa de reconexão automática
+      setTimeout(() => {
+        if (!socket || socket.readyState === WebSocket.CLOSED) {
+          console.log("Tentando reconectar o WebSocket...");
+          connect();
+        }
+      }, 3000); // Tenta reconectar após 3 segundos
     };
 
     setSocket(ws);
   }, [url]);
 
   useEffect(() => {
-    if (url) {
+    if (url && !socket) {
       connect();
     }
 
     return () => {
-      if (
-        socket &&
-        (socket.readyState === WebSocket.OPEN ||
-          socket.readyState === WebSocket.CONNECTING)
-      ) {
+      if (socket && socket.readyState === WebSocket.OPEN) {
         console.log("Fechando WebSocket ao desmontar o provider.");
         socket.close();
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [url, connect]);
+  }, [url, connect, socket]);
 
   const sendMessage = useCallback(
     (message) => {

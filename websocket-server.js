@@ -61,9 +61,27 @@ const server = http.createServer(async (req, res) => {
 // Anexar o WebSocket.Server ao servidor HTTP
 const wss = new WebSocket.Server({ server });
 
+const interval = setInterval(function ping() {
+  wss.clients.forEach(function each(ws) {
+    if (ws.isAlive === false) return ws.terminate();
+
+    ws.isAlive = false;
+    ws.ping(() => {});
+  });
+}, 30000);
+
+wss.on("close", function close() {
+  clearInterval(interval);
+});
+
 console.log(`Servidor HTTP e WebSocket iniciado na porta ${PORT}`);
 
 wss.on("connection", (ws) => {
+  ws.isAlive = true;
+  ws.on("pong", () => {
+    ws.isAlive = true;
+  });
+
   clients.add(ws);
   console.log("Novo cliente WebSocket conectado. Total:", clients.size);
 
