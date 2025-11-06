@@ -58,6 +58,7 @@ async function sendToR(itemData) {
         sis: itemData.sis ?? 0,
         alt: itemData.alt ?? 0,
         base: itemData.base ?? 0,
+        r_bsa_uid: itemData.r_bsa_uid,
       }),
     });
 
@@ -367,6 +368,7 @@ async function sendToC(itemData) {
         base: itemData.base,
         real: itemData.real,
         pix: itemData.pix,
+        r_bsa_ids: itemData.r_bsa_ids, // Adicionado r_bsa_ids aqui
       }),
     });
 

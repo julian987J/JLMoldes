@@ -157,6 +157,7 @@ const BSA = ({ codigo, r, onTotalsChange }) => {
           <tr>
             <th className="hidden">ID</th>
             <th className="w-36">Data</th>
+            <th className="hidden">UID</th>
             <th className="hidden">CODIGO</th>
             <th className="text-center">Dec</th>
             <th>Nome</th>
@@ -177,6 +178,7 @@ const BSA = ({ codigo, r, onTotalsChange }) => {
             >
               <td className="hidden">{item.id}</td>
               <td>{Use.formatarData(item.data)}</td>
+              <td className="hidden">{item.r_bsa_uid}</td>
               <td className="hidden">{item.codigo}</td>
               <td className="text-center">{item.dec}</td>
               <td>{item.nome}</td>
@@ -194,6 +196,7 @@ const BSA = ({ codigo, r, onTotalsChange }) => {
               <tr>
                 <th className="hidden bg-secondary-content">ID</th>
                 <th className="w-36 bg-secondary-content">Data</th>
+                <th className="hidden bg-secondary-content">UID</th>
                 <th className="hidden bg-secondary-content">CODIGO</th>
                 <th className="text-center bg-secondary-content">Dec</th>
                 <th className="bg-secondary-content">Nome</th>
@@ -214,6 +217,7 @@ const BSA = ({ codigo, r, onTotalsChange }) => {
                 >
                   <td className="hidden">{item.id}</td>
                   <td>{Use.formatarData(item.data)}</td>
+                  <td className="hidden">{item.r_bsa_uid}</td>
                   <td className="hidden">{item.codigo}</td>
                   <td className="text-center">{item.dec}</td>
                   <td>{item.nome}</td>
@@ -248,6 +252,7 @@ const BSA = ({ codigo, r, onTotalsChange }) => {
               <tr>
                 <th className="hidden bg-error/30">ID</th>
                 <th className="w-36 bg-error/30">Data</th>
+                <th className="hidden bg-error/30">UID</th>
                 <th className="hidden bg-error/30">CODIGO</th>
                 <th className="text-center bg-error/30">Dec</th>
                 <th className="bg-error/30">Nome</th>
@@ -269,6 +274,7 @@ const BSA = ({ codigo, r, onTotalsChange }) => {
                 >
                   <td className="hidden">{item.id}</td>
                   <td>{Use.formatarData(item.data)}</td>
+                  <td className="hidden">{item.r_bsa_uid}</td>
                   <td className="hidden">{item.codigo}</td>
                   <td className="text-center">{item.dec}</td>
                   <td>{item.nome}</td>

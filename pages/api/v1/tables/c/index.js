@@ -36,15 +36,16 @@ export default router.handler(controller.errorHandlers);
 
 async function postHandler(request, response) {
   const ordemInputValues = request.body;
-  const newCItemResult = await ordem.createC(ordemInputValues);
+  const newCOrdem = await ordem.createC(ordemInputValues);
 
-  if (newCItemResult?.rows?.length > 0) {
+  if (newCOrdem?.rows?.length > 0) {
     await notifyWebSocketServer({
       type: "C_NEW_ITEM",
-      payload: newCItemResult.rows[0], // Assume que createC retorna o item criado
+      payload: newCOrdem.rows[0], // Envia o item criado
     });
   }
-  return response.status(201).json(newCItemResult);
+
+  return response.status(201).json(newCOrdem);
 }
 
 async function getHandler(request, response) {
@@ -60,13 +61,19 @@ async function getHandler(request, response) {
 
 async function deleteHandler(request, response) {
   const { id } = request.body;
-  const result = await ordem.deleteC(id);
+  const deletedRows = await ordem.deleteC(id);
 
-  await notifyWebSocketServer({
-    type: "C_DELETED_ITEM",
-    payload: { id: id }, // Envia o ID do item deletado
-  });
-  return response.status(200).json(result);
+  if (deletedRows && deletedRows.length > 0) {
+    const deletedItem = deletedRows[0];
+    await notifyWebSocketServer({
+      type: "C_DELETED_ITEM",
+      payload: { id: deletedItem.id, r: deletedItem.r },
+    });
+    return response.status(200).json(deletedItem);
+  }
+
+  // Se nada foi deletado (ex: ID não encontrado), retorne uma resposta apropriada.
+  return response.status(200).json(null);
 }
 
 async function updateHandler(request, response) {

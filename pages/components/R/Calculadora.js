@@ -330,6 +330,7 @@ const Calculadora = ({
           sis: Number(group.total_sis) || 0,
           alt: Number(group.total_alt) || 0,
           ids: group.ids || [],
+          uids: group.uids || [],
         }));
 
         setDecGroups(groups);
@@ -705,83 +706,6 @@ const Calculadora = ({
     }
   };
 
-  const handleUpdateC = async (codigo, data, New, currentTotal, dec) => {
-    try {
-      // Decodificar a data
-      const decodedData = decodeURIComponent(data);
-
-      // Obter valores atuais do C para este dec
-      const existingData = await Execute.receiveFromCData(
-        codigo,
-        decodedData,
-        r,
-        dec,
-      );
-
-      // Calcular novos valores
-      const newSis = (existingData.sis || 0) + (New.sis || 0);
-      const newAlt = (existingData.alt || 0) + (New.alt || 0);
-      const newBase = (existingData.base || 0) + (New.base || 0);
-
-      // Ajustar valores de real e pix para não ultrapassar o total permitido
-      let adjustedReal = roundedReal;
-      let adjustedPix = roundedPix;
-
-      // Calcular o máximo permitido para este grupo dec
-      const maxForDec = newSis + newAlt + newBase;
-
-      // Garantir que nenhum valor exceda o máximo do grupo
-      adjustedReal = Math.min(adjustedReal, maxForDec);
-      adjustedPix = Math.min(adjustedPix, maxForDec);
-
-      // Ajustar soma se necessário
-      const soma = adjustedReal + adjustedPix;
-      if (soma > maxForDec) {
-        const excesso = soma - maxForDec;
-        const ratioReal = adjustedReal / soma;
-        const ratioPix = adjustedPix / soma;
-
-        adjustedReal -= Math.round(excesso * ratioReal);
-        adjustedPix -= Math.round(excesso * ratioPix);
-
-        // Garantir valores não negativos
-        adjustedReal = Math.max(adjustedReal, 0);
-        adjustedPix = Math.max(adjustedPix, 0);
-
-        // Correção final de arredondamento
-        if (adjustedReal + adjustedPix > maxForDec) {
-          adjustedReal = maxForDec - adjustedPix;
-        }
-      }
-
-      // Fazer a requisição PUT atualizada com dec
-      const response = await fetch(
-        `/api/v1/tables/c/calculadora?codigo=${codigo}&data=${decodedData}&r=${r}&dec=${dec}`,
-        {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            sis: round(newSis),
-            alt: round(newAlt),
-            base: round(newBase),
-            real: roundToHalf(adjustedReal),
-            pix: roundToHalf(adjustedPix),
-          }),
-        },
-      );
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Erro ao atualizar registro no C");
-      }
-
-      return await response.json();
-    } catch (error) {
-      console.error("Erro ao atualizar C para dec", dec, ":", error);
-      throw error;
-    }
-  };
-
   const sendToCAndUpdateR = async (value) => {
     await Execute.removeDevo(codigo);
     const currentTotal = decGroups.reduce(
@@ -790,41 +714,33 @@ const Calculadora = ({
     );
     const excessoTotal = currentTotal - value;
 
-    // Verificar existência no C para cada dec
-    const existsMap = new Map();
-    for (const group of decGroups) {
-      const exists = await Execute.receiveFromCData(codigo, data, r, group.dec);
-      existsMap.set(group.dec, exists);
-    }
-
-    if (excessoTotal > 0) {
-      // Criar lista única para ajuste
-      const allEntries = [];
-      decGroups.forEach((g) => {
-        allEntries.push(
-          { dec: g.dec, type: "base", value: g.base },
-          { dec: g.dec, type: "sis", value: g.sis },
-          { dec: g.dec, type: "alt", value: g.alt },
-        );
-      });
-
-      // Ordenar e ajustar valores
-      allEntries.sort((a, b) => b.value - a.value);
-      let remaining = excessoTotal;
+    if (excessoTotal >= 0) {
       const adjustments = {};
-
       decGroups.forEach((g) => {
         adjustments[g.dec] = { base: g.base, sis: g.sis, alt: g.alt };
       });
 
-      for (const entry of allEntries) {
-        if (remaining <= 0) break;
-        const subtract = Math.min(entry.value, remaining);
-        adjustments[entry.dec][entry.type] -= subtract;
-        remaining -= subtract;
+      if (excessoTotal > 0) {
+        const allEntries = [];
+        decGroups.forEach((g) => {
+          allEntries.push(
+            { dec: g.dec, type: "base", value: g.base },
+            { dec: g.dec, type: "sis", value: g.sis },
+            { dec: g.dec, type: "alt", value: g.alt },
+          );
+        });
+
+        allEntries.sort((a, b) => b.value - a.value);
+        let remaining = excessoTotal;
+
+        for (const entry of allEntries) {
+          if (remaining <= 0) break;
+          const subtract = Math.min(entry.value, remaining);
+          adjustments[entry.dec][entry.type] -= subtract;
+          remaining -= subtract;
+        }
       }
 
-      // Atualizar R
       const novosDados = decGroups.map((g) => ({
         dec: g.dec,
         base: adjustments[g.dec].base,
@@ -835,31 +751,43 @@ const Calculadora = ({
       }));
       await handleSave(novosDados);
 
-      // Atualizar/enviar para C
+      let remainingPix = roundedPix;
+      let remainingReal = roundedReal;
+
       for (const group of decGroups) {
-        const diff = {
+        const paidAmount = {
           base: group.base - adjustments[group.dec].base,
           sis: group.sis - adjustments[group.dec].sis,
           alt: group.alt - adjustments[group.dec].alt,
-          real: Math.min(roundedReal), // Adicione
-          pix: Math.min(roundedPix), // Adicione
         };
+        const totalPaidForGroup =
+          paidAmount.base + paidAmount.sis + paidAmount.alt;
 
-        const exists = existsMap.get(group.dec);
+        if (totalPaidForGroup > 0) {
+          let pixForGroup = 0;
+          let realForGroup = 0;
 
-        if (exists) {
-          await handleUpdateC(codigo, data, diff, currentTotal, group.dec);
-        } else {
+          const pixToApply = Math.min(remainingPix, totalPaidForGroup);
+          pixForGroup += pixToApply;
+          remainingPix -= pixToApply;
+          let remainingDebtInGroup = totalPaidForGroup - pixToApply;
+
+          if (remainingDebtInGroup > 0) {
+            const realToApply = Math.min(remainingReal, remainingDebtInGroup);
+            realForGroup += realToApply;
+            remainingReal -= realToApply;
+          }
+
           await Execute.sendToC({
             ...ObjC1,
+            data: new Date().toISOString(),
             dec: group.dec,
-            ...diff,
-            real: roundToHalf(
-              Math.min(roundedReal, diff.base + diff.sis + diff.alt),
-            ),
-            pix: roundToHalf(
-              Math.min(roundedPix, diff.base + diff.sis + diff.alt),
-            ),
+            base: round(paidAmount.base),
+            sis: round(paidAmount.sis),
+            alt: round(paidAmount.alt),
+            real: roundToHalf(realForGroup),
+            pix: roundToHalf(pixForGroup),
+            r_bsa_ids: group.uids,
           });
         }
       }

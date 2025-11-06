@@ -186,28 +186,22 @@ const Mcontent = ({ oficina, r }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    const ordemInputValues = {
-      oficina,
-      observacao,
-      codigo,
-      dec,
-      nome,
-      sis,
-      base,
-      alt,
-    };
+    const r_bsa_uid =
+      Date.now().toString(36) +
+      Math.random().toString(36).slice(2, 10).toUpperCase();
 
     // Condição para separar os dados em duas tabelas
     let hasInserted = false;
 
     // Se todos os valores forem 0, exibe o erro e interrompe a execução
-    if (parseInt(base) === 0 && parseInt(sis) === 0 && parseInt(alt) === 0) {
-      setErrorCode("");
-      setTimeout(() => {
-        setErrorCode("000BSA"); // Define um novo código de erro depois de um pequeno delay
-      }, 0);
+    if (
+      (!base || parseInt(base) === 0) &&
+      (!sis || parseInt(sis) === 0) &&
+      (!alt || parseInt(alt) === 0)
+    ) {
+      setErrorCode("000BSA");
     } else {
-      setErrorCode("");
+      setErrorCode(false);
       if (parseInt(base) > 0) {
         try {
           const responseBase = await fetch("/api/v1/tables", {
@@ -222,6 +216,7 @@ const Mcontent = ({ oficina, r }) => {
               sis: 0,
               base,
               alt: 0,
+              r_bsa_uid,
             }),
           });
 
@@ -248,6 +243,7 @@ const Mcontent = ({ oficina, r }) => {
               sis,
               base: 0,
               alt,
+              r_bsa_uid,
             }),
           });
 
@@ -257,22 +253,6 @@ const Mcontent = ({ oficina, r }) => {
           hasInserted = true; // Marca que pelo menos uma inserção foi feita
         } catch (error) {
           console.error("Erro ao enviar sis_alt:", error);
-        }
-      }
-
-      // Se nenhum dado foi inserido antes, faz o envio para a tabela padrão
-      if (!hasInserted) {
-        try {
-          const response = await fetch("/api/v1/tables", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(ordemInputValues),
-          });
-
-          if (!response.ok) throw new Error("Erro ao enviar os dados.");
-          await response.json();
-        } catch (error) {
-          console.error("Erro ao enviar:", error);
         }
       }
 

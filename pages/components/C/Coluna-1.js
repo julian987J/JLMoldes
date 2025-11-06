@@ -279,11 +279,10 @@ const Coluna = ({ r }) => {
                     <tr
                       key={item.id}
                       className={`border-b border-base-content/5 ${
+                        item.r_bsa_ids &&
                         exists.some(
                           (e) =>
-                            String(e.codigo) === String(item.codigo) && // Comparar como string
-                            Use.formatarData(e.data) ===
-                              Use.formatarData(item.data), // Comparar datas formatadas
+                            e.r_bsa_uid && item.r_bsa_ids.includes(e.r_bsa_uid),
                         )
                           ? "bg-error/70"
                           : ""

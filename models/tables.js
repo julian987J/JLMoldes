@@ -41,8 +41,8 @@ async function notifyWebSocketServer(data) {
 async function createC(ordemInputValues) {
   const result = await database.query({
     text: `
-      INSERT INTO "C" (codigo,dec, data, nome, sis, alt, base, real, pix, r) 
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+      INSERT INTO "C" (codigo,dec, data, nome, sis, alt, base, real, pix, r, r_bsa_ids) 
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
       RETURNING *;
     `,
     values: [
@@ -56,6 +56,7 @@ async function createC(ordemInputValues) {
       ordemInputValues.real,
       ordemInputValues.pix,
       ordemInputValues.r,
+      ordemInputValues.r_bsa_ids,
     ],
   });
 
@@ -220,8 +221,8 @@ async function createPapelC(ordemInputValues) {
 async function createM(ordemInputValues) {
   const result = await database.query({
     text: `
-      INSERT INTO "Mtable" (oficina, observacao, codigo, dec, nome, sis, base, alt) 
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+      INSERT INTO "Mtable" (oficina, observacao, codigo, dec, nome, sis, base, alt, r_bsa_uid) 
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
       RETURNING *;
     `,
     values: [
@@ -233,6 +234,7 @@ async function createM(ordemInputValues) {
       ordemInputValues.sis,
       ordemInputValues.base,
       ordemInputValues.alt,
+      ordemInputValues.r_bsa_uid,
     ],
   });
 
@@ -242,8 +244,8 @@ async function createM(ordemInputValues) {
 async function createRBSA(ordemInputValues) {
   const result = await database.query({
     text: `
-      INSERT INTO "RBSA" (id, dec, r, codigo, nome, sis, alt, base) 
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+      INSERT INTO "RBSA" (id, dec, r, codigo, nome, sis, alt, base, r_bsa_uid) 
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
       RETURNING *;
     `,
     values: [
@@ -255,6 +257,7 @@ async function createRBSA(ordemInputValues) {
       ordemInputValues.sis,
       ordemInputValues.alt,
       ordemInputValues.base,
+      ordemInputValues.r_bsa_uid,
     ],
   });
 
@@ -1392,7 +1395,8 @@ async function getRJustBSA(codigo, r) {
             SUM(base) AS total_base,
             SUM(sis) AS total_sis,
             SUM(alt) AS total_alt,
-            array_agg(id) AS ids
+            array_agg(id) AS ids,
+            array_agg(r_bsa_uid) AS uids
           FROM "RBSA" 
           WHERE r = $2 AND codigo = $1
           GROUP BY dec;`,
@@ -1852,6 +1856,49 @@ async function archivePorR(r) {
   }
 }
 
+async function findCByRbsaIds(r, rbsaIds) {
+  if (!rbsaIds || rbsaIds.length === 0) {
+    return null;
+  }
+
+  const result = await database.query({
+    text: `SELECT * FROM "C"
+           WHERE r = $1 AND r_bsa_ids && $2
+           AND dtfim IS NULL
+           LIMIT 1;`,
+    values: [r, rbsaIds],
+  });
+  return result.rows[0];
+}
+
+async function updateCWithAddition(updatedData) {
+  const result = await database.query({
+    text: `
+      UPDATE "C"
+      SET
+        base = base + $1,
+        sis = sis + $2,
+        alt = alt + $3,
+        real = real + $4,
+        pix = pix + $5,
+        r_bsa_ids = array_cat(r_bsa_ids, $6)
+      WHERE id = $7
+      RETURNING *;
+    `,
+    values: [
+      updatedData.base || 0,
+      updatedData.sis || 0,
+      updatedData.alt || 0,
+      updatedData.real || 0,
+      updatedData.pix || 0,
+      updatedData.r_bsa_ids || [],
+      updatedData.id,
+    ],
+  });
+
+  return result;
+}
+
 const ordem = {
   archivePorR,
   finalizePorR,
@@ -1950,6 +1997,8 @@ const ordem = {
   verifyUserCredentials,
   getUsers,
   updateUser,
+  findCByRbsaIds,
+  updateCWithAddition,
 };
 
 export default ordem;
