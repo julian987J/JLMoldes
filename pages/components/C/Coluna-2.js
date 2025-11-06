@@ -133,10 +133,12 @@ const Coluna = ({ r }) => {
 
       const { type, payload } = lastMessage.data;
 
-      // --- Lida com atualizações na tabela PapelC (dados principais) ---
+      // --- Lida com atualizações via WebSocket ---
       if (
         payload &&
-        type.startsWith("PAPELC_") &&
+        (type === "PAPELC_NEW_ITEM" ||
+          type === "PAPELC_UPDATED_ITEM" ||
+          type === "PAPELC_FINALIZED_ITEM") &&
         String(payload.r) === String(r)
       ) {
         setDados((prevDados) => {
@@ -167,21 +169,19 @@ const Coluna = ({ r }) => {
                 }
               }
               break;
-            case "PAPELC_DELETED_ITEM":
-              if (itemIndex !== -1) {
-                newDados = newDados.filter(
-                  (item) => String(item.id) !== String(payload.id),
-                );
-              }
-              break;
           }
           if (editingId === payload.id) setEditingId(null);
           return newDados.sort((a, b) => new Date(b.data) - new Date(a.data));
         });
-      }
-
-      // --- Lida com atualizações na tabela Deve (dados 'exists') ---
-      if (
+      } else if (type === "PAPELC_DELETED_ITEM" && payload) {
+        setDados((prevDados) => {
+          const newDados = prevDados.filter(
+            (item) => String(item.id) !== String(payload.id),
+          );
+          if (editingId === payload.id) setEditingId(null);
+          return newDados;
+        });
+      } else if (
         (type === "DEVE_NEW_ITEM" || type === "DEVE_UPDATED_ITEM") &&
         payload &&
         String(payload.r) === String(r)
@@ -193,9 +193,8 @@ const Coluna = ({ r }) => {
 
             const pId = payload.id;
             const pCodigo = payload.codigo;
-            const pDeveId = payload.deveid; // Use deveid for Deve table
+            const pDeveId = payload.deveid;
 
-            // Try to find the item by deveid first
             if (pDeveId !== undefined) {
               itemIndex = newExists.findIndex(
                 (item) =>
@@ -203,13 +202,11 @@ const Coluna = ({ r }) => {
                   String(item.deveid) === String(pDeveId),
               );
             } else if (pId !== undefined) {
-              // Fallback to id if deveid is not present (less reliable for Deve)
               itemIndex = newExists.findIndex(
                 (item) =>
                   item.id !== undefined && String(item.id) === String(pId),
               );
             } else if (pCodigo !== undefined) {
-              // Fallback to codigo if neither id nor deveid is present
               itemIndex = newExists.findIndex(
                 (item) =>
                   item.codigo !== undefined &&
@@ -220,9 +217,8 @@ const Coluna = ({ r }) => {
             switch (type) {
               case "DEVE_NEW_ITEM":
                 if (itemIndex === -1) {
-                  newExists.push(payload); // Adiciona se realmente novo
+                  newExists.push(payload);
                 } else {
-                  // Se já existe (ex: mensagem duplicada ou chegou fora de ordem), atualiza
                   newExists[itemIndex] = {
                     ...newExists[itemIndex],
                     ...payload,
@@ -246,16 +242,16 @@ const Coluna = ({ r }) => {
             }
             return newExists.sort(
               (a, b) => new Date(b.data) - new Date(a.data),
-            ); // Ordena se necessário
+            );
           }
-          return prevExists; // Retorna o estado anterior se o payload for nulo (segurança)
+          return prevExists;
         });
       } else if (type === "DEVE_DELETED_ITEM" && payload) {
         setExists((prevExists) => {
           let newExists = [...prevExists];
-          const pId = payload.id; // Payload de DEVE_DELETED_ITEM pode não ter 'id' vindo do backend atual
-          const pCodigo = payload.codigo; // Backend envia 'codigo'
-          const pDeveId = payload.deveid; // Use deveid for Deve table
+          const pId = payload.id;
+          const pCodigo = payload.codigo;
+          const pDeveId = payload.deveid;
 
           if (pDeveId !== undefined) {
             newExists = newExists.filter(
@@ -273,16 +269,14 @@ const Coluna = ({ r }) => {
                   String(item.codigo) === String(pCodigo)
                 ),
             );
-          }
-          // Adicionado para robustez, caso o payload de deleção comece a enviar 'id' no futuro
-          else if (pId !== undefined) {
+          } else if (pId !== undefined) {
             newExists = newExists.filter(
               (item) =>
                 !(item.id !== undefined && String(item.id) === String(pId)),
             );
           }
 
-          return newExists.sort((a, b) => new Date(b.data) - new Date(a.data)); // Ordena se necessário
+          return newExists.sort((a, b) => new Date(b.data) - new Date(a.data));
         });
       }
 
