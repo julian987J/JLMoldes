@@ -1,11 +1,5 @@
 /* eslint-disable react-hooks/exhaustive-deps */
-import React, {
-  useEffect,
-  useState,
-  useCallback,
-  useRef,
-  useMemo,
-} from "react";
+import React, { useEffect, useState, useCallback, useRef } from "react";
 import Execute from "models/functions";
 import Use from "models/utils";
 import { useWebSocket } from "../../../contexts/WebSocketContext.js"; // Ajuste o caminho se necessário

@@ -183,7 +183,7 @@ const Coluna = ({ r }) => {
 
       lastProcessedTimestampRef.current = lastMessage.timestamp;
     }
-  }, [lastMessage, r, editingId, setDados, setExists]);
+  }, [lastMessage, r, memoizedFetchData]);
 
   const groupedResults = useMemo(() => {
     return dados.reduce((acc, item) => {

@@ -127,7 +127,7 @@ const Coluna = ({ r }) => {
 
       lastProcessedTimestampRef.current = lastMessage.timestamp;
     }
-  }, [lastMessage, r, editingId, setDados, setExists]); // Adicionado setDados e setExists
+  }, [lastMessage, r, fetchData]); // Adicionado setDados e setExists
 
   const groupedResults = useMemo(() => {
     return dados.reduce((acc, item) => {

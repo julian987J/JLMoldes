@@ -190,9 +190,6 @@ const Mcontent = ({ oficina, r }) => {
       Date.now().toString(36) +
       Math.random().toString(36).slice(2, 10).toUpperCase();
 
-    // Condição para separar os dados em duas tabelas
-    let hasInserted = false;
-
     // Se todos os valores forem 0, exibe o erro e interrompe a execução
     if (
       (!base || parseInt(base) === 0) &&
@@ -222,8 +219,6 @@ const Mcontent = ({ oficina, r }) => {
 
           if (!responseBase.ok)
             throw new Error("Erro ao enviar os dados para a tabela 'base'.");
-          await responseBase.json();
-          hasInserted = true; // Marca que pelo menos uma inserção foi feita
         } catch (error) {
           console.error("Erro ao enviar base:", error);
         }
@@ -250,7 +245,6 @@ const Mcontent = ({ oficina, r }) => {
           if (!responseSisAlt.ok)
             throw new Error("Erro ao enviar os dados para a tabela 'sis_alt'.");
           await responseSisAlt.json();
-          hasInserted = true; // Marca que pelo menos uma inserção foi feita
         } catch (error) {
           console.error("Erro ao enviar sis_alt:", error);
         }

@@ -75,7 +75,7 @@ const PlanilhaDiaria = ({ r, totalValores, plotterTotals }) => {
 
   useEffect(() => {
     if (lastMessage && lastMessage.id !== lastProcessedMessageIdRef.current) {
-      const { type, payload } = lastMessage.data;
+      const { type } = lastMessage.data;
 
       // Lista de tipos de mensagem que devem acionar a atualização de dados
       const relevantTypes = [
