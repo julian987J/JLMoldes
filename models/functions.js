@@ -627,7 +627,9 @@ async function receiveFromPagamentos(r) {
       console.warn("receiveFromPagamentos: 'r' parameter is missing.");
       return [];
     }
-    const response = await fetch(`/api/v1/tables/pagamentos?r=${r}`);
+    const response = await fetch(`/api/v1/tables/pagamentos?r=${r}`, {
+      cache: "no-store",
+    });
     if (!response.ok) {
       let errorMsg = `Error fetching pagamentos (Status: ${response.status})`;
       try {
@@ -647,7 +649,9 @@ async function receiveFromPagamentos(r) {
 }
 async function receiveFromDevo(r) {
   try {
-    const response = await fetch(`/api/v1/tables/devo?r=${r}`);
+    const response = await fetch(`/api/v1/tables/devo?r=${r}`, {
+      cache: "no-store",
+    });
     if (!response.ok) throw new Error("Erro ao carregar os dados");
     const data = await response.json();
     return Array.isArray(data.rows) ? data.rows : [];
@@ -743,7 +747,9 @@ async function receiveFromPapelCData(codigo, data) {
 
 async function receiveFromPapelC(r) {
   try {
-    const response = await fetch(`/api/v1/tables/c/papel?r=${r}`);
+    const response = await fetch(`/api/v1/tables/c/papel?r=${r}`, {
+      cache: "no-store",
+    });
     if (!response.ok) throw new Error("Erro ao carregar os dados");
     const data = await response.json();
     return Array.isArray(data.rows) ? data.rows : [];
@@ -1273,6 +1279,34 @@ async function removePagamentoById(id) {
   }
 }
 
+async function removePagamentosByRAndDateRange(r, startDate, endDate) {
+  try {
+    const response = await fetch(
+      `/api/v1/tables/pagamentos?r=${r}&startDate=${encodeURIComponent(startDate)}&endDate=${encodeURIComponent(endDate)}`,
+      {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+      },
+    );
+
+    if (!response.ok) {
+      let errorMsg = `Erro ao excluir pagamentos (Status: ${response.status})`;
+      try {
+        const errorData = await response.json();
+        errorMsg = errorData.error || errorData.message || errorMsg;
+      } catch (parseError) {
+        // Ignore if body is not valid JSON
+      }
+      throw new Error(errorMsg);
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error(`Erro em removePagamentosByRAndDateRange:`, error);
+    throw error;
+  }
+}
+
 async function deleteAllPagamentos() {
   try {
     const response = await fetch(`/api/v1/tables/pagamentos`, {
@@ -1367,6 +1401,7 @@ async function receiveFromC(r) {
     // Este endpoint agora busca todos os itens, ativos e finalizados.
     const response = await fetch(
       `/api/v1/tables/c?r=${r}&includeFinished=true`,
+      { cache: "no-store" },
     );
     if (!response.ok) throw new Error("Erro ao carregar todos os dados de C");
     const data = await response.json();
@@ -1504,6 +1539,7 @@ const execute = {
   updateDevo,
   removeDevoById,
   removePagamentoById,
+  removePagamentosByRAndDateRange,
   removeTemp,
   deleteAllPagamentos,
   loginUser,

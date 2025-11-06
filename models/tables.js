@@ -1588,6 +1588,22 @@ export async function deletePagamentosByR(rValue) {
   return result;
 }
 
+export async function deletePagamentosByRAndDateRange(
+  rValue,
+  startDate,
+  endDate,
+) {
+  const result = await database.query({
+    text: `DELETE FROM "Pagamentos"
+           WHERE r = $1
+           AND DATE(data) >= $2::date
+           AND DATE(data) <= $3::date
+           RETURNING id, r, data;`,
+    values: [rValue, startDate, endDate],
+  });
+  return result;
+}
+
 async function verifyUserCredentials(username, password) {
   try {
     const result = await database.query({
@@ -1973,6 +1989,7 @@ const ordem = {
   deleteDevoID,
   deletePagamentoById,
   deletePagamentosByR,
+  deletePagamentosByRAndDateRange,
   deleteTemp,
   deleteAllPagamentos,
   updateDeveCalculadora,

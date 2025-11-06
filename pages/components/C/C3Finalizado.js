@@ -195,6 +195,64 @@ const Coluna3 = ({ r }) => {
     });
   };
 
+  const handleArchiveAllFinalizado = async () => {
+    try {
+      // Buscar dados de TODAS as três tabelas finalizadas
+      const [cData, papelCData, plotterCData] = await Promise.all([
+        Execute.receiveFromC(r),
+        Execute.receiveFromPapelC(r),
+        Execute.receiveFromPlotterC(r),
+      ]);
+
+      const cutoffDate = new Date("2025-01-01");
+
+      // Filtrar apenas os dados finalizados (dtfim >= 2025-01-01)
+      const cFinalizados = Array.isArray(cData)
+        ? cData.filter(
+            (item) => item.dtfim && new Date(item.dtfim) >= cutoffDate,
+          )
+        : [];
+
+      const papelCFinalizados = Array.isArray(papelCData)
+        ? papelCData.filter(
+            (item) => item.dtfim && new Date(item.dtfim) >= cutoffDate,
+          )
+        : [];
+
+      const plotterCFinalizados = Array.isArray(plotterCData)
+        ? plotterCData.filter(
+            (item) => item.dtfim && new Date(item.dtfim) >= cutoffDate,
+          )
+        : [];
+
+      // Combinar todas as datas de dtfim
+      const allDates = [
+        ...cFinalizados.map((item) => new Date(item.dtfim)),
+        ...papelCFinalizados.map((item) => new Date(item.dtfim)),
+        ...plotterCFinalizados.map((item) => new Date(item.dtfim)),
+      ];
+
+      if (allDates.length === 0) {
+        return;
+      }
+
+      const oldestDate = new Date(Math.min(...allDates));
+      const newestDate = new Date(Math.max(...allDates));
+
+      // Formatar datas para ISO string (YYYY-MM-DD)
+      const startDate = oldestDate.toISOString().split("T")[0];
+      const endDate = newestDate.toISOString().split("T")[0];
+
+      // PRIMEIRO: Deletar pagamentos do range de datas
+      await Execute.removePagamentosByRAndDateRange(r, startDate, endDate);
+
+      // DEPOIS: Arquivar os registros (muda dtfim para 2000)
+      await Execute.archiveAllFinalizado(r);
+    } catch (error) {
+      console.error("Erro ao arquivar e deletar pagamentos:", error);
+    }
+  };
+
   if (loading) {
     return <div className="text-center p-4">Carregando...</div>;
   }
@@ -250,7 +308,7 @@ const Coluna3 = ({ r }) => {
             <th colSpan={2} rowSpan={2} className="bg-error text-center">
               <button
                 className="btn btn-xs btn-error"
-                onClick={() => Execute.archiveAllFinalizado(r)}
+                onClick={handleArchiveAllFinalizado}
               >
                 EXCLUIR
               </button>
@@ -471,7 +529,7 @@ const Coluna3 = ({ r }) => {
               </tr>
             );
           })}
-        </tbody>{" "}
+        </tbody>
       </table>
     </div>
   );

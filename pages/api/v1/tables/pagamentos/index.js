@@ -48,7 +48,7 @@ async function getHandlerPagamentos(request, response) {
 }
 
 async function deleteHandlerPagamentos(request, response) {
-  const { r } = request.query;
+  const { r, startDate, endDate } = request.query;
   const { id } = request.body; // Check for ID in the body
   let deletionResult;
   let notificationType;
@@ -71,6 +71,30 @@ async function deleteHandlerPagamentos(request, response) {
           .status(404)
           .json({ error: `Pagamento com ID ${id} não encontrado.` });
       }
+    } else if (
+      startDate &&
+      endDate &&
+      typeof r !== "undefined" &&
+      r !== null &&
+      r !== ""
+    ) {
+      // Deletar pagamentos por range de datas para um 'r' específico
+      deletionResult = await ordem.deletePagamentosByRAndDateRange(
+        r,
+        startDate,
+        endDate,
+      );
+      notificationType = "PAGAMENTOS_DATE_RANGE_CLEARED";
+      notificationPayload = {
+        r: r,
+        startDate,
+        endDate,
+        count: deletionResult.rowCount,
+      };
+      response.status(200).json({
+        message: `Pagamentos para R${r} entre ${startDate} e ${endDate} deletados com sucesso.`,
+        count: deletionResult.rowCount,
+      });
     } else if (typeof r !== "undefined" && r !== null && r !== "") {
       // Deletar pagamentos para um 'r' específico
       deletionResult = await ordem.deletePagamentosByR(r); // Assumes deletePagamentosByR is in models/tables.js

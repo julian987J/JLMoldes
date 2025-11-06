@@ -1,5 +1,5 @@
 import Execute from "models/functions";
-import { useState, useEffect, useId } from "react";
+import { useState, useEffect, useId, useCallback } from "react";
 import dynamic from "next/dynamic";
 import { useWebSocket } from "../../../contexts/WebSocketContext.js"; // Import WebSocket context
 import Use from "models/utils.js";
@@ -253,6 +253,20 @@ const Calculadora = ({
       onCodigoChange("");
     }
   };
+
+  const resetForm = useCallback(() => {
+    setPix("");
+    onPlusChange(0);
+    setReal("");
+    setComentario("");
+    setPerdida("");
+    setTrocoReal("");
+    onNomeChange("");
+    onCodigoChange("");
+    onValuesChange(Array(28).fill(""));
+    setGastoOficina(""); // Resetar também estes campos
+    setValorOficina(""); // Resetar também estes campos
+  }, [onPlusChange, onValuesChange, onNomeChange, onCodigoChange]);
 
   // Calcula a soma bruta dos valores (novo cálculo)
   const sumValues = values.reduce((sum, current) => {
@@ -710,7 +724,11 @@ const Calculadora = ({
     }
   };
 
-  const sendToCAndUpdateR = async (value) => {
+  const sendToCAndUpdateR = async (
+    value,
+    currentPixValue = null,
+    currentRealValue = null,
+  ) => {
     await Execute.removeDevo(codigo);
     const currentTotal = decGroups.reduce(
       (sum, g) => sum + g.base + g.sis + g.alt,
@@ -755,8 +773,13 @@ const Calculadora = ({
       }));
       await handleSave(novosDados);
 
-      let remainingPix = roundedPix;
-      let remainingReal = roundedReal;
+      // Usar valores passados como parâmetro se fornecidos, caso contrário usar os valores calculados
+      const pixToUse = currentPixValue !== null ? currentPixValue : roundedPix;
+      const realToUse =
+        currentRealValue !== null ? currentRealValue : roundedReal;
+
+      let remainingPix = pixToUse;
+      let remainingReal = realToUse;
 
       for (const group of decGroups) {
         const paidAmount = {
@@ -947,10 +970,20 @@ const Calculadora = ({
         }
 
         if (existsMap) {
-          const values = totalGeral - Number(total) - pixMaisReal;
-          await sendToCAndUpdateR(values);
-          const numPix = roundedPix;
-          const numReal = roundedReal;
+          // IMPORTANTE: Recalcular com valores ATUAIS do estado
+          const currentRoundedPix = roundToHalf(Number(pix) || 0);
+          const currentRoundedReal = roundToHalf(Number(real) || 0);
+          const currentPixMaisReal = currentRoundedPix + currentRoundedReal;
+
+          const values = totalGeral - Number(total) - currentPixMaisReal;
+          await sendToCAndUpdateR(
+            values,
+            currentRoundedPix,
+            currentRoundedReal,
+          );
+
+          const numPix = currentRoundedPix;
+          const numReal = currentRoundedReal;
 
           if (numPix > 0 || numReal > 0) {
             let finalPix = numPix;
@@ -1005,8 +1038,12 @@ const Calculadora = ({
         console.log("Caiu em foi tudo pago Papel e R.");
         //
       } else if (valorDeve && !trocoValue) {
-        const numPix = roundedPix;
-        const numReal = roundedReal;
+        // IMPORTANTE: Recalcular com valores ATUAIS do estado
+        const currentRoundedPix = roundToHalf(Number(pix) || 0);
+        const currentRoundedReal = roundToHalf(Number(real) || 0);
+
+        const numPix = currentRoundedPix;
+        const numReal = currentRoundedReal;
 
         if (numPix > 0 || numReal > 0) {
           let finalPix = numPix;
@@ -1301,8 +1338,13 @@ const Calculadora = ({
         await handleUpdatePapel();
       }
 
-      const numPix = roundedPix;
-      const numReal = roundedReal;
+      // IMPORTANTE: Recalcular roundedPix e roundedReal AQUI dentro do handleSubmit
+      // para garantir que estamos usando os valores mais RECENTES do estado
+      const currentRoundedPix = roundToHalf(Number(pix) || 0);
+      const currentRoundedReal = roundToHalf(Number(real) || 0);
+
+      const numPix = currentRoundedPix;
+      const numReal = currentRoundedReal;
 
       if (numPix > 0 || numReal > 0) {
         let finalPix = numPix;
@@ -1330,6 +1372,16 @@ const Calculadora = ({
             }
           }
 
+          console.log("💰 Calculadora - Enviando para Pagamentos:", {
+            pixOriginal: pix,
+            realOriginal: real,
+            pixArredondado: currentRoundedPix,
+            realArredondado: currentRoundedReal,
+            pixFinal: round(pixParaPagamento),
+            realFinal: round(realParaPagamento),
+            valorDevo: valorDevo,
+          });
+
           await Execute.sendToPagamentos({
             nome,
             r,
@@ -1340,15 +1392,7 @@ const Calculadora = ({
         }
       }
 
-      setPix("");
-      onPlusChange(0);
-      setReal("");
-      setComentario("");
-      setPerdida("");
-      setTrocoReal("");
-      onNomeChange("");
-      onCodigoChange("");
-      onValuesChange(Array(28).fill(""));
+      resetForm();
     } catch (error) {
       console.error("Erro ao salvar:", error);
       alert("Erro ao salvar os dados!");
@@ -1388,10 +1432,7 @@ const Calculadora = ({
 
     try {
       await Execute.sendToTemp(dataToSend);
-      onValuesChange(Array(28).fill(""));
-      onPlusChange(0);
-      onNomeChange(""); // Limpa o campo nome
-      onCodigoChange(""); // Limpa o campo codigo
+      resetForm();
       console.log("Dados pendentes salvos com sucesso!");
     } catch (error) {
       console.error("Erro ao salvar dados pendentes:", error);
@@ -1446,14 +1487,7 @@ const Calculadora = ({
         );
 
         // Clear form after successful operation
-        setPix("");
-        onPlusChange(0);
-        setReal("");
-        setComentario("");
-        setPerdida("");
-        onNomeChange("");
-        onCodigoChange("");
-        onValuesChange(Array(28).fill(""));
+        resetForm();
       } else {
         setShowError(true);
       }
