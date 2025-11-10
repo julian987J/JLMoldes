@@ -31,6 +31,8 @@ const Rcontent = ({
   const [bsaTotals, setBsaTotals] = useState({ total1M: 0, total2M: 0 });
   const [deveTotals, setDeveTotals] = useState({ total1M: 0, total2M: 0 });
   const [plotterTotals, setPlotterTotals] = useState(0);
+  const [countM1, setCountM1] = useState(0);
+  const [countUtilTotal, setCountUtilTotal] = useState(0);
   const [combined1MTotal, setCombined1MTotal] = useState(0);
   const [combined2MTotal, setCombined2MTotal] = useState(0);
 
@@ -140,8 +142,13 @@ const Rcontent = ({
     setDeveTotals(totals);
   }, []);
 
-  const handlePlotterTotalsChange = useCallback((totals) => {
+  const handlePlotterTotalsChange = useCallback((totals, count) => {
     setPlotterTotals(totals);
+    setCountM1(count || 0);
+  }, []);
+
+  const handleCountUtilChange = useCallback((count) => {
+    setCountUtilTotal(count || 0);
   }, []);
 
   useEffect(() => {
@@ -163,6 +170,7 @@ const Rcontent = ({
           r={r}
           totalValores={totalValores}
           plotterTotals={plotterTotals}
+          onCountUtilChange={handleCountUtilChange}
         />
         <div className="col-span-6">
           <PlotterTotals r={r} onTotalsChange={handlePlotterTotalsChange} />
@@ -198,6 +206,8 @@ const Rcontent = ({
             onValuesChange={handleValuesChange}
             data={data}
             isPendente={!!selectedPendenteItem}
+            countM1={countM1}
+            countUtilGreaterThanZero={countUtilTotal}
           />
           <div className="mt-1">
             <PlotterStatus r={r} plotterNome="P01" />

@@ -152,7 +152,7 @@ const BSA = ({ codigo, r, onTotalsChange }) => {
 
   return (
     <div className="overflow-x-auto rounded-box border border-warning bg-base-100">
-      <table className="table table-xs mb-80">
+      <table className="table table-xs mb-90">
         <thead>
           <tr>
             <th className="hidden">ID</th>

@@ -171,7 +171,7 @@ const Deve = ({ codigo, r, onTotalsChange, total1M, total2M }) => {
 
   return (
     <div className="overflow-x-auto rounded-box border border-neutral-content bg-base-100">
-      <table className="table table-xs mb-71">
+      <table className="table table-xs mb-90">
         <thead>
           <tr className="grid grid-cols-12">
             <th className="col-span-3">Data</th>

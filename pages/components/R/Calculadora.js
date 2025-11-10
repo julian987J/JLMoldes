@@ -32,6 +32,8 @@ const Calculadora = ({
   nome,
   onCodigoChange,
   onNomeChange,
+  countM1 = 0,
+  countUtilGreaterThanZero = 0,
 }) => {
   const ErrorComponent = dynamic(() => import("../Errors.js"), { ssr: false });
   const [showError, setShowError] = useState(false);
@@ -1707,6 +1709,18 @@ const Calculadora = ({
       </div>
       <div className="badge badge-accent w-full badge-sm whitespace-normal h-auto text-black">
         {comentarioCadastro}
+      </div>
+      <div
+        className={`badge w-full py-3 mt-1 ${
+          countM1 === countUtilGreaterThanZero ? "badge-success" : "badge-error"
+        }`}
+      >
+        <span className="font-bold">
+          {countM1 === countUtilGreaterThanZero ? "Correto" : "Pendente"}
+        </span>
+        <span className="ml-2 text-xs">
+          ({countM1}/{countUtilGreaterThanZero})
+        </span>
       </div>
 
       <form onSubmit={handleSubmit} autoComplete="nope">

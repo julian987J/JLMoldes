@@ -13,7 +13,12 @@ import { useAuth } from "../../../contexts/AuthContext.js";
 const sortDadosByDate = (dataArray) =>
   [...dataArray].sort((a, b) => new Date(b.data) - new Date(a.data));
 
-const PlanilhaDiaria = ({ r, totalValores, plotterTotals }) => {
+const PlanilhaDiaria = ({
+  r,
+  totalValores,
+  plotterTotals,
+  onCountUtilChange,
+}) => {
   const [pagamentosDados, setPagamentosDados] = useState([]);
   const [metragemDados, setMetragemDados] = useState([]);
   const [cDados, setCDados] = useState([]);
@@ -278,6 +283,17 @@ const PlanilhaDiaria = ({ r, totalValores, plotterTotals }) => {
 
     return combined;
   }, [pagamentosDados, metragemDados, cDados]);
+
+  const totalCountUtilGreaterThanZero = useMemo(() => {
+    return metragemDados.filter((item) => (parseFloat(item.util) || 0) > 0)
+      .length;
+  }, [metragemDados]);
+
+  useEffect(() => {
+    if (onCountUtilChange) {
+      onCountUtilChange(totalCountUtilGreaterThanZero);
+    }
+  }, [totalCountUtilGreaterThanZero, onCountUtilChange]);
 
   const RightTotalValue = (totalValores + plotterTotals) / 250;
 

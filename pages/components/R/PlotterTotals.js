@@ -118,17 +118,17 @@ const PlotterTotals = ({ r, onTotalsChange }) => {
     return acc + m2Value;
   }, 0);
 
-  useEffect(() => {
-    if (onTotalsChange) {
-      onTotalsChange(totalM2_P01 + totalM2_P02);
-    }
-  }, [totalM2_P01, totalM2_P02, onTotalsChange]);
-
   const totalP01 = totalM1_P01 + totalM2_P01;
   const totalP02 = totalM1_P02 + totalM2_P02;
 
   const countM1 = dados.filter((item) => parseFloat(item.sim) > 0).length;
   const countM2 = dados.filter((item) => parseFloat(item.nao) > 0).length;
+
+  useEffect(() => {
+    if (onTotalsChange) {
+      onTotalsChange(totalM2_P01 + totalM2_P02, countM1);
+    }
+  }, [totalM2_P01, totalM2_P02, countM1, onTotalsChange]);
 
   const groupedConfirmedData = useMemo(() => {
     const cutoffDate = new Date("2025-01-01");
