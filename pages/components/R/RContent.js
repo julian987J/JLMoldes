@@ -10,6 +10,7 @@ import Aviso from "./Aviso.js";
 import ValoresColuna from "./ValoresColuna.js";
 import PlotterStatus from "./PlotterStatus.js";
 import PlotterTotals from "./PlotterTotals.js";
+import Semanas from "./Semanas.js";
 
 const Rcontent = ({
   codigoExterno,
@@ -18,8 +19,6 @@ const Rcontent = ({
   onCombinedTotalsChange,
 }) => {
   const tablesToSearch = useRef(["R", "deve", "devo", "cadastro"]);
-
-  // Se o codigoExterno for passado, não alteramos o estado de codigo
   const [codigo, setCodigo] = useState(codigoExterno || "");
   const [nome, setNome] = useState(nomeExterno || "");
   const [plusCalculadora, setPlusCalculadora] = useState(null);
@@ -208,6 +207,9 @@ const Rcontent = ({
           </div>
           <div className="mt-1">
             <Devo codigo={codigo} r={r} />
+          </div>
+          <div className="mt-1">
+            <Semanas r={r} />
           </div>
         </div>
       </div>

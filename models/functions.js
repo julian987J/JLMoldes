@@ -469,6 +469,31 @@ async function sendToPagamentos(itemData) {
   }
 }
 
+async function sendToSemanal(itemData) {
+  try {
+    const response = await fetch("/api/v1/tables/semanal", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(itemData),
+    });
+
+    if (!response.ok) {
+      let errorMsg = `Erro ao criar registro em Semanal (Status: ${response.status})`;
+      try {
+        const errorData = await response.json();
+        errorMsg = errorData.error || errorData.message || errorMsg;
+      } catch (parseError) {
+        // Ignore if body is not valid JSON
+      }
+      throw new Error(errorMsg);
+    }
+    return await response.json();
+  } catch (error) {
+    console.error("Erro no sendToSemanal:", error);
+    throw error;
+  }
+}
+
 async function sendToTemp(itemData) {
   try {
     const response = await fetch("/api/v1/tables/temp", {
@@ -647,6 +672,34 @@ async function receiveFromPagamentos(r) {
     return [];
   }
 }
+
+async function receiveFromSemanal(r) {
+  try {
+    if (typeof r === "undefined" || r === null) {
+      console.warn("receiveFromSemanal: 'r' parameter is missing.");
+      return [];
+    }
+    const response = await fetch(`/api/v1/tables/semanal?r=${r}`, {
+      cache: "no-store",
+    });
+    if (!response.ok) {
+      let errorMsg = `Error fetching semanal data (Status: ${response.status})`;
+      try {
+        const errorData = await response.json();
+        errorMsg = errorData.error || errorData.message || errorMsg;
+      } catch (e) {
+        // ignore if not json
+      }
+      throw new Error(errorMsg);
+    }
+    const data = await response.json();
+    return Array.isArray(data) ? data : [];
+  } catch (error) {
+    console.error(`Error fetching semanal for r=${r}:`, error);
+    return [];
+  }
+}
+
 async function receiveFromDevo(r) {
   try {
     const response = await fetch(`/api/v1/tables/devo?r=${r}`, {
@@ -1489,6 +1542,7 @@ const execute = {
   sendToPapel,
   sendToPapelC,
   sendToPagamentos,
+  sendToSemanal,
   receiveFromTemp,
   sendToTemp,
   receiveFromC,
@@ -1518,6 +1572,7 @@ const execute = {
   receiveFromDevoJustValor,
   receiveFromNota,
   receiveFromPagamentos,
+  receiveFromSemanal,
   receiveFromR,
   receiveFromRJustBSA,
   receiveAllCad, // Added

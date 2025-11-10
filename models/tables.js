@@ -374,6 +374,23 @@ async function createPagamento(pagamentoData) {
   return result; // The handler expects result.rows[0]
 }
 
+async function createSemanal(semanalData) {
+  const result = await database.query({
+    text: `
+      INSERT INTO "semanal" (data, real, pix, r)
+      VALUES ($1, $2, $3, $4)
+      RETURNING *;
+    `,
+    values: [
+      semanalData.data,
+      parseFloat(semanalData.real) || 0,
+      parseFloat(semanalData.pix) || 0,
+      semanalData.r,
+    ],
+  });
+  return result;
+}
+
 async function updateAltSis(updatedData) {
   const { id, r1, r2, r3, r4, ...otherFields } = updatedData; // Desestruture r1, r2, r3
 
@@ -1423,6 +1440,14 @@ async function getPagamentos(r) {
   return result;
 }
 
+async function getSemanal(r) {
+  const result = await database.query({
+    text: `SELECT * FROM "semanal" WHERE r = $1 ORDER BY data DESC;`,
+    values: [r],
+  });
+  return result;
+}
+
 async function getComentario(codigo) {
   const result = await database.query({
     // Seleciona todas as colunas da tabela "cadastro" onde o código corresponde.
@@ -1761,6 +1786,12 @@ async function finalizePorR(r) {
     };
     const plotterCResult = await client.query(updatePlotterCQuery);
 
+    const updateSemanalQuery = {
+      text: `UPDATE "semanal" SET "dtfim" = NOW() WHERE r = $1 AND "dtfim" IS NULL RETURNING *;`,
+      values: [r],
+    };
+    const semanalResult = await client.query(updateSemanalQuery);
+
     await client.query("COMMIT");
 
     if (cResult.rows.length > 0) {
@@ -1790,10 +1821,20 @@ async function finalizePorR(r) {
       });
     }
 
+    if (semanalResult.rows.length > 0) {
+      semanalResult.rows.forEach((row) => {
+        notifyWebSocketServer({
+          type: "SEMANAL_FINALIZED_ITEM",
+          payload: row,
+        });
+      });
+    }
+
     return {
       c: cResult.rows,
       papelC: papelCResult.rows,
       plotterC: plotterCResult.rows,
+      semanal: semanalResult.rows,
     };
   } catch (error) {
     await client.query("ROLLBACK");
@@ -1915,7 +1956,37 @@ async function updateCWithAddition(updatedData) {
   return result;
 }
 
+async function deleteSemanalByPeriod(r, periodKey) {
+  let query;
+  const values = [r];
+
+  if (periodKey === "null") {
+    query = {
+      text: `DELETE FROM "semanal" WHERE r = $1 AND dtfim IS NULL RETURNING *;`,
+      values: values,
+    };
+  } else {
+    values.push(periodKey);
+    query = {
+      text: `DELETE FROM "semanal" WHERE r = $1 AND dtfim = $2 RETURNING *;`,
+      values: values,
+    };
+  }
+
+  const result = await database.query(query);
+
+  if (result.rows.length > 0) {
+    notifyWebSocketServer({
+      type: "SEMANAL_PERIOD_DELETED",
+      payload: { r, periodKey },
+    });
+  }
+
+  return result.rows;
+}
+
 const ordem = {
+  deleteSemanalByPeriod,
   archivePorR,
   finalizePorR,
   getPlotterC,
@@ -1938,6 +2009,7 @@ const ordem = {
   createPapelC,
   createTemp,
   createPagamento,
+  createSemanal,
   getTemp,
   getComentario,
   getPessoal,
@@ -1972,6 +2044,7 @@ const ordem = {
   getDevo,
   getDevoJustValor,
   getPagamentos,
+  getSemanal,
   deleteC,
   deleteNota,
   deletePapel,

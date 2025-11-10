@@ -1459,6 +1459,13 @@ const Calculadora = ({
             pix: round(pixParaPagamento),
             real: round(realParaPagamento),
           });
+
+          await Execute.sendToSemanal({
+            r,
+            data: Use.NowData(),
+            pix: round(pixParaPagamento),
+            real: round(realParaPagamento),
+          });
         }
       }
 
