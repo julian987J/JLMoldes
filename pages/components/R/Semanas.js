@@ -77,9 +77,7 @@ const Semanas = ({ r }) => {
 
   const groupedByPeriod = useMemo(() => {
     const periods = semanalDados.reduce((acc, item) => {
-      const periodKey = item.dtfim
-        ? new Date(item.dtfim).toISOString().split("T")[0]
-        : "null";
+      const periodKey = item.bobina || "null";
       if (!acc[periodKey]) {
         acc[periodKey] = [];
       }
@@ -112,7 +110,7 @@ const Semanas = ({ r }) => {
     return Object.keys(groupedByPeriod).sort((a, b) => {
       if (a === "null") return -1;
       if (b === "null") return 1;
-      return new Date(b) - new Date(a);
+      return a.localeCompare(b);
     });
   }, [groupedByPeriod]);
 
@@ -136,9 +134,7 @@ const Semanas = ({ r }) => {
             className="overflow-x-auto rounded-box border border-success bg-base-100 mt-1"
           >
             <h3 className="text-center font-bold p-1">
-              {periodKey === "null"
-                ? "Lançamentos Atuais"
-                : `Fechamento: ${periodKey}`}
+              {periodKey === "null" ? "Lançamentos Atuais" : `Bobina Fechada`}
             </h3>
             <table className="table table-xs">
               <tbody>

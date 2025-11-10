@@ -9,7 +9,7 @@ router.post(postHandler);
 export default router.handler(controller.errorHandlers);
 
 async function postHandler(request, response) {
-  const { r } = request.body;
+  const { r, bobina } = request.body;
 
   if (!r) {
     return response
@@ -17,6 +17,9 @@ async function postHandler(request, response) {
       .json({ error: "O valor de 'r' é obrigatório." });
   }
 
-  const result = await ordem.finalizePorR(r);
+  const finalBobina =
+    bobina || `bobina_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
+
+  const result = await ordem.finalizePorR(r, finalBobina);
   return response.status(200).json(result);
 }

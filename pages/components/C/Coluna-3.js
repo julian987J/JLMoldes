@@ -356,7 +356,7 @@ const Coluna3 = ({ r }) => {
         const response = await fetch("/api/v1/tables/c/plotter/finalizar", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ r }),
+          body: JSON.stringify({ r, bobina: oldestPapel.gastos }),
         });
 
         if (!response.ok) {

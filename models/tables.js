@@ -1763,7 +1763,7 @@ async function swapSimNaoPlotterC(id) {
   return result;
 }
 
-async function finalizePorR(r) {
+async function finalizePorR(r, bobina) {
   const client = await database.getNewClient();
   try {
     await client.query("BEGIN");
@@ -1787,8 +1787,8 @@ async function finalizePorR(r) {
     const plotterCResult = await client.query(updatePlotterCQuery);
 
     const updateSemanalQuery = {
-      text: `UPDATE "semanal" SET "dtfim" = NOW() WHERE r = $1 AND "dtfim" IS NULL RETURNING *;`,
-      values: [r],
+      text: `UPDATE "semanal" SET "bobina" = $2 WHERE r = $1 AND "bobina" IS NULL RETURNING *;`,
+      values: [r, bobina],
     };
     const semanalResult = await client.query(updateSemanalQuery);
 
@@ -1962,13 +1962,13 @@ async function deleteSemanalByPeriod(r, periodKey) {
 
   if (periodKey === "null") {
     query = {
-      text: `DELETE FROM "semanal" WHERE r = $1 AND dtfim IS NULL RETURNING *;`,
+      text: `DELETE FROM "semanal" WHERE r = $1 AND bobina IS NULL RETURNING *;`,
       values: values,
     };
   } else {
     values.push(periodKey);
     query = {
-      text: `DELETE FROM "semanal" WHERE r = $1 AND dtfim = $2 RETURNING *;`,
+      text: `DELETE FROM "semanal" WHERE r = $1 AND bobina = $2 RETURNING *;`,
       values: values,
     };
   }
