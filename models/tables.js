@@ -1985,6 +1985,58 @@ async function deleteSemanalByPeriod(r, periodKey) {
   return result.rows;
 }
 
+async function createTContentAno(anoData) {
+  const result = await database.query({
+    text: `
+      INSERT INTO "TContentAno" (ano, r, oficina, papel_data, despesas_data, encaixes_data, bobinas_data)
+      VALUES ($1, $2, $3, $4, $5, $6, $7)
+      RETURNING *;
+    `,
+    values: [
+      anoData.ano,
+      anoData.r,
+      anoData.oficina,
+      JSON.stringify(anoData.papel_data),
+      JSON.stringify(anoData.despesas_data),
+      JSON.stringify(anoData.encaixes_data),
+      JSON.stringify(anoData.bobinas_data),
+    ],
+  });
+
+  if (result.rows.length > 0) {
+    await notifyWebSocketServer({
+      type: "TCONTENT_ANO_NEW_ITEM",
+      payload: result.rows[0],
+    });
+  }
+
+  return result;
+}
+
+async function getTContentAno(r, oficina) {
+  const result = await database.query({
+    text: `SELECT id, ano, r, oficina, created_at FROM "TContentAno" WHERE r = $1 AND oficina = $2 ORDER BY ano DESC;`,
+    values: [r, oficina],
+  });
+  return result.rows;
+}
+
+async function getTContentAnoByYear(ano, r, oficina) {
+  const result = await database.query({
+    text: `SELECT * FROM "TContentAno" WHERE ano = $1 AND r = $2 AND oficina = $3;`,
+    values: [ano, r, oficina],
+  });
+  return result.rows[0];
+}
+
+async function checkTContentAnoExists(ano, r, oficina) {
+  const result = await database.query({
+    text: `SELECT EXISTS(SELECT 1 FROM "TContentAno" WHERE ano = $1 AND r = $2 AND oficina = $3) AS exists;`,
+    values: [ano, r, oficina],
+  });
+  return result.rows[0].exists;
+}
+
 const ordem = {
   deleteSemanalByPeriod,
   archivePorR,
@@ -2088,6 +2140,10 @@ const ordem = {
   updateUser,
   findCByRbsaIds,
   updateCWithAddition,
+  createTContentAno,
+  getTContentAno,
+  getTContentAnoByYear,
+  checkTContentAnoExists,
 };
 
 export default ordem;
