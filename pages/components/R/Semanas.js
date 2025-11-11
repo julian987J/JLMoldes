@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useMemo, useCallback } from "react";
 import Execute from "models/functions";
 import { useWebSocket } from "../../../contexts/WebSocketContext";
+import { useAuth } from "../../../contexts/AuthContext";
 
 const getStartOfWeek = (date) => {
   const d = new Date(date);
@@ -13,6 +14,8 @@ const Semanas = ({ r }) => {
   const [semanalDados, setSemanalDados] = useState([]);
   const [loading, setLoading] = useState(true);
   const { lastMessage } = useWebSocket();
+  const { user } = useAuth();
+  const isAdmin = user && user.role === "admin";
 
   const fetchData = useCallback(async () => {
     if (typeof r === "undefined" || r === null) return;
@@ -128,27 +131,35 @@ const Semanas = ({ r }) => {
         const weeklyTotals = groupedByPeriod[periodKey];
         if (weeklyTotals.length === 0) return null;
 
+        if (!isAdmin && periodKey !== "null") {
+          return null;
+        }
+
         return (
           <div
             key={periodKey}
             className="overflow-x-auto rounded-box border border-success bg-base-100 mt-1"
           >
             <h3 className="text-center font-bold p-1">
-              {periodKey === "null" ? "Lançamentos Atuais" : `Bobina Fechada`}
+              {isAdmin && periodKey !== "null"
+                ? `Bobina Fechada`
+                : "Lançamentos Atuais"}
             </h3>
             <table className="table table-xs">
               <tbody>
-                <tr>
-                  <th className="bg-primary/30 text-primary">Pix:</th>
-                  {weeklyTotals.map((week, index) => (
-                    <td
-                      key={`pix-${periodKey}-${index}`}
-                      className="text-center"
-                    >
-                      {week.pix.toFixed(2)}
-                    </td>
-                  ))}
-                </tr>
+                {isAdmin && (
+                  <tr>
+                    <th className="bg-primary/30 text-primary">Pix:</th>
+                    {weeklyTotals.map((week, index) => (
+                      <td
+                        key={`pix-${periodKey}-${index}`}
+                        className="text-center"
+                      >
+                        {week.pix.toFixed(2)}
+                      </td>
+                    ))}
+                  </tr>
+                )}
                 <tr>
                   <th className="bg-secondary/30 text-secondary">Real:</th>
                   {weeklyTotals.map((week, index) => (
@@ -164,24 +175,30 @@ const Semanas = ({ r }) => {
                   <td colSpan={weeklyTotals.length + 1} className="bg-base-200">
                     <div className="flex items-center justify-between px-2">
                       <div className="text-center flex-1 text-lg font-bold">
-                        <span className="text-primary mr-2">
-                          {weeklyTotals
-                            .reduce((sum, week) => sum + week.pix, 0)
-                            .toFixed(2)}
-                        </span>
-                        <span className="text-base-content mx-2">|</span>
+                        {isAdmin && (
+                          <>
+                            <span className="text-primary mr-2">
+                              {weeklyTotals
+                                .reduce((sum, week) => sum + week.pix, 0)
+                                .toFixed(2)}
+                            </span>
+                            <span className="text-base-content mx-2">|</span>
+                          </>
+                        )}
                         <span className="text-secondary ml-2">
                           {weeklyTotals
                             .reduce((sum, week) => sum + week.real, 0)
                             .toFixed(2)}
                         </span>
                       </div>
-                      <button
-                        className="btn btn-xs btn-outline btn-error ml-2"
-                        onClick={() => handleDeletePeriod(periodKey)}
-                      >
-                        Excluir
-                      </button>
+                      {isAdmin && (
+                        <button
+                          className="btn btn-xs btn-outline btn-error ml-2"
+                          onClick={() => handleDeletePeriod(periodKey)}
+                        >
+                          Excluir
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>
