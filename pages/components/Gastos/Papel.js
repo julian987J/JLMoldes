@@ -7,6 +7,11 @@ import { CheckIcon } from "@primer/octicons-react";
 import { AlertIcon } from "@primer/octicons-react";
 import { useWebSocket } from "../../../contexts/WebSocketContext.js"; // Importar o hook
 
+const formatNumber = (value) => {
+  const number = parseFloat(value);
+  return isNaN(number) ? "0.00" : number.toFixed(2);
+};
+
 const Papel = ({ letras }) => {
   const [data, setData] = useState([]);
   const [item, setItem] = useState("");
@@ -130,7 +135,7 @@ const Papel = ({ letras }) => {
   // Função para iniciar a edição de uma linha
   const startEditing = (entry) => {
     setEditingId(entry.id);
-    setEditedData({ ...entry });
+    setEditedData({ ...entry, metragem: formatNumber(entry.metragem) });
   };
 
   // Atualiza os dados editados conforme o usuário altera os inputs
@@ -465,7 +470,7 @@ const Papel = ({ letras }) => {
                         className="input input-xs p-0 m-0 text-center"
                       />
                     ) : (
-                      entry.metragem
+                      formatNumber(entry.metragem)
                     )}
                   </td>
                   <td className="px-0">
@@ -621,7 +626,7 @@ const Papel = ({ letras }) => {
                         className="input input-xs p-0 m-0 text-center"
                       />
                     ) : (
-                      entry.metragem
+                      formatNumber(entry.metragem)
                     )}
                   </td>
                   <td className="px-0.5 text-center">

@@ -41,8 +41,8 @@ async function notifyWebSocketServer(data) {
 async function createC(ordemInputValues) {
   const result = await database.query({
     text: `
-      INSERT INTO "C" (codigo,dec, data, nome, sis, alt, base, real, pix, r) 
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+      INSERT INTO "C" (codigo,dec, data, nome, sis, alt, base, real, pix, r, r_bsa_ids) 
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
       RETURNING *;
     `,
     values: [
@@ -56,6 +56,7 @@ async function createC(ordemInputValues) {
       ordemInputValues.real,
       ordemInputValues.pix,
       ordemInputValues.r,
+      ordemInputValues.r_bsa_ids,
     ],
   });
 
@@ -220,8 +221,8 @@ async function createPapelC(ordemInputValues) {
 async function createM(ordemInputValues) {
   const result = await database.query({
     text: `
-      INSERT INTO "Mtable" (oficina, observacao, codigo, dec, nome, sis, base, alt) 
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+      INSERT INTO "Mtable" (oficina, observacao, codigo, dec, nome, sis, base, alt, r_bsa_uid) 
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
       RETURNING *;
     `,
     values: [
@@ -233,6 +234,7 @@ async function createM(ordemInputValues) {
       ordemInputValues.sis,
       ordemInputValues.base,
       ordemInputValues.alt,
+      ordemInputValues.r_bsa_uid,
     ],
   });
 
@@ -242,8 +244,8 @@ async function createM(ordemInputValues) {
 async function createRBSA(ordemInputValues) {
   const result = await database.query({
     text: `
-      INSERT INTO "RBSA" (id, dec, r, codigo, nome, sis, alt, base) 
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+      INSERT INTO "RBSA" (id, dec, r, codigo, nome, sis, alt, base, r_bsa_uid) 
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
       RETURNING *;
     `,
     values: [
@@ -255,6 +257,7 @@ async function createRBSA(ordemInputValues) {
       ordemInputValues.sis,
       ordemInputValues.alt,
       ordemInputValues.base,
+      ordemInputValues.r_bsa_uid,
     ],
   });
 
@@ -369,6 +372,23 @@ async function createPagamento(pagamentoData) {
     ],
   });
   return result; // The handler expects result.rows[0]
+}
+
+async function createSemanal(semanalData) {
+  const result = await database.query({
+    text: `
+      INSERT INTO "semanal" (data, real, pix, r)
+      VALUES ($1, $2, $3, $4)
+      RETURNING *;
+    `,
+    values: [
+      semanalData.data,
+      parseFloat(semanalData.real) || 0,
+      parseFloat(semanalData.pix) || 0,
+      semanalData.r,
+    ],
+  });
+  return result;
 }
 
 async function updateAltSis(updatedData) {
@@ -568,34 +588,6 @@ async function updateConfig(updatedData) {
   });
 
   return result;
-}
-
-async function updateCBSA(codigo, data, r, dec, newValues) {
-  return await database.query({
-    text: `UPDATE "C"
-           SET
-             sis  = sis  + $5,
-             alt  = alt  + $6,
-             base = base + $7,
-             real = real + $8,
-             pix  = pix  + $9
-           WHERE codigo = $1
-             AND data   = $2
-             AND r      = $3
-             AND dec    = $4
-           RETURNING *;`,
-    values: [
-      codigo,
-      data,
-      r,
-      dec,
-      newValues.sis,
-      newValues.alt,
-      newValues.base,
-      newValues.real,
-      newValues.pix,
-    ],
-  });
 }
 
 async function updatePapelC(updatedData) {
@@ -1149,7 +1141,15 @@ async function updateDeve(updatedData) {
 
 async function getC(r) {
   const result = await database.query({
-    text: `SELECT * FROM "C" WHERE r = $1;`,
+    text: `SELECT * FROM "C" WHERE r = $1 AND "dtfim" IS NULL;`,
+    values: [r],
+  });
+  return result;
+}
+
+async function getAllC(r) {
+  const result = await database.query({
+    text: `SELECT * FROM "C" WHERE r = $1 ORDER BY id DESC;`,
     values: [r],
   });
   return result;
@@ -1240,6 +1240,14 @@ async function getPapelCalculadora(oficina) {
   return result;
 }
 
+async function getPapelByItem(item) {
+  const result = await database.query({
+    text: `SELECT * FROM "Papel" WHERE item = $1;`,
+    values: [item],
+  });
+  return result.rows;
+}
+
 async function getValorOficinas(oficina) {
   const result = await database.query({
     text: `SELECT * FROM "SaidaO" WHERE oficina = $1;`,
@@ -1286,7 +1294,7 @@ async function getPapelData(codigo, data) {
 
 async function getPapelC(r) {
   const result = await database.query({
-    text: `SELECT * FROM "PapelC" WHERE r = $1;`,
+    text: `SELECT * FROM "PapelC" WHERE r = $1 ORDER BY id DESC;`,
     values: [r],
   });
   return result;
@@ -1376,7 +1384,8 @@ async function getRJustBSA(codigo, r) {
             SUM(base) AS total_base,
             SUM(sis) AS total_sis,
             SUM(alt) AS total_alt,
-            array_agg(id) AS ids
+            array_agg(id) AS ids,
+            array_agg(r_bsa_uid) AS uids
           FROM "RBSA" 
           WHERE r = $2 AND codigo = $1
           GROUP BY dec;`,
@@ -1428,6 +1437,14 @@ async function getPagamentos(r) {
     values: [r],
   });
   // The API handler will access result.rows
+  return result;
+}
+
+async function getSemanal(r) {
+  const result = await database.query({
+    text: `SELECT * FROM "semanal" WHERE r = $1 ORDER BY data DESC;`,
+    values: [r],
+  });
   return result;
 }
 
@@ -1553,6 +1570,14 @@ export async function deleteAviso(avisoid) {
   return result.rows;
 }
 
+export async function deleteDeveById(deveid) {
+  const result = await database.query({
+    text: `DELETE FROM "Deve" WHERE deveid = $1 RETURNING *`,
+    values: [deveid],
+  });
+  return result.rows;
+}
+
 export async function deleteTemp(id) {
   const result = await database.query({
     text: `DELETE FROM "Temp" WHERE id = $1 RETURNING id;`,
@@ -1584,6 +1609,22 @@ export async function deletePagamentosByR(rValue) {
   const result = await database.query({
     text: `DELETE FROM "Pagamentos" WHERE r = $1 RETURNING id;`,
     values: [rValue],
+  });
+  return result;
+}
+
+export async function deletePagamentosByRAndDateRange(
+  rValue,
+  startDate,
+  endDate,
+) {
+  const result = await database.query({
+    text: `DELETE FROM "Pagamentos"
+           WHERE r = $1
+           AND DATE(data) >= $2::date
+           AND DATE(data) <= $3::date
+           RETURNING id, r, data;`,
+    values: [rValue, startDate, endDate],
   });
   return result;
 }
@@ -1656,8 +1697,10 @@ async function updatePlotterC(updatedData) {
         desperdicio = $3,
         data = $4,
         inicio = $5,
-        fim = $6
-      WHERE id = $7
+        fim = $6,
+        largura = $7,
+        confirmado = $8
+      WHERE id = $9
       RETURNING *;
     `,
     values: [
@@ -1667,6 +1710,8 @@ async function updatePlotterC(updatedData) {
       updatedData.data,
       updatedData.inicio,
       updatedData.fim,
+      updatedData.largura,
+      updatedData.confirmado,
       updatedData.id,
     ],
   });
@@ -1679,6 +1724,28 @@ async function deletePlotterC(id) {
     values: [id],
   });
   return result.rows;
+}
+
+async function createPlotterC(plotterData) {
+  const result = await database.query({
+    text: `
+      INSERT INTO "PlotterC" (r, sim, nao, desperdicio, data, inicio, fim, nome, plotter_nome) 
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+      RETURNING *;
+    `,
+    values: [
+      plotterData.r,
+      plotterData.sim,
+      plotterData.nao,
+      plotterData.desperdicio,
+      plotterData.data,
+      plotterData.inicio,
+      plotterData.fim,
+      plotterData.nome,
+      plotterData.plotter_nome,
+    ],
+  });
+  return result;
 }
 
 async function swapSimNaoPlotterC(id) {
@@ -1696,8 +1763,286 @@ async function swapSimNaoPlotterC(id) {
   return result;
 }
 
+async function finalizePorR(r, bobina) {
+  const client = await database.getNewClient();
+  try {
+    await client.query("BEGIN");
+
+    const updateCQuery = {
+      text: `UPDATE "C" SET "dtfim" = NOW() WHERE r = $1 AND "dtfim" IS NULL RETURNING *;`,
+      values: [r],
+    };
+    const cResult = await client.query(updateCQuery);
+
+    const updatePapelCQuery = {
+      text: `UPDATE "PapelC" SET "dtfim" = NOW() WHERE r = $1 AND "dtfim" IS NULL RETURNING *;`,
+      values: [r],
+    };
+    const papelCResult = await client.query(updatePapelCQuery);
+
+    const updatePlotterCQuery = {
+      text: `UPDATE "PlotterC" SET "dtfim" = NOW() WHERE r = $1 AND "dtfim" IS NULL RETURNING *;`,
+      values: [r],
+    };
+    const plotterCResult = await client.query(updatePlotterCQuery);
+
+    const updateSemanalQuery = {
+      text: `UPDATE "semanal" SET "bobina" = $2 WHERE r = $1 AND "bobina" IS NULL RETURNING *;`,
+      values: [r, bobina],
+    };
+    const semanalResult = await client.query(updateSemanalQuery);
+
+    await client.query("COMMIT");
+
+    if (cResult.rows.length > 0) {
+      cResult.rows.forEach((row) => {
+        notifyWebSocketServer({
+          type: "C_FINALIZED_ITEM",
+          payload: row,
+        });
+      });
+    }
+
+    if (papelCResult.rows.length > 0) {
+      papelCResult.rows.forEach((row) => {
+        notifyWebSocketServer({
+          type: "PAPELC_FINALIZED_ITEM",
+          payload: row,
+        });
+      });
+    }
+
+    if (plotterCResult.rows.length > 0) {
+      plotterCResult.rows.forEach((row) => {
+        notifyWebSocketServer({
+          type: "PLOTTER_C_FINALIZED_ITEM",
+          payload: row,
+        });
+      });
+    }
+
+    if (semanalResult.rows.length > 0) {
+      semanalResult.rows.forEach((row) => {
+        notifyWebSocketServer({
+          type: "SEMANAL_FINALIZED_ITEM",
+          payload: row,
+        });
+      });
+    }
+
+    return {
+      c: cResult.rows,
+      papelC: papelCResult.rows,
+      plotterC: plotterCResult.rows,
+      semanal: semanalResult.rows,
+    };
+  } catch (error) {
+    await client.query("ROLLBACK");
+    console.error("Erro na transação finalizePorR:", error);
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
+async function archivePorR(r) {
+  const client = await database.getNewClient();
+  const archiveDate = "2000-01-01T00:00:00.000Z";
+  try {
+    await client.query("BEGIN");
+
+    const updateCQuery = {
+      text: `UPDATE "C" SET "dtfim" = $1 WHERE r = $2 AND "dtfim" IS NOT NULL RETURNING *;`,
+      values: [archiveDate, r],
+    };
+    const cResult = await client.query(updateCQuery);
+
+    const updatePapelCQuery = {
+      text: `UPDATE "PapelC" SET "dtfim" = $1 WHERE r = $2 AND "dtfim" IS NOT NULL RETURNING *;`,
+      values: [archiveDate, r],
+    };
+    const papelCResult = await client.query(updatePapelCQuery);
+
+    const updatePlotterCQuery = {
+      text: `UPDATE "PlotterC" SET "dtfim" = $1 WHERE r = $2 AND "dtfim" IS NOT NULL RETURNING *;`,
+      values: [archiveDate, r],
+    };
+    const plotterCResult = await client.query(updatePlotterCQuery);
+
+    await client.query("COMMIT");
+
+    // Enviar notificações WebSocket após o commit bem-sucedido
+    if (cResult.rows.length > 0) {
+      cResult.rows.forEach((row) => {
+        notifyWebSocketServer({
+          type: "C_UPDATED_ITEM",
+          payload: row,
+        });
+      });
+    }
+
+    if (papelCResult.rows.length > 0) {
+      papelCResult.rows.forEach((row) => {
+        notifyWebSocketServer({
+          type: "PAPELC_UPDATED_ITEM",
+          payload: row,
+        });
+      });
+    }
+
+    if (plotterCResult.rows.length > 0) {
+      plotterCResult.rows.forEach((row) => {
+        notifyWebSocketServer({
+          type: "PLOTTER_C_UPDATED_ITEM",
+          payload: row,
+        });
+      });
+    }
+
+    return {
+      c: cResult.rows,
+      papelC: papelCResult.rows,
+      plotterC: plotterCResult.rows,
+    };
+  } catch (error) {
+    await client.query("ROLLBACK");
+    console.error("Erro na transação archivePorR:", error);
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
+async function findCByRbsaIds(r, rbsaIds) {
+  if (!rbsaIds || rbsaIds.length === 0) {
+    return null;
+  }
+
+  const result = await database.query({
+    text: `SELECT * FROM "C"
+           WHERE r = $1 AND r_bsa_ids && $2
+           AND dtfim IS NULL
+           LIMIT 1;`,
+    values: [r, rbsaIds],
+  });
+  return result.rows[0];
+}
+
+async function updateCWithAddition(updatedData) {
+  const result = await database.query({
+    text: `
+      UPDATE "C"
+      SET
+        base = base + $1,
+        sis = sis + $2,
+        alt = alt + $3,
+        real = real + $4,
+        pix = pix + $5,
+        r_bsa_ids = array_cat(r_bsa_ids, $6)
+      WHERE id = $7
+      RETURNING *;
+    `,
+    values: [
+      updatedData.base || 0,
+      updatedData.sis || 0,
+      updatedData.alt || 0,
+      updatedData.real || 0,
+      updatedData.pix || 0,
+      updatedData.r_bsa_ids || [],
+      updatedData.id,
+    ],
+  });
+
+  return result;
+}
+
+async function deleteSemanalByPeriod(r, periodKey) {
+  let query;
+  const values = [r];
+
+  if (periodKey === "null") {
+    query = {
+      text: `DELETE FROM "semanal" WHERE r = $1 AND bobina IS NULL RETURNING *;`,
+      values: values,
+    };
+  } else {
+    values.push(periodKey);
+    query = {
+      text: `DELETE FROM "semanal" WHERE r = $1 AND bobina = $2 RETURNING *;`,
+      values: values,
+    };
+  }
+
+  const result = await database.query(query);
+
+  if (result.rows.length > 0) {
+    notifyWebSocketServer({
+      type: "SEMANAL_PERIOD_DELETED",
+      payload: { r, periodKey },
+    });
+  }
+
+  return result.rows;
+}
+
+async function createTContentAno(anoData) {
+  const result = await database.query({
+    text: `
+      INSERT INTO "TContentAno" (ano, r, oficina, papel_data, despesas_data, encaixes_data, bobinas_data)
+      VALUES ($1, $2, $3, $4, $5, $6, $7)
+      RETURNING *;
+    `,
+    values: [
+      anoData.ano,
+      anoData.r,
+      anoData.oficina,
+      JSON.stringify(anoData.papel_data),
+      JSON.stringify(anoData.despesas_data),
+      JSON.stringify(anoData.encaixes_data),
+      JSON.stringify(anoData.bobinas_data),
+    ],
+  });
+
+  if (result.rows.length > 0) {
+    await notifyWebSocketServer({
+      type: "TCONTENT_ANO_NEW_ITEM",
+      payload: result.rows[0],
+    });
+  }
+
+  return result;
+}
+
+async function getTContentAno(r, oficina) {
+  const result = await database.query({
+    text: `SELECT id, ano, r, oficina, created_at FROM "TContentAno" WHERE r = $1 AND oficina = $2 ORDER BY ano DESC;`,
+    values: [r, oficina],
+  });
+  return result.rows;
+}
+
+async function getTContentAnoByYear(ano, r, oficina) {
+  const result = await database.query({
+    text: `SELECT * FROM "TContentAno" WHERE ano = $1 AND r = $2 AND oficina = $3;`,
+    values: [ano, r, oficina],
+  });
+  return result.rows[0];
+}
+
+async function checkTContentAnoExists(ano, r, oficina) {
+  const result = await database.query({
+    text: `SELECT EXISTS(SELECT 1 FROM "TContentAno" WHERE ano = $1 AND r = $2 AND oficina = $3) AS exists;`,
+    values: [ano, r, oficina],
+  });
+  return result.rows[0].exists;
+}
+
 const ordem = {
+  deleteSemanalByPeriod,
+  archivePorR,
+  finalizePorR,
   getPlotterC,
+  createPlotterC,
   updatePlotterC,
   deletePlotterC,
   swapSimNaoPlotterC,
@@ -1716,6 +2061,7 @@ const ordem = {
   createPapelC,
   createTemp,
   createPagamento,
+  createSemanal,
   getTemp,
   getComentario,
   getPessoal,
@@ -1726,12 +2072,14 @@ const ordem = {
   getOficina,
   getValorOficinas,
   getC,
+  getAllC,
   getDec,
   getAnualC,
   getNotas,
   getCByDec,
   getCData,
   getPapel,
+  getPapelByItem,
   getPapelCalculadora,
   getPapelC,
   getAnualPapelC,
@@ -1748,6 +2096,7 @@ const ordem = {
   getDevo,
   getDevoJustValor,
   getPagamentos,
+  getSemanal,
   deleteC,
   deleteNota,
   deletePapel,
@@ -1759,11 +2108,13 @@ const ordem = {
   deleteM,
   deleteR,
   deleteDeve,
+  deleteDeveById,
   deleteAviso,
   deleteDevo,
   deleteDevoID,
   deletePagamentoById,
   deletePagamentosByR,
+  deletePagamentosByRAndDateRange,
   deleteTemp,
   deleteAllPagamentos,
   updateDeveCalculadora,
@@ -1773,7 +2124,6 @@ const ordem = {
   updateC,
   updateDec,
   updateNota,
-  updateCBSA,
   updatePessoal,
   updateSaidaP,
   updateSaidaO,
@@ -1788,6 +2138,12 @@ const ordem = {
   verifyUserCredentials,
   getUsers,
   updateUser,
+  findCByRbsaIds,
+  updateCWithAddition,
+  createTContentAno,
+  getTContentAno,
+  getTContentAnoByYear,
+  checkTContentAnoExists,
 };
 
 export default ordem;

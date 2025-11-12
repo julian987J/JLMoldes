@@ -6,6 +6,9 @@ const errorMessages = {
   R1ID: "Essa Operação ja foi enviada.",
   Nulo: "Nenhuma operação foi efetuada.",
   CAD01: "Cadastro já existe. O código ou nome é igual.",
+  PAPEL01: "Não há papel cadastrado para esta oficina.",
+  TCONTENT_ANO_EXISTS:
+    "Já existe um snapshot salvo para este ano, R e Oficina.",
 };
 
 function ErrorComponent({ errorCode }) {

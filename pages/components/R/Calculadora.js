@@ -1,8 +1,16 @@
 import Execute from "models/functions";
-import { useState, useEffect, useId } from "react";
+import { useState, useEffect, useId, useCallback } from "react";
 import dynamic from "next/dynamic";
 import { useWebSocket } from "../../../contexts/WebSocketContext.js"; // Import WebSocket context
 import Use from "models/utils.js";
+
+function round(value) {
+  return Math.round(value * 100) / 100;
+}
+
+function roundToHalf(value) {
+  return Math.round(value / 0.5) * 0.5;
+}
 
 function gerarCodigoUnico() {
   // Combina o timestamp atual com uma string aleatória para garantir unicidade.
@@ -13,20 +21,23 @@ function gerarCodigoUnico() {
 }
 
 const Calculadora = ({
-  codigo,
-  nome,
   plus,
   values = Array(28).fill(""), // Provide a default value for values
-  onCodigoChange,
-  onNomeChange,
   onPlusChange, // Recebido como prop
   onValuesChange, // Recebido como prop
   data,
   r,
   isPendente,
+  codigo,
+  nome,
+  onCodigoChange,
+  onNomeChange,
+  countM1 = 0,
+  countUtilGreaterThanZero = 0,
 }) => {
   const ErrorComponent = dynamic(() => import("../Errors.js"), { ssr: false });
   const [showError, setShowError] = useState(false);
+  const [errorCode, setErrorCode] = useState(null);
   const componentId = useId();
 
   useEffect(() => {
@@ -42,8 +53,18 @@ const Calculadora = ({
     return () => clearTimeout(timer);
   }, [showError]);
 
+  useEffect(() => {
+    if (errorCode) {
+      const timer = setTimeout(() => {
+        setErrorCode(null);
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [errorCode]);
+
   const [dadosR, setDadosR] = useState(0);
-  const [idsArray, setIdsArray] = useState(0);
+  const [idsArray, setIdsArray] = useState([]);
+  const [rBsaUidsArray, setRBsaUidsArray] = useState([]);
   const [decGroups, setDecGroups] = useState([]);
 
   const [valorDevo, setValorDevo] = useState(0);
@@ -60,6 +81,8 @@ const Calculadora = ({
   const [comentario, setComentario] = useState("");
   const [perdida, setPerdida] = useState("");
   const [comentarioCadastro, setComentarioCadastro] = useState("");
+  const [gastoOficina, setGastoOficina] = useState("");
+  const [valorOficina, setValorOficina] = useState("");
 
   const [allCadastroNames, setAllCadastroNames] = useState([]);
   const [filteredSuggestions, setFilteredSuggestions] = useState([]);
@@ -68,6 +91,186 @@ const Calculadora = ({
   const [isPendenteDisabled, setIsPendenteDisabled] = useState(false);
   const [isEsperaDisabled, setIsEsperaDisabled] = useState(false);
   const [trocoReal, setTrocoReal] = useState("");
+  const [nomeInputClass, setNomeInputClass] = useState("input-warning");
+  const [somaTotalInputClass, setSomaTotalInputClass] = useState(
+    "input-success text-success",
+  );
+
+  useEffect(() => {
+    const checkOldestDebt = async () => {
+      if (!codigo || !r) {
+        setNomeInputClass("input-warning");
+        setSomaTotalInputClass("input-success text-success");
+        return;
+      }
+
+      try {
+        const allDeveData = await Execute.receiveFromDeve(r);
+        const userDeveData = allDeveData.filter(
+          (item) => item.codigo === codigo,
+        );
+
+        if (userDeveData.length === 0) {
+          setNomeInputClass("input-warning");
+          setSomaTotalInputClass("input-success text-success");
+          return;
+        }
+
+        const oldestDate = userDeveData.reduce((oldest, current) => {
+          const currentDate = new Date(current.data);
+          return currentDate < oldest ? currentDate : oldest;
+        }, new Date(userDeveData[0].data));
+
+        const oneMonthAgo = new Date();
+        oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
+        const twoMonthsAgo = new Date();
+        twoMonthsAgo.setMonth(twoMonthsAgo.getMonth() - 2);
+
+        if (oldestDate < twoMonthsAgo) {
+          setNomeInputClass("input-error bg-error/30");
+          setSomaTotalInputClass("input-error bg-error/30 text-error");
+        } else if (oldestDate < oneMonthAgo) {
+          setNomeInputClass("input-secondary bg-secondary/30");
+          setSomaTotalInputClass(
+            "input-secondary bg-secondary/30 text-secondary",
+          );
+        } else {
+          setNomeInputClass("input-warning");
+          setSomaTotalInputClass("input-success text-success");
+        }
+      } catch (error) {
+        console.error("Erro ao verificar dívidas antigas:", error);
+        setNomeInputClass("input-warning");
+        setSomaTotalInputClass("input-success text-success");
+      }
+    };
+
+    if (!codigo && !nome) {
+      setNomeInputClass("input-warning");
+      setSomaTotalInputClass("input-success text-success");
+    } else {
+      checkOldestDebt();
+    }
+  }, [codigo, nome, r, lastMessage]);
+
+  // Estados para a nova funcionalidade de papel
+  const [papeis, setPapeis] = useState([]);
+  const [oldestPapel, setOldestPapel] = useState(null);
+  const [plotterData, setPlotterData] = useState([]);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      if (typeof r === "undefined" || r === null) return;
+      try {
+        const workshop = "R" + r;
+        const [plotterResults, papelResults] = await Promise.all([
+          Execute.receiveFromPlotterC(r),
+          Execute.receiveFromPapelByItem(workshop),
+        ]);
+
+        setPlotterData(
+          Array.isArray(plotterResults)
+            ? plotterResults
+                .filter((item) => !item.dtfim)
+                .sort(
+                  (a, b) =>
+                    new Date(b.data) - new Date(a.data) ||
+                    new Date(b.inicio) - new Date(a.inicio),
+                )
+            : [],
+        );
+
+        if (Array.isArray(papelResults)) {
+          const filteredPapeis = papelResults
+            .filter((p) => p.gastos && p.gastos.startsWith("PAPEL-"))
+            .sort((a, b) => a.id - b.id); // Sort ascending by ID
+          setPapeis(filteredPapeis);
+        } else {
+          setPapeis([]);
+        }
+      } catch (error) {
+        console.error("Erro ao buscar dados de papel e plotter:", error);
+      }
+    };
+    fetchData();
+  }, [r]);
+
+  useEffect(() => {
+    if (papeis && papeis.length > 0) {
+      setOldestPapel(papeis[0]);
+    } else {
+      setOldestPapel(null);
+    }
+  }, [papeis]);
+
+  const handleCodigoChange = (e) => {
+    const newCodigo = e.target.value;
+    onCodigoChange(newCodigo);
+
+    const codigoBuscado = newCodigo.trim();
+    if (!codigoBuscado) {
+      onNomeChange("");
+      return;
+    }
+
+    const registro = allCadastroNames.find(
+      (item) => item.codigo?.toString().trim() === codigoBuscado,
+    );
+
+    if (registro) {
+      onNomeChange(registro.nome || "");
+    } else {
+      onNomeChange("");
+    }
+  };
+
+  const handleNomeChange = (e) => {
+    const newNome = e.target.value;
+    onNomeChange(newNome);
+
+    if (newNome.length > 0) {
+      const suggestions = allCadastroNames
+        .filter(
+          (item) =>
+            item.nome &&
+            item.nome.toLowerCase().includes(newNome.toLowerCase()),
+        )
+        .map((item) => item.nome);
+      setFilteredSuggestions(suggestions);
+    } else {
+      setFilteredSuggestions([]);
+    }
+
+    const nomeBuscado = newNome.trim().toLowerCase();
+    if (!nomeBuscado) {
+      onCodigoChange("");
+      return;
+    }
+
+    const registro = allCadastroNames.find(
+      (item) => item.nome?.trim().toLowerCase() === nomeBuscado,
+    );
+
+    if (registro) {
+      onCodigoChange(registro.codigo?.toString() || "");
+    } else {
+      onCodigoChange("");
+    }
+  };
+
+  const resetForm = useCallback(() => {
+    setPix("");
+    onPlusChange(0);
+    setReal("");
+    setComentario("");
+    setPerdida("");
+    setTrocoReal("");
+    onNomeChange("");
+    onCodigoChange("");
+    onValuesChange(Array(28).fill(""));
+    setGastoOficina(""); // Resetar também estes campos
+    setValorOficina(""); // Resetar também estes campos
+  }, [onPlusChange, onValuesChange, onNomeChange, onCodigoChange]);
 
   // Calcula a soma bruta dos valores (novo cálculo)
   const sumValues = values.reduce((sum, current) => {
@@ -95,6 +298,14 @@ const Calculadora = ({
     onValuesChange(newValues); // Usa o handler do prop
   };
 
+  const handleHalfStepChange = (setter) => (e) => {
+    const value = e.target.value;
+    // Permite números inteiros, números terminados em ".", ou números terminados em ".5"
+    if (/^\d*(\.5?)?$/.test(value) || value === "") {
+      setter(value);
+    }
+  };
+
   // calculos da calculadora
   const comitions = plus * comissi;
   const papel = values.some((val) => val !== "")
@@ -114,18 +325,18 @@ const Calculadora = ({
     comitions;
 
   // Calculate the display value for totalGeral according to the new rounding rules
-  const roundedTotalGeral = Math.round(totalGeral / 0.5) * 0.5;
+  const roundedTotalGeral = roundToHalf(totalGeral);
   const displayTotalGeral =
     roundedTotalGeral === 0 ? "SOMA TOTAL" : roundedTotalGeral.toFixed(2);
 
-  const totalTroco =
-    roundedTotalGeral -
-    (Number(pix) || 0) -
-    (Number(real) || 0) +
-    (Number(trocoReal) || 0);
-  const roundedTroco = Math.round(totalTroco / 0.5) * 0.5;
+  const roundedPix = roundToHalf(Number(pix) || 0);
+  const roundedReal = roundToHalf(Number(real) || 0);
 
-  const pixMaisReal = Number(pix) + Number(real);
+  const totalTroco =
+    roundedTotalGeral - roundedPix - roundedReal + (Number(trocoReal) || 0);
+  const roundedTroco = roundToHalf(totalTroco);
+
+  const pixMaisReal = roundedPix + roundedReal;
   // Buscar dados R agrupados por dec
   useEffect(() => {
     const buscarDados = async () => {
@@ -138,6 +349,7 @@ const Calculadora = ({
           sis: Number(group.total_sis) || 0,
           alt: Number(group.total_alt) || 0,
           ids: group.ids || [],
+          uids: group.uids || [],
         }));
 
         setDecGroups(groups);
@@ -265,7 +477,7 @@ const Calculadora = ({
   // WebSocket listeners for real-time updates
   useEffect(() => {
     if (lastMessage && lastMessage.data) {
-      const { type } = lastMessage.data;
+      const { type, payload } = lastMessage.data;
 
       // Listener for R updates
       if (type.startsWith("BSA_")) {
@@ -278,12 +490,15 @@ const Calculadora = ({
               sis: Number(group.total_sis) || 0,
               alt: Number(group.total_alt) || 0,
               ids: group.ids || [],
+              uids: group.uids || [],
             }));
+
             setDecGroups(groups);
             setDadosR(
               groups.reduce((sum, g) => sum + g.base + g.sis + g.alt, 0),
             );
             setIdsArray(groups.flatMap((g) => g.ids));
+            setRBsaUidsArray(groups.flatMap((g) => g.uids));
           } catch (error) {
             console.error("Erro ao recarregar dados de R:", error);
           }
@@ -321,8 +536,150 @@ const Calculadora = ({
         };
         buscarDadosDevo();
       }
+
+      // Listeners para Papel e PlotterC
+      const workshop = "R" + r;
+      if (
+        (type.startsWith("PLOTTER_C_") &&
+          payload &&
+          String(payload.r) === String(r)) ||
+        (type.startsWith("PAPEL_") && payload)
+      ) {
+        // Atualiza Plotter Data
+        if (type.startsWith("PLOTTER_C_")) {
+          setPlotterData((prev) => {
+            let newData = [...prev];
+            const index =
+              payload.id !== undefined
+                ? newData.findIndex(
+                    (item) => String(item.id) === String(payload.id),
+                  )
+                : -1;
+
+            switch (type) {
+              case "PLOTTER_C_NEW_ITEM":
+                if (!payload.dtfim && index === -1) {
+                  newData.push(payload);
+                }
+                break;
+              case "PLOTTER_C_UPDATED_ITEM":
+                if (payload.dtfim) {
+                  if (index !== -1) {
+                    newData = newData.filter(
+                      (item) => String(item.id) !== String(payload.id),
+                    );
+                  }
+                } else {
+                  if (index !== -1) {
+                    newData[index] = payload;
+                  } else {
+                    newData.push(payload);
+                  }
+                }
+                break;
+              case "PLOTTER_C_DELETED_ITEM":
+                newData = newData.filter(
+                  (item) => String(item.id) !== String(payload.id),
+                );
+                break;
+            }
+            return newData.sort(
+              (a, b) =>
+                new Date(b.data) - new Date(a.data) ||
+                new Date(b.inicio) - new Date(a.inicio),
+            );
+          });
+        }
+
+        // Atualiza Papeis
+        if (type.startsWith("PAPEL_") && payload.item === workshop) {
+          if (
+            type === "PAPEL_NEW_ITEM" &&
+            payload.gastos?.startsWith("PAPEL-")
+          ) {
+            setPapeis((prev) => [...prev, payload].sort((a, b) => a.id - b.id));
+          } else if (type === "PAPEL_UPDATED_ITEM") {
+            setPapeis((prev) =>
+              prev
+                .map((item) =>
+                  String(item.id) === String(payload.id) ? payload : item,
+                )
+                .sort((a, b) => a.id - b.id),
+            );
+          }
+        }
+        if (type === "PAPEL_DELETED_ITEM") {
+          setPapeis((prev) =>
+            prev.filter((item) => String(item.id) !== String(payload.id)),
+          );
+        }
+      }
     }
   }, [lastMessage, codigo, r]);
+
+  const handleFinalizarPapel = async () => {
+    if (oldestPapel) {
+      try {
+        // Finaliza todos os registros em aberto para a oficina 'r'
+        const response = await fetch("/api/v1/tables/c/plotter/finalizar", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ r }),
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || "Erro ao finalizar registros.");
+        }
+
+        // Atualização otimista da UI: remove os dados do plotter, pois foram finalizados
+        setPlotterData([]);
+
+        // Remove o papel da lista
+        setPapeis((prevPapeis) =>
+          prevPapeis.filter((p) => p.id !== oldestPapel.id),
+        );
+
+        // Envia a requisição para remover o papel do banco de dados
+        await Execute.removePapel(oldestPapel.id);
+      } catch (error) {
+        console.error("Erro no processo de finalização:", error);
+        // Em caso de erro, recarrega os dados para garantir consistência
+        const fetchData = async () => {
+          const workshop = "R" + r;
+          const [plotterResults, papelResults] = await Promise.all([
+            Execute.receiveFromPlotterC(r),
+            Execute.receiveFromPapelByItem(workshop),
+          ]);
+
+          setPlotterData(
+            Array.isArray(plotterResults)
+              ? plotterResults
+                  .filter((item) => !item.dtfim)
+                  .sort(
+                    (a, b) =>
+                      new Date(b.data) - new Date(a.data) ||
+                      new Date(b.inicio) - new Date(a.inicio),
+                  )
+              : [],
+          );
+
+          if (Array.isArray(papelResults)) {
+            const filteredPapeis = papelResults
+              .filter((p) => p.gastos && p.gastos.startsWith("PAPEL-"))
+              .sort((a, b) => a.id - b.id);
+            setPapeis(filteredPapeis);
+          }
+        };
+        fetchData();
+      }
+    }
+  };
+
+  const formatNumber = (value) => {
+    const number = parseFloat(value);
+    return isNaN(number) ? "0.00" : number.toFixed(2);
+  };
 
   // Fetch all cadastro names on component mount
   useEffect(() => {
@@ -388,24 +745,27 @@ const Calculadora = ({
     }
   };
 
-  const hadleUpdatePapel = async (metroConsumido) => {
+  const handleUpdatePapel = async () => {
+    const activeValuesCount = values.filter((v) => Number(v) > 0).length;
+    const metroConsumido =
+      sumValues +
+      (Number(desperdicio) || 0) * activeValuesCount +
+      (Number(perdida) || 0);
+
+    if (metroConsumido <= 0) return; // Não faz nada se não houver consumo
+
     const oficina = `R${r}`;
     const result = await Execute.receiveFromPapelCalculadora(oficina);
 
     if (!result || result.length === 0) {
-      console.error(
-        "hadleUpdatePapel: Nenhum dado retornado de receiveFromPapelCalculadora para a oficina:",
-        oficina,
-      );
-      return;
+      setErrorCode("PAPEL01");
+      return false;
     }
 
-    // Encontrar o item com o menor ID
     const itemComMenorId = result.reduce((menor, itemAtual) => {
-      if (!menor || Number(itemAtual.id) < Number(menor.id)) {
-        return itemAtual;
-      }
-      return menor;
+      return !menor || Number(itemAtual.id) < Number(menor.id)
+        ? itemAtual
+        : menor;
     }, null);
 
     if (!itemComMenorId || typeof itemComMenorId.metragem === "undefined") {
@@ -416,13 +776,12 @@ const Calculadora = ({
       return;
     }
 
-    const metragemAtual = Number(itemComMenorId.metragem);
-    const novaMetragem = metragemAtual - Number(metroConsumido);
+    const novaMetragem = Number(itemComMenorId.metragem) - metroConsumido;
 
     try {
       const dadosParaAtualizar = {
         id: itemComMenorId.id,
-        metragem: novaMetragem,
+        metragem: round(novaMetragem),
       };
 
       const response = await fetch("/api/v1/tables/gastos/papel", {
@@ -431,92 +790,17 @@ const Calculadora = ({
         body: JSON.stringify(dadosParaAtualizar),
       });
       if (!response.ok) throw new Error("Erro ao atualizar");
-      console.log(
-        "Papel.js: Dados salvos via API. Aguardando mensagem WebSocket para fechar o modo de edição.",
-      );
+      return true;
     } catch (error) {
       console.error("Erro ao salvar:", error);
     }
   };
 
-  const handleUpdateC = async (codigo, data, New, currentTotal, dec) => {
-    try {
-      // Decodificar a data
-      const decodedData = decodeURIComponent(data);
-
-      // Obter valores atuais do C para este dec
-      const existingData = await Execute.receiveFromCData(
-        codigo,
-        decodedData,
-        r,
-        dec,
-      );
-
-      // Calcular novos valores
-      const newSis = (existingData.sis || 0) + (New.sis || 0);
-      const newAlt = (existingData.alt || 0) + (New.alt || 0);
-      const newBase = (existingData.base || 0) + (New.base || 0);
-
-      // Ajustar valores de real e pix para não ultrapassar o total permitido
-      let adjustedReal = Number(real);
-      let adjustedPix = Number(pix);
-
-      // Calcular o máximo permitido para este grupo dec
-      const maxForDec = newSis + newAlt + newBase;
-
-      // Garantir que nenhum valor exceda o máximo do grupo
-      adjustedReal = Math.min(adjustedReal, maxForDec);
-      adjustedPix = Math.min(adjustedPix, maxForDec);
-
-      // Ajustar soma se necessário
-      const soma = adjustedReal + adjustedPix;
-      if (soma > maxForDec) {
-        const excesso = soma - maxForDec;
-        const ratioReal = adjustedReal / soma;
-        const ratioPix = adjustedPix / soma;
-
-        adjustedReal -= Math.round(excesso * ratioReal);
-        adjustedPix -= Math.round(excesso * ratioPix);
-
-        // Garantir valores não negativos
-        adjustedReal = Math.max(adjustedReal, 0);
-        adjustedPix = Math.max(adjustedPix, 0);
-
-        // Correção final de arredondamento
-        if (adjustedReal + adjustedPix > maxForDec) {
-          adjustedReal = maxForDec - adjustedPix;
-        }
-      }
-
-      // Fazer a requisição PUT atualizada com dec
-      const response = await fetch(
-        `/api/v1/tables/c/calculadora?codigo=${codigo}&data=${decodedData}&r=${r}&dec=${dec}`,
-        {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            sis: newSis,
-            alt: newAlt,
-            base: newBase,
-            real: adjustedReal,
-            pix: adjustedPix,
-          }),
-        },
-      );
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Erro ao atualizar registro no C");
-      }
-
-      return await response.json();
-    } catch (error) {
-      console.error("Erro ao atualizar C para dec", dec, ":", error);
-      throw error;
-    }
-  };
-
-  const sendToCAndUpdateR = async (value) => {
+  const sendToCAndUpdateR = async (
+    value,
+    currentPixValue = null,
+    currentRealValue = null,
+  ) => {
     await Execute.removeDevo(codigo);
     const currentTotal = decGroups.reduce(
       (sum, g) => sum + g.base + g.sis + g.alt,
@@ -524,41 +808,33 @@ const Calculadora = ({
     );
     const excessoTotal = currentTotal - value;
 
-    // Verificar existência no C para cada dec
-    const existsMap = new Map();
-    for (const group of decGroups) {
-      const exists = await Execute.receiveFromCData(codigo, data, r, group.dec);
-      existsMap.set(group.dec, exists);
-    }
-
-    if (excessoTotal > 0) {
-      // Criar lista única para ajuste
-      const allEntries = [];
-      decGroups.forEach((g) => {
-        allEntries.push(
-          { dec: g.dec, type: "base", value: g.base },
-          { dec: g.dec, type: "sis", value: g.sis },
-          { dec: g.dec, type: "alt", value: g.alt },
-        );
-      });
-
-      // Ordenar e ajustar valores
-      allEntries.sort((a, b) => b.value - a.value);
-      let remaining = excessoTotal;
+    if (excessoTotal >= 0) {
       const adjustments = {};
-
       decGroups.forEach((g) => {
         adjustments[g.dec] = { base: g.base, sis: g.sis, alt: g.alt };
       });
 
-      for (const entry of allEntries) {
-        if (remaining <= 0) break;
-        const subtract = Math.min(entry.value, remaining);
-        adjustments[entry.dec][entry.type] -= subtract;
-        remaining -= subtract;
+      if (excessoTotal > 0) {
+        const allEntries = [];
+        decGroups.forEach((g) => {
+          allEntries.push(
+            { dec: g.dec, type: "base", value: g.base },
+            { dec: g.dec, type: "sis", value: g.sis },
+            { dec: g.dec, type: "alt", value: g.alt },
+          );
+        });
+
+        allEntries.sort((a, b) => b.value - a.value);
+        let remaining = excessoTotal;
+
+        for (const entry of allEntries) {
+          if (remaining <= 0) break;
+          const subtract = Math.min(entry.value, remaining);
+          adjustments[entry.dec][entry.type] -= subtract;
+          remaining -= subtract;
+        }
       }
 
-      // Atualizar R
       const novosDados = decGroups.map((g) => ({
         dec: g.dec,
         base: adjustments[g.dec].base,
@@ -569,27 +845,48 @@ const Calculadora = ({
       }));
       await handleSave(novosDados);
 
-      // Atualizar/enviar para C
+      // Usar valores passados como parâmetro se fornecidos, caso contrário usar os valores calculados
+      const pixToUse = currentPixValue !== null ? currentPixValue : roundedPix;
+      const realToUse =
+        currentRealValue !== null ? currentRealValue : roundedReal;
+
+      let remainingPix = pixToUse;
+      let remainingReal = realToUse;
+
       for (const group of decGroups) {
-        const diff = {
+        const paidAmount = {
           base: group.base - adjustments[group.dec].base,
           sis: group.sis - adjustments[group.dec].sis,
           alt: group.alt - adjustments[group.dec].alt,
-          real: Math.min(Number(real)), // Adicione
-          pix: Math.min(Number(pix)), // Adicione
         };
+        const totalPaidForGroup =
+          paidAmount.base + paidAmount.sis + paidAmount.alt;
 
-        const exists = existsMap.get(group.dec);
+        if (totalPaidForGroup > 0) {
+          let pixForGroup = 0;
+          let realForGroup = 0;
 
-        if (exists) {
-          await handleUpdateC(codigo, data, diff, currentTotal, group.dec);
-        } else {
+          const pixToApply = Math.min(remainingPix, totalPaidForGroup);
+          pixForGroup += pixToApply;
+          remainingPix -= pixToApply;
+          let remainingDebtInGroup = totalPaidForGroup - pixToApply;
+
+          if (remainingDebtInGroup > 0) {
+            const realToApply = Math.min(remainingReal, remainingDebtInGroup);
+            realForGroup += realToApply;
+            remainingReal -= realToApply;
+          }
+
           await Execute.sendToC({
             ...ObjC1,
+            data: new Date().toISOString(),
             dec: group.dec,
-            ...diff,
-            real: Math.min(Number(real), diff.base + diff.sis + diff.alt),
-            pix: Math.min(Number(pix), diff.base + diff.sis + diff.alt),
+            base: round(paidAmount.base),
+            sis: round(paidAmount.sis),
+            alt: round(paidAmount.alt),
+            real: roundToHalf(realForGroup),
+            pix: roundToHalf(pixForGroup),
+            r_bsa_ids: group.uids,
           });
         }
       }
@@ -601,10 +898,68 @@ const Calculadora = ({
     if (isSalvarDisabled) return;
     setIsSalvarDisabled(true);
 
+    if (sumValues > 0) {
+      const oficina = `R${r}`;
+      const result = await Execute.receiveFromPapelCalculadora(oficina);
+      if (!result || result.length === 0) {
+        setErrorCode("PAPEL01");
+        setIsSalvarDisabled(false);
+        return;
+      }
+    }
+
     const trocoValue = Number(roundedTroco);
 
     try {
-      if (dadosR && !valorDeve && trocoValue > 0 && !Number(total)) {
+      // Condição para devolver crédito (Devo) em dinheiro para o cliente
+      if (
+        valorDevo > 0 &&
+        Number(trocoReal) > 0 &&
+        !total &&
+        !dadosR &&
+        !valorDeve &&
+        !pix &&
+        !real
+      ) {
+        const valorRetirado = Number(trocoReal);
+        const novoValorDevo = valorDevo - valorRetirado;
+
+        // Remove o registro de crédito antigo
+        await Execute.removeDevo(codigo);
+
+        // Se ainda sobrar crédito, cria um novo registro com o valor atualizado
+        if (novoValorDevo > 0) {
+          await Execute.sendToDevo({
+            nome,
+            r,
+            codigo,
+            valor: roundToHalf(novoValorDevo),
+          });
+        }
+
+        // Registra a saída de caixa como um pagamento negativo
+        await Execute.sendToPagamentos({
+          nome,
+          r,
+          data: Use.NowData(),
+          pix: 0,
+          real: -valorRetirado,
+        });
+
+        console.log("Caiu em Devolver crédito (Devo) em dinheiro.");
+
+        // Limpa o formulário e encerra a execução para não processar o resto da função
+        setPix("");
+        onPlusChange(0);
+        setReal("");
+        setComentario("");
+        setPerdida("");
+        setTrocoReal("");
+        onNomeChange("");
+        onCodigoChange("");
+        onValuesChange(Array(28).fill(""));
+        return;
+      } else if (dadosR && !valorDeve && trocoValue > 0 && !Number(total)) {
         await sendToCAndUpdateR(trocoValue);
         console.log("caiu em Pago Parte do R");
 
@@ -616,7 +971,7 @@ const Calculadora = ({
         //
       } else if (trocoValue < 0) {
         const totalOriginalDaCompra = total + (Number(dadosR) || 0) + valorDeve;
-        const pagamento = (Number(pix) || 0) + (Number(real) || 0);
+        const pagamento = pixMaisReal;
         const trocoRealDado = Number(trocoReal) || 0;
 
         const creditoFinal =
@@ -631,7 +986,7 @@ const Calculadora = ({
             nome,
             r,
             codigo,
-            valor: creditoFinal,
+            valor: roundToHalf(creditoFinal),
           });
         }
 
@@ -657,8 +1012,8 @@ const Calculadora = ({
               r,
               data: Use.NowData(),
               codigo,
-              valorpapel: papel,
-              valorcomissao: comitions,
+              valorpapel: round(papel),
+              valorcomissao: round(comitions),
               valor: roundedTotalGeral,
             });
             await Execute.sendToPapelC({
@@ -687,10 +1042,20 @@ const Calculadora = ({
         }
 
         if (existsMap) {
-          const values = totalGeral - Number(total) - pixMaisReal;
-          await sendToCAndUpdateR(values);
-          const numPix = Number(pix) || 0;
-          const numReal = Number(real) || 0;
+          // IMPORTANTE: Recalcular com valores ATUAIS do estado
+          const currentRoundedPix = roundToHalf(Number(pix) || 0);
+          const currentRoundedReal = roundToHalf(Number(real) || 0);
+          const currentPixMaisReal = currentRoundedPix + currentRoundedReal;
+
+          const values = totalGeral - Number(total) - currentPixMaisReal;
+          await sendToCAndUpdateR(
+            values,
+            currentRoundedPix,
+            currentRoundedReal,
+          );
+
+          const numPix = currentRoundedPix;
+          const numReal = currentRoundedReal;
 
           if (numPix > 0 || numReal > 0) {
             let finalPix = numPix;
@@ -745,8 +1110,12 @@ const Calculadora = ({
         console.log("Caiu em foi tudo pago Papel e R.");
         //
       } else if (valorDeve && !trocoValue) {
-        const numPix = Number(pix) || 0;
-        const numReal = Number(real) || 0;
+        // IMPORTANTE: Recalcular com valores ATUAIS do estado
+        const currentRoundedPix = roundToHalf(Number(pix) || 0);
+        const currentRoundedReal = roundToHalf(Number(real) || 0);
+
+        const numPix = currentRoundedPix;
+        const numReal = currentRoundedReal;
 
         if (numPix > 0 || numReal > 0) {
           let finalPix = numPix;
@@ -803,9 +1172,9 @@ const Calculadora = ({
           codigo,
           r,
           nome,
-          valorpapel: papel,
-          valorcomissao: comitions,
-          valor: total,
+          valorpapel: round(papel),
+          valorcomissao: round(comitions),
+          valor: roundToHalf(total),
         });
 
         await Execute.sendToPapelC({
@@ -821,8 +1190,8 @@ const Calculadora = ({
           trocoValue,
           r,
           deveIdsArray,
-          Number(pix),
-          Number(real),
+          roundedPix,
+          roundedReal,
         );
 
         if (total > 0) {
@@ -833,24 +1202,26 @@ const Calculadora = ({
             r,
             data: Use.NowData(),
             codigo,
-            valorpapel: papel,
-            valorcomissao: comitions,
+            valorpapel: round(papel),
+            valorcomissao: round(comitions),
             valor: trocoValue,
           });
           await Execute.sendToPapelC({
             ...ObjPapelC,
             deveid: novoCodigo,
-            papelpix:
-              Number(pix) > 0 ? Math.min(Number(pix), papel) - trocoValue : 0,
-            papelreal:
-              Number(real) > 0
+            papelpix: round(
+              roundedPix > 0 ? Math.min(roundedPix, papel) - trocoValue : 0,
+            ),
+            papelreal: round(
+              roundedReal > 0
                 ? Math.min(
-                    Number(real),
+                    roundedReal,
                     papel -
-                      (Number(pix) > 0 ? Math.min(Number(pix), papel) : 0) -
+                      (roundedPix > 0 ? Math.min(roundedPix, papel) : 0) -
                       trocoValue,
                   )
                 : 0,
+            ),
           });
           console.log("caiu no valor novo pago e parte");
         }
@@ -882,8 +1253,8 @@ const Calculadora = ({
               r,
               data: Use.NowData(),
               codigo,
-              valorpapel: papel,
-              valorcomissao: comitions,
+              valorpapel: round(papel),
+              valorcomissao: round(comitions),
               valor: trocoValue,
             });
             await Execute.sendToPapelC({
@@ -916,9 +1287,9 @@ const Calculadora = ({
               r,
               data: Use.NowData(),
               codigo,
-              valorpapel: papel,
-              valorcomissao: comitions,
-              valor: Number(total),
+              valorpapel: round(papel),
+              valorcomissao: round(comitions),
+              valor: roundToHalf(total),
             });
 
             await Execute.sendToPapelC({
@@ -949,9 +1320,9 @@ const Calculadora = ({
               r,
               data: Use.NowData(),
               codigo,
-              valorpapel: papel,
-              valorcomissao: comitions,
-              valor: value,
+              valorpapel: round(papel),
+              valorcomissao: round(comitions),
+              valor: roundToHalf(value),
             });
             await Execute.sendToPapelC({
               ...ObjPapelC,
@@ -987,7 +1358,7 @@ const Calculadora = ({
           console.log("Caiu em foi pago Parte R deve o Papel.");
         } else if (pixMaisReal > dadosR) {
           await Execute.sendToDeveUpdate(codigo, trocoValue, r);
-          await Execute.sendToCAndUpdateR(0);
+          await sendToCAndUpdateR(0);
           await Execute.PayAllMandR(idsArray);
           console.log("Caiu em foi Todo R e Parte Papel.");
         }
@@ -996,15 +1367,17 @@ const Calculadora = ({
         await Execute.removeDevo(codigo);
         await Execute.sendToPapelC({
           ...ObjPapelC,
-          papelpix:
-            Number(pix) > 0 ? Math.min(Number(pix), papel) + valorDevo : 0,
-          papelreal:
-            Number(real) > 0
+          papelpix: round(
+            roundedPix > 0 ? Math.min(roundedPix, papel) + valorDevo : 0,
+          ),
+          papelreal: round(
+            roundedReal > 0
               ? Math.min(
-                  Number(real),
-                  papel - (Number(pix) > 0 ? Math.min(Number(pix), papel) : 0),
+                  roundedReal,
+                  papel - (roundedPix > 0 ? Math.min(roundedPix, papel) : 0),
                 ) + valorDevo
               : 0,
+          ),
         });
 
         console.log("Caiu em DEVO e Pagou tudo o Papel");
@@ -1019,8 +1392,8 @@ const Calculadora = ({
           r,
           data: Use.NowData(),
           codigo,
-          valorpapel: papel - pixMaisReal,
-          valorcomissao: comitions,
+          valorpapel: round(papel - pixMaisReal),
+          valorcomissao: round(comitions),
           valor: trocoValue,
         });
         await Execute.sendToPapelC({
@@ -1033,12 +1406,17 @@ const Calculadora = ({
         await Execute.sendToPapelC(ObjPapelC);
       }
 
-      hadleUpdatePapel(
-        Number(sumValues) + Number(desperdicio) + Number(perdida),
-      );
+      if (sumValues > 0) {
+        await handleUpdatePapel();
+      }
 
-      const numPix = Number(pix) || 0;
-      const numReal = Number(real) || 0;
+      // IMPORTANTE: Recalcular roundedPix e roundedReal AQUI dentro do handleSubmit
+      // para garantir que estamos usando os valores mais RECENTES do estado
+      const currentRoundedPix = roundToHalf(Number(pix) || 0);
+      const currentRoundedReal = roundToHalf(Number(real) || 0);
+
+      const numPix = currentRoundedPix;
+      const numReal = currentRoundedReal;
 
       if (numPix > 0 || numReal > 0) {
         let finalPix = numPix;
@@ -1066,25 +1444,34 @@ const Calculadora = ({
             }
           }
 
+          console.log("💰 Calculadora - Enviando para Pagamentos:", {
+            pixOriginal: pix,
+            realOriginal: real,
+            pixArredondado: currentRoundedPix,
+            realArredondado: currentRoundedReal,
+            pixFinal: round(pixParaPagamento),
+            realFinal: round(realParaPagamento),
+            valorDevo: valorDevo,
+          });
+
           await Execute.sendToPagamentos({
             nome,
             r,
             data: Use.NowData(),
-            pix: pixParaPagamento,
-            real: realParaPagamento,
+            pix: round(pixParaPagamento),
+            real: round(realParaPagamento),
+          });
+
+          await Execute.sendToSemanal({
+            r,
+            data: Use.NowData(),
+            pix: round(pixParaPagamento),
+            real: round(realParaPagamento),
           });
         }
       }
 
-      setPix("");
-      onPlusChange(0);
-      setReal("");
-      setComentario("");
-      setPerdida("");
-      setTrocoReal("");
-      onNomeChange("");
-      onCodigoChange("");
-      onValuesChange(Array(28).fill(""));
+      resetForm();
     } catch (error) {
       console.error("Erro ao salvar:", error);
       alert("Erro ao salvar os dados!");
@@ -1124,10 +1511,7 @@ const Calculadora = ({
 
     try {
       await Execute.sendToTemp(dataToSend);
-      onValuesChange(Array(28).fill(""));
-      onPlusChange(0);
-      onNomeChange(""); // Limpa o campo nome
-      onCodigoChange(""); // Limpa o campo codigo
+      resetForm();
       console.log("Dados pendentes salvos com sucesso!");
     } catch (error) {
       console.error("Erro ao salvar dados pendentes:", error);
@@ -1147,6 +1531,11 @@ const Calculadora = ({
       return;
     }
 
+    if (sumValues > 0 && papeis.length === 0) {
+      setErrorCode("PAPEL01");
+      return;
+    }
+
     try {
       if (Number(total) > 0) {
         const novoCodigo = gerarCodigoUnico();
@@ -1157,9 +1546,9 @@ const Calculadora = ({
           r,
           data: Use.NowData(),
           codigo,
-          valorpapel: papel,
-          valorcomissao: comitions,
-          valor: total,
+          valorpapel: round(papel),
+          valorcomissao: round(comitions),
+          valor: roundToHalf(total),
         });
 
         await Execute.sendToPapelC({
@@ -1172,15 +1561,12 @@ const Calculadora = ({
           encaixereal: 0,
         });
 
+        handleUpdatePapel(
+          Number(sumValues) + Number(desperdicio) + Number(perdida),
+        );
+
         // Clear form after successful operation
-        setPix("");
-        onPlusChange(0);
-        setReal("");
-        setComentario("");
-        setPerdida("");
-        onNomeChange("");
-        onCodigoChange("");
-        onValuesChange(Array(28).fill(""));
+        resetForm();
       } else {
         setShowError(true);
       }
@@ -1191,40 +1577,23 @@ const Calculadora = ({
     }
   };
 
-  const handleSaveCommentWaste = async () => {
-    const activeValuesCount = values.reduce((count, currentValue) => {
-      return count + (currentValue !== "" ? 1 : 0);
-    }, 0);
-
-    const dataToSave = {
-      deveid: 0,
-      codigo: 0,
-      r,
-      data: Use.NowData(),
-      nome: "Desperdício",
-      multi: 0,
-      comissao: 0,
-      papel: 0,
-      papelpix: 0,
-      papelreal: 0,
-      encaixepix: 0,
-      encaixereal: 0,
-      desperdicio: (Number(desperdicio) || 0) * activeValuesCount,
-      util: 0,
-      perdida: Number(perdida) || 0,
-      comentario,
-    };
-
+  const handleEnviarGastoOficina = async () => {
+    if (!gastoOficina || !valorOficina) {
+      console.error("Gasto e Valor são obrigatórios.");
+      return;
+    }
     try {
-      await Execute.sendToPapelC(dataToSave);
-      hadleUpdatePapel(
-        Number(sumValues) + Number(desperdicio) + Number(perdida),
+      await Execute.sendToSaidaO(
+        "A",
+        `R${r}`,
+        gastoOficina,
+        parseFloat(valorOficina) || 0,
+        Use.NowData(),
       );
-
-      setComentario("");
-      setPerdida("");
+      setGastoOficina("");
+      setValorOficina("");
     } catch (error) {
-      console.error("Erro ao salvar comentário e desperdício:", error);
+      console.error("Erro ao enviar gasto da oficina:", error);
     }
   };
 
@@ -1239,11 +1608,10 @@ const Calculadora = ({
     base: 0,
     real: Number(real),
     pix: Number(pix),
+    r_bsa_ids: rBsaUidsArray, // Adicionado para rastreamento
   };
 
-  const activeValuesCount = values.reduce((count, currentValue) => {
-    return count + (currentValue !== "" ? 1 : 0);
-  }, 0);
+  const activeValuesCount = values.filter((v) => Number(v) > 0).length;
 
   const ObjPapelC = {
     deveid: 0,
@@ -1253,26 +1621,27 @@ const Calculadora = ({
     nome,
     multi: multiplier,
     comissao: plus || 0,
-    papel: papel || 0,
-    papelpix: Number(pix) > 0 ? Math.min(Number(pix), papel) : 0,
-    papelreal:
-      Number(real) > 0
+    papel: round(papel) || 0,
+    papelpix: round(roundedPix > 0 ? Math.min(roundedPix, papel) : 0),
+    papelreal: round(
+      roundedReal > 0
         ? Math.min(
-            Number(real),
-            papel - (Number(pix) > 0 ? Math.min(Number(pix), papel) : 0),
+            roundedReal,
+            papel - (roundedPix > 0 ? Math.min(roundedPix, papel) : 0),
           )
         : 0,
-    encaixepix: Number(pix) > 0 ? Math.min(Number(pix), comitions) : 0,
-    encaixereal:
-      Number(real) > 0
+    ),
+    encaixepix: round(roundedPix > 0 ? Math.min(roundedPix, comitions) : 0),
+    encaixereal: round(
+      roundedReal > 0
         ? Math.min(
-            Number(real),
-            comitions -
-              (Number(pix) > 0 ? Math.min(Number(pix), comitions) : 0),
+            roundedReal,
+            comitions - (roundedPix > 0 ? Math.min(roundedPix, comitions) : 0),
           )
         : 0,
-    desperdicio: (Number(desperdicio) || 0) * activeValuesCount,
-    util: sumValues,
+    ),
+    desperdicio: round((Number(desperdicio) || 0) * activeValuesCount),
+    util: round(sumValues),
     perdida: Number(perdida) || 0,
     comentario,
   };
@@ -1281,8 +1650,77 @@ const Calculadora = ({
 
   return (
     <div>
+      {/* Seção de Papel Adicionada */}
+      <div className="overflow-x-auto rounded-box border border-warning bg-base-100">
+        <table className="table table-xs">
+          <thead>
+            <tr>
+              {oldestPapel ? (
+                <th
+                  colSpan={2}
+                  key={oldestPapel.id}
+                  className="text-center bg-success py-0 px-1"
+                >
+                  {oldestPapel.gastos}
+                </th>
+              ) : (
+                <th colSpan={2}></th>
+              )}
+              <th colSpan={4} className="bg-success py-0 px-1"></th>
+              <th colSpan={2} rowSpan={2} className="bg-error p-0">
+                {oldestPapel && (
+                  <button
+                    type="button"
+                    className="btn btn-ghost btn-error rounded-none w-full h-full p-0 m-0"
+                    onClick={handleFinalizarPapel}
+                  >
+                    Finalizar
+                  </button>
+                )}
+              </th>
+            </tr>
+            <tr>
+              {oldestPapel ? (
+                <th
+                  colSpan={2}
+                  key={oldestPapel.id}
+                  className="text-center bg-info/30 py-0 px-1"
+                >
+                  {formatNumber(oldestPapel.metragem)}
+                </th>
+              ) : (
+                <th colSpan={2}></th>
+              )}
+              <th colSpan={4} className="text-center bg-secondary/30 py-0 px-1">
+                {formatNumber(
+                  plotterData.reduce((acc, item) => {
+                    const larguraTotalCm =
+                      parseFloat(item.largura) + (Number(desperdicio) || 0);
+                    const mValue =
+                      ((parseFloat(item.sim) + parseFloat(item.nao)) / 100) *
+                      (larguraTotalCm / 100);
+                    return acc + mValue;
+                  }, 0),
+                )}
+              </th>
+            </tr>
+          </thead>
+        </table>
+      </div>
       <div className="badge badge-accent w-full badge-sm whitespace-normal h-auto text-black">
         {comentarioCadastro}
+      </div>
+      <div
+        className={`badge w-full py-3 mt-1 ${
+          countM1 === countUtilGreaterThanZero ? "badge-success" : "badge-error"
+        }`}
+      >
+        <span className="font-bold">
+          {countM1 === countUtilGreaterThanZero ? "Correto" : "Pendente"}
+        </span>
+        <span className="ml-2 text-xs">
+          ({countM1}/{countUtilGreaterThanZero})
+        </span>
       </div>
 
       <form onSubmit={handleSubmit} autoComplete="nope">
@@ -1293,7 +1731,7 @@ const Calculadora = ({
             className="input input-warning input-xs w-full col-span-3"
             value={codigo}
             autoComplete="nope"
-            onChange={(e) => onCodigoChange(e.target.value)}
+            onChange={handleCodigoChange}
             required
           />
           <input
@@ -1309,28 +1747,11 @@ const Calculadora = ({
           <input
             type="text"
             placeholder="Nome"
-            className="input input-warning input-xs w-full"
+            className={`input ${nomeInputClass} input-xs w-full`}
             value={nome}
             autoComplete="nope"
             list={datalistId} // Linked to datalist
-            onChange={(e) => {
-              const novoNome = e.target.value;
-              onNomeChange(novoNome); // Update parent's nome state
-
-              if (novoNome.length > 0) {
-                const suggestions = allCadastroNames
-                  .filter(
-                    (item) =>
-                      item.nome &&
-                      item.nome.toLowerCase().includes(novoNome.toLowerCase()),
-                  )
-                  .map((item) => item.nome);
-                setFilteredSuggestions(suggestions);
-              } else {
-                // Clear suggestions if input is empty
-                setFilteredSuggestions([]);
-              }
-            }}
+            onChange={handleNomeChange}
             required
           />
           <datalist id={datalistId}>
@@ -1368,7 +1789,7 @@ const Calculadora = ({
             placeholder="Total"
             value={typeof total === "number" ? total.toFixed(2) : ""}
             autoComplete="nope"
-            className="input input-warning input-xs z-3 text-center text-warning font-bold"
+            className="input input-warning input-xs z-3 text-center text-warning font-bold w-full"
             readOnly
           />
         </div>
@@ -1378,20 +1799,24 @@ const Calculadora = ({
             placeholder="SOMA TOTAL"
             value={displayTotalGeral}
             autoComplete="nope"
-            className="input input-success input-xl z-3 text-center text-success mt-0.5 font-bold"
+            className={`input ${somaTotalInputClass} input-xl z-3 text-center mt-0.5 font-bold w-full`}
             readOnly
           />
         </div>
         <div className="join grid grid-cols-3 mt-0.5">
           <input
             min="0"
-            step={0.01}
+            step="0.5"
             type="number"
             placeholder="Pix"
             className="input input-secondary input-lg z-2 text-secondary font-bold join-item"
             value={pix}
             autoComplete="nope"
-            onChange={(e) => setPix(e.target.value)}
+            onChange={handleHalfStepChange(setPix)}
+            onBlur={(e) =>
+              e.target.value && setPix(parseFloat(e.target.value).toFixed(2))
+            }
+            onWheel={(e) => e.target.blur()}
           />
           <input
             min="0"
@@ -1404,24 +1829,33 @@ const Calculadora = ({
           />
           <input
             min="0"
-            step={0.01}
+            step="0.5"
             type="number"
             placeholder="Real"
             className="input input-secondary input-lg z-2 text-secondary font-bold join-item"
             value={real}
             autoComplete="nope"
-            onChange={(e) => setReal(e.target.value)}
+            onChange={handleHalfStepChange(setReal)}
+            onBlur={(e) =>
+              e.target.value && setReal(parseFloat(e.target.value).toFixed(2))
+            }
+            onWheel={(e) => e.target.blur()}
           />
           <div className="grid col-span-3 my-0.5 z-50">
             <input
               min="0"
-              step={0.01}
+              step="0.5"
               type="number"
               placeholder="Troco Real"
-              className="input input-info input-lg z-2 text-center text-info font-bold"
+              className="input input-info input-lg z-2 text-center text-info font-bold w-full"
               value={trocoReal}
-              onChange={(e) => setTrocoReal(e.target.value)}
+              onChange={handleHalfStepChange(setTrocoReal)}
+              onBlur={(e) =>
+                e.target.value &&
+                setTrocoReal(parseFloat(e.target.value).toFixed(2))
+              }
               autoComplete="nope"
+              onWheel={(e) => e.target.blur()}
             />
           </div>
           <div className="grid grid-cols-2 col-span-3 my-0.5 z-50">
@@ -1455,26 +1889,26 @@ const Calculadora = ({
         <div className="join items-end">
           <input
             type="text"
-            placeholder="Comentário"
-            className="input input-primary input-xs join-item" // Ajuste de largura
+            placeholder="Gasto"
+            className="input input-primary input-xs join-item"
             autoComplete="nope"
-            value={comentario}
-            onChange={(e) => setComentario(e.target.value)}
+            value={gastoOficina}
+            onChange={(e) => setGastoOficina(e.target.value)}
           />
           <input
             min="0"
             step={0.01}
             type="number"
-            placeholder="Desperdício"
+            placeholder="Valor"
             className="input input-primary input-xs join-item"
             autoComplete="nope"
-            value={perdida}
-            onChange={(e) => setPerdida(e.target.value)}
+            value={valorOficina}
+            onChange={(e) => setValorOficina(e.target.value)}
           />
           <button
             type="button"
-            className="btn btn-info btn-xs join-item" // Adjust styling as needed
-            onClick={handleSaveCommentWaste}
+            className="btn btn-info btn-xs join-item"
+            onClick={handleEnviarGastoOficina}
           >
             Enviar
           </button>
@@ -1483,6 +1917,7 @@ const Calculadora = ({
       {typeof window !== "undefined" && showError && (
         <ErrorComponent errorCode="Nulo" />
       )}
+      {errorCode && <ErrorComponent errorCode={errorCode} />}
     </div>
   );
 };

@@ -1,10 +1,4 @@
-import React, {
-  useEffect,
-  useState,
-  useCallback,
-  useRef,
-  useMemo,
-} from "react";
+import React, { useEffect, useState, useRef, useMemo } from "react";
 import Execute from "models/functions";
 import Edit from "../Edit";
 import Use from "models/utils";
@@ -23,7 +17,7 @@ const Coluna = ({ r }) => {
   const [editingId, setEditingId] = useState(null);
   const [editedData, setEditedData] = useState({});
   const { lastMessage } = useWebSocket();
-  const lastProcessedTimestampRef = useRef(null);
+  const lastProcessedMessageIdRef = useRef(null);
 
   const handleSave = async (editedData) => {
     try {
@@ -41,54 +35,46 @@ const Coluna = ({ r }) => {
     }
   };
 
-  const fetchData = async () => {
-    try {
-      if (typeof r === "undefined" || r === null) return;
-      const results = await Execute.receiveFromC(r);
-      const existsData = await Execute.receiveFromR(r);
-      setDados(
-        Array.isArray(results)
-          ? results.sort((a, b) => new Date(b.date) - new Date(a.date))
-          : [],
-      );
-      setExists(Array.isArray(existsData) ? existsData : []);
-    } catch (error) {
-      console.error("Erro:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const memoizedFetchData = useCallback(fetchData, [r]);
-
   useEffect(() => {
-    memoizedFetchData();
-  }, [memoizedFetchData]);
+    const fetchData = async () => {
+      try {
+        if (typeof r === "undefined" || r === null) return;
+        const results = await Execute.receiveFromC(r);
+        const existsData = await Execute.receiveFromR(r);
+        setDados(
+          Array.isArray(results)
+            ? results
+                .filter((item) => !item.dtfim)
+                .sort((a, b) => new Date(b.data) - new Date(a.data))
+            : [],
+        );
+        setExists(Array.isArray(existsData) ? existsData : []);
+      } catch (error) {
+        console.error("Erro:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [r]);
 
   // Efeito para lidar com mensagens WebSocket
   useEffect(() => {
-    if (lastMessage && lastMessage.data && lastMessage.timestamp) {
-      if (
-        lastProcessedTimestampRef.current &&
-        lastMessage.timestamp <= lastProcessedTimestampRef.current
-      ) {
-        return; // Ignora mensagem já processada
-      }
-
+    if (lastMessage && lastMessage.id !== lastProcessedMessageIdRef.current) {
       const { type, payload } = lastMessage.data;
 
       // --- Lida com atualizações na tabela C (dados principais) ---
       if (
         // Condição para C_NEW_ITEM e C_UPDATED_ITEM: requer 'r' no payload
-        ((type === "C_NEW_ITEM" || type === "C_UPDATED_ITEM") &&
+        ((type === "C_NEW_ITEM" ||
+          type === "C_UPDATED_ITEM" ||
+          type === "C_FINALIZED_ITEM") && // Adicionado C_FINALIZED_ITEM
           payload &&
           String(payload.r) === String(r)) ||
         // Condição para C_DELETED_ITEM: requer apenas 'id' no payload
         (type === "C_DELETED_ITEM" && payload && payload.id !== undefined)
       ) {
-        console.log(
-          `Coluna-1: Mensagem C-type recebida. Type: ${type}, Payload.r: ${payload?.r}, Component r: ${r}`,
-        );
         setDados((prevDadosC) => {
           let newDadosC = [...prevDadosC];
 
@@ -101,21 +87,22 @@ const Coluna = ({ r }) => {
 
           switch (type) {
             case "C_NEW_ITEM":
-              console.log(
-                `Coluna-1: Processando C_NEW_ITEM. ItemIndex: ${itemIndex}`,
-              );
               if (itemIndex === -1) newDadosC.push(payload);
               break;
+            case "C_FINALIZED_ITEM": // Novo caso para finalização
             case "C_UPDATED_ITEM":
-              console.log(
-                `Coluna-1: Processando C_UPDATED_ITEM. ItemIndex: ${itemIndex}`,
-              );
-              if (itemIndex !== -1) {
-                newDadosC[itemIndex] = payload; // Substitui o item completo pelo payload
+              if (payload.dtfim) {
+                newDadosC = newDadosC.filter(
+                  (item) => String(item.id) !== String(payload.id),
+                );
               } else {
-                newDadosC.push(payload); // Adiciona se não existir (fallback)
+                if (itemIndex !== -1) {
+                  newDadosC[itemIndex] = payload;
+                } else {
+                  newDadosC.push(payload);
+                }
               }
-              if (editingId === payload.id) setEditingId(null); // Fecha edição
+              if (editingId === payload.id) setEditingId(null);
               break;
             case "C_DELETED_ITEM":
               newDadosC = newDadosC.filter(
@@ -125,11 +112,10 @@ const Coluna = ({ r }) => {
               break;
           }
           const sortedDados = newDadosC.sort((a, b) => {
-            const dateA = new Date(a.date).getTime();
-            const dateB = new Date(b.date).getTime();
+            const dateA = new Date(a.data).getTime();
+            const dateB = new Date(b.data).getTime();
             return dateB - dateA;
           });
-          console.log(`Coluna-1: Novo estado de dados (sorted):`, sortedDados);
           return sortedDados;
         });
       }
@@ -170,14 +156,14 @@ const Coluna = ({ r }) => {
         }
       }
 
-      lastProcessedTimestampRef.current = lastMessage.timestamp;
+      lastProcessedMessageIdRef.current = lastMessage.id;
     }
   }, [lastMessage, r, editingId, setDados, setExists]); // Adicionado setDados e setExists
 
   const groupedResults = useMemo(() => {
     return dados.reduce((acc, item) => {
-      const dateKey = item.date.substring(0, 10); // YYYY-MM-DD
-      const dateObj = new Date(item.date);
+      const dateKey = item.data.substring(0, 10); // YYYY-MM-DD
+      const dateObj = new Date(item.data);
       const horas = String(dateObj.getHours()).padStart(2, "0");
       const minutos = String(dateObj.getMinutes()).padStart(2, "0");
       const horaFormatada = `${horas}:${minutos}`;
@@ -296,11 +282,10 @@ const Coluna = ({ r }) => {
                     <tr
                       key={item.id}
                       className={`border-b border-base-content/5 ${
+                        item.r_bsa_ids &&
                         exists.some(
                           (e) =>
-                            String(e.codigo) === String(item.codigo) && // Comparar como string
-                            Use.formatarData(e.data) ===
-                              Use.formatarData(item.date), // Comparar datas formatadas
+                            e.r_bsa_uid && item.r_bsa_ids.includes(e.r_bsa_uid),
                         )
                           ? "bg-error/70"
                           : ""

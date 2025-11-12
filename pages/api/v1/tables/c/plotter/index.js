@@ -20,12 +20,26 @@ async function notifyWebSocketServer(data) {
 
 const router = createRouter();
 
+router.post(postHandler);
 router.get(getHandler);
 router.delete(deleteHandler);
 router.put(updateHandler);
 router.patch(patchHandler);
 
 export default router.handler(controller.errorHandlers);
+
+async function postHandler(request, response) {
+  const newData = request.body;
+  const result = await ordem.createPlotterC(newData);
+
+  if (result?.rows?.length > 0) {
+    await notifyWebSocketServer({
+      type: "PLOTTER_C_NEW_ITEM",
+      payload: result.rows[0],
+    });
+  }
+  return response.status(201).json(result);
+}
 
 async function getHandler(request, response) {
   const { r } = request.query;

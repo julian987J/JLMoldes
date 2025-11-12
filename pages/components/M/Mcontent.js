@@ -8,6 +8,7 @@ import Config from "../Config.js";
 import Notes from "./Notes.js";
 import Alerta from "./Alertas.js";
 import { useWebSocket } from "../../../contexts/WebSocketContext.js";
+import Execute from "models/functions";
 
 const Mcontent = ({ oficina, r }) => {
   const componentId = useId();
@@ -21,8 +22,66 @@ const Mcontent = ({ oficina, r }) => {
   const [alt, setAlt] = useState("");
   const [showError, setErrorCode] = useState(false);
   const [filteredSuggestions, setFilteredSuggestions] = useState([]);
+  const [nomeInputClass, setNomeInputClass] = useState("input-info");
 
   const { lastMessage } = useWebSocket();
+
+  useEffect(() => {
+    const checkOldestDebt = async () => {
+      if (!codigo || !r) {
+        setNomeInputClass("input-info");
+        return;
+      }
+
+      try {
+        const [allDeveData, allRbsaData] = await Promise.all([
+          Execute.receiveFromDeve(r),
+          Execute.receiveFromR(r),
+        ]);
+
+        const userDeveData = allDeveData.filter(
+          (item) => item.codigo === codigo,
+        );
+        const userRbsaData = allRbsaData.filter(
+          (item) => item.codigo === codigo,
+        );
+
+        const combinedUserData = [...userDeveData, ...userRbsaData];
+
+        if (combinedUserData.length === 0) {
+          setNomeInputClass("input-info");
+          return;
+        }
+
+        const oldestDate = combinedUserData.reduce((oldest, current) => {
+          const currentDate = new Date(current.data);
+          return currentDate < oldest ? currentDate : oldest;
+        }, new Date(combinedUserData[0].data));
+
+        const oneMonthAgo = new Date();
+        oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
+        const twoMonthsAgo = new Date();
+        twoMonthsAgo.setMonth(twoMonthsAgo.getMonth() - 2);
+
+        if (oldestDate < twoMonthsAgo) {
+          setNomeInputClass("input-error bg-error/30");
+        } else if (oldestDate < oneMonthAgo) {
+          setNomeInputClass("input-secondary bg-secondary/30");
+        } else {
+          setNomeInputClass("input-info");
+        }
+      } catch (error) {
+        console.error("Erro ao verificar dívidas antigas:", error);
+        setNomeInputClass("input-info");
+      }
+    };
+
+    if (!codigo && !nome) {
+      setNomeInputClass("input-info");
+    } else {
+      checkOldestDebt();
+    }
+  }, [codigo, nome, r, lastMessage]);
 
   useEffect(() => {
     const fetchInitialCadastroData = async () => {
@@ -63,14 +122,14 @@ const Mcontent = ({ oficina, r }) => {
     }
   }, [lastMessage]);
 
-  // useEffect para código (modificado)
-  useEffect(() => {
-    const codigoBuscado = codigo.trim().toUpperCase();
+  const handleCodigoChange = (e) => {
+    const newCodigo = e.target.value;
+    setCodigo(newCodigo);
 
-    // Sempre limpa quando o código está vazio
+    const codigoBuscado = newCodigo.trim().toUpperCase();
     if (!codigoBuscado) {
-      setObservacao("");
       setNome("");
+      setObservacao("");
       return;
     }
 
@@ -79,22 +138,35 @@ const Mcontent = ({ oficina, r }) => {
     );
 
     if (registro) {
-      setObservacao(registro.observacao || "");
       setNome(registro.nome || "");
+      setObservacao(registro.observacao || "");
     } else {
-      setObservacao("");
       setNome("");
-    }
-  }, [codigo, cadastroItems]);
-
-  // useEffect para nome (modificado)
-  useEffect(() => {
-    const nomeBuscado = nome.trim().toLowerCase();
-
-    // Sempre limpa quando o nome está vazio
-    if (!nomeBuscado) {
       setObservacao("");
+    }
+  };
+
+  const handleNomeChange = (e) => {
+    const newNome = e.target.value;
+    setNome(newNome);
+
+    if (newNome.length > 0) {
+      const suggestions = cadastroItems
+        .filter(
+          (item) =>
+            item.nome &&
+            item.nome.toLowerCase().includes(newNome.toLowerCase()),
+        )
+        .map((item) => item.nome);
+      setFilteredSuggestions(suggestions);
+    } else {
+      setFilteredSuggestions([]);
+    }
+
+    const nomeBuscado = newNome.trim().toLowerCase();
+    if (!nomeBuscado) {
       setCodigo("");
+      setObservacao("");
       return;
     }
 
@@ -103,39 +175,30 @@ const Mcontent = ({ oficina, r }) => {
     );
 
     if (registro) {
-      setObservacao(registro.observacao || "");
       setCodigo(registro.codigo?.toString() || "");
+      setObservacao(registro.observacao || "");
     } else {
-      setObservacao("");
       setCodigo("");
+      setObservacao("");
     }
-  }, [nome, cadastroItems]);
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    const ordemInputValues = {
-      oficina,
-      observacao,
-      codigo,
-      dec,
-      nome,
-      sis,
-      base,
-      alt,
-    };
-
-    // Condição para separar os dados em duas tabelas
-    let hasInserted = false;
+    const r_bsa_uid =
+      Date.now().toString(36) +
+      Math.random().toString(36).slice(2, 10).toUpperCase();
 
     // Se todos os valores forem 0, exibe o erro e interrompe a execução
-    if (parseInt(base) === 0 && parseInt(sis) === 0 && parseInt(alt) === 0) {
-      setErrorCode("");
-      setTimeout(() => {
-        setErrorCode("000BSA"); // Define um novo código de erro depois de um pequeno delay
-      }, 0);
+    if (
+      (!base || parseInt(base) === 0) &&
+      (!sis || parseInt(sis) === 0) &&
+      (!alt || parseInt(alt) === 0)
+    ) {
+      setErrorCode("000BSA");
     } else {
-      setErrorCode("");
+      setErrorCode(false);
       if (parseInt(base) > 0) {
         try {
           const responseBase = await fetch("/api/v1/tables", {
@@ -150,13 +213,12 @@ const Mcontent = ({ oficina, r }) => {
               sis: 0,
               base,
               alt: 0,
+              r_bsa_uid,
             }),
           });
 
           if (!responseBase.ok)
             throw new Error("Erro ao enviar os dados para a tabela 'base'.");
-          await responseBase.json();
-          hasInserted = true; // Marca que pelo menos uma inserção foi feita
         } catch (error) {
           console.error("Erro ao enviar base:", error);
         }
@@ -176,31 +238,15 @@ const Mcontent = ({ oficina, r }) => {
               sis,
               base: 0,
               alt,
+              r_bsa_uid,
             }),
           });
 
           if (!responseSisAlt.ok)
             throw new Error("Erro ao enviar os dados para a tabela 'sis_alt'.");
           await responseSisAlt.json();
-          hasInserted = true; // Marca que pelo menos uma inserção foi feita
         } catch (error) {
           console.error("Erro ao enviar sis_alt:", error);
-        }
-      }
-
-      // Se nenhum dado foi inserido antes, faz o envio para a tabela padrão
-      if (!hasInserted) {
-        try {
-          const response = await fetch("/api/v1/tables", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(ordemInputValues),
-          });
-
-          if (!response.ok) throw new Error("Erro ao enviar os dados.");
-          await response.json();
-        } catch (error) {
-          console.error("Erro ao enviar:", error);
         }
       }
 
@@ -238,7 +284,7 @@ const Mcontent = ({ oficina, r }) => {
             placeholder="CODIGO"
             className="input input-info input-xs w-24"
             value={codigo}
-            onChange={(e) => setCodigo(e.target.value)}
+            onChange={handleCodigoChange}
           />
           <input
             type="text"
@@ -258,29 +304,11 @@ const Mcontent = ({ oficina, r }) => {
             <input
               type="text"
               placeholder="Nome"
-              className="input input-info input-xs"
+              className={`input ${nomeInputClass} input-xs`}
               value={nome}
               autoComplete="off"
               list={`m-name-suggestions-${componentId}`}
-              onChange={(e) => {
-                const novoNome = e.target.value;
-                setNome(novoNome);
-
-                if (novoNome.length > 0) {
-                  const suggestions = cadastroItems
-                    .filter(
-                      (item) =>
-                        item.nome &&
-                        item.nome
-                          .toLowerCase()
-                          .includes(novoNome.toLowerCase()),
-                    )
-                    .map((item) => item.nome);
-                  setFilteredSuggestions(suggestions);
-                } else {
-                  setFilteredSuggestions([]);
-                }
-              }}
+              onChange={handleNomeChange}
             />
             <datalist id={`m-name-suggestions-${componentId}`}>
               {filteredSuggestions.map((suggestion, index) => (
@@ -319,7 +347,7 @@ const Mcontent = ({ oficina, r }) => {
         </form>
         <Config />
       </div>
-      <div className="grid grid-cols-[2fr_2fr_1fr] gap-2">
+      <div className="grid grid-cols-[2fr_2fr_1fr] gap-2 items-start">
         <TabelaM
           oficina={oficina}
           r={r}
@@ -342,7 +370,7 @@ const Mcontent = ({ oficina, r }) => {
       </div>
       <div className="divider divider-neutral">OFICINA</div>
       <div>
-        <Rcontent codigoExterno={codigo} r={r} />
+        <Rcontent codigoExterno={codigo} nomeExterno={nome} r={r} />
       </div>
 
       {showError && <ErrorComponent errorCode="000BSA" />}

@@ -343,6 +343,12 @@ const TabelaM = ({
                           try {
                             setErrorCode(null);
                             const result = await Execute.sendTrueMR(item.id, 1);
+                            const uidToSend =
+                              item.r_bsa_uid ||
+                              `${Date.now().toString(36)}-${Math.random()
+                                .toString(36)
+                                .slice(2, 10)
+                                .toUpperCase()}`;
 
                             if (result) {
                               await Execute.sendToR({
@@ -352,6 +358,7 @@ const TabelaM = ({
                                 base: item.base || 0,
                                 r: 1,
                                 dec: item.dec,
+                                r_bsa_uid: uidToSend,
                               });
                             } else {
                               setErrorCode(item.id);
@@ -376,7 +383,17 @@ const TabelaM = ({
                         onClick={async () => {
                           try {
                             setErrorCode(null);
-                            const result = await Execute.sendTrueMR(item.id, 2);
+                            const result = await Execute.sendTrueMR(
+                              item.id,
+                              2,
+                              uidToSend,
+                            );
+                            const uidToSend =
+                              item.r_bsa_uid ||
+                              `${Date.now().toString(36)}-${Math.random()
+                                .toString(36)
+                                .slice(2, 10)
+                                .toUpperCase()}`;
 
                             if (result) {
                               await Execute.sendToR({
@@ -386,6 +403,7 @@ const TabelaM = ({
                                 base: item.base || 0,
                                 r: 2,
                                 dec: item.dec,
+                                r_bsa_uid: uidToSend,
                               });
                             } else {
                               setErrorCode(item.id);
@@ -407,6 +425,12 @@ const TabelaM = ({
                           try {
                             setErrorCode(null);
                             const result = await Execute.sendTrueMR(item.id, 3);
+                            const uidToSend =
+                              item.r_bsa_uid ||
+                              `${Date.now().toString(36)}-${Math.random()
+                                .toString(36)
+                                .slice(2, 10)
+                                .toUpperCase()}`;
 
                             if (result) {
                               await Execute.sendToR({
@@ -416,6 +440,7 @@ const TabelaM = ({
                                 base: item.base || 0,
                                 r: 3,
                                 dec: item.dec,
+                                r_bsa_uid: uidToSend,
                               });
                             } else {
                               setErrorCode(item.id);

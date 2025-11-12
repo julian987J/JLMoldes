@@ -3,13 +3,15 @@ import React, { useEffect, useState, useCallback, useRef } from "react";
 import Execute from "models/functions";
 import Use from "models/utils";
 import { useWebSocket } from "../../../contexts/WebSocketContext.js"; // Ajuste o caminho se necessário
+import { useAuth } from "../../../contexts/AuthContext.js";
 
 const sortDadosByDate = (dataArray) =>
   [...dataArray].sort((a, b) => new Date(b.data) - new Date(a.data));
 
-const BSA = ({ codigo, r }) => {
+const BSA = ({ codigo, r, onTotalsChange }) => {
   const [dados, setDados] = useState([]);
   const { lastMessage } = useWebSocket();
+  const { user } = useAuth();
   const lastProcessedTimestampRef = useRef(null);
 
   const loadData = useCallback(async () => {
@@ -90,13 +92,72 @@ const BSA = ({ codigo, r }) => {
     }
   }, [lastMessage, r, setDados]);
 
+  const handleDelete = async (id) => {
+    try {
+      await Execute.removeMandR(id);
+    } catch (error) {
+      console.error("Erro ao excluir registro BSA:", error);
+      alert("Falha ao excluir registro.");
+    }
+  };
+
+  const oneMonthAgo = new Date();
+  oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
+  const twoMonthsAgo = new Date();
+  twoMonthsAgo.setMonth(twoMonthsAgo.getMonth() - 2);
+
+  const recentDados = dados.filter(
+    (item) => new Date(item.data) >= oneMonthAgo,
+  );
+  const betweenOneAndTwoMonthsDados = dados.filter(
+    (item) =>
+      new Date(item.data) < oneMonthAgo && new Date(item.data) >= twoMonthsAgo,
+  );
+  const oldDados = dados.filter((item) => new Date(item.data) < twoMonthsAgo);
+
+  const totalsBetweenOneAndTwoMonths = betweenOneAndTwoMonthsDados.reduce(
+    (acc, item) => {
+      acc.base += Number(item.base) || 0;
+      acc.sis += Number(item.sis) || 0;
+      acc.alt += Number(item.alt) || 0;
+      return acc;
+    },
+    { base: 0, sis: 0, alt: 0 },
+  );
+
+  const totalsOld = oldDados.reduce(
+    (acc, item) => {
+      acc.base += Number(item.base) || 0;
+      acc.sis += Number(item.sis) || 0;
+      acc.alt += Number(item.alt) || 0;
+      return acc;
+    },
+    { base: 0, sis: 0, alt: 0 },
+  );
+
+  const total1M =
+    totalsBetweenOneAndTwoMonths.base +
+    totalsBetweenOneAndTwoMonths.sis +
+    totalsBetweenOneAndTwoMonths.alt;
+  const total2M = totalsOld.base + totalsOld.sis + totalsOld.alt;
+
+  useEffect(() => {
+    if (onTotalsChange) {
+      onTotalsChange({
+        total1M,
+        total2M,
+      });
+    }
+  }, [total1M, total2M, onTotalsChange]);
+
   return (
     <div className="overflow-x-auto rounded-box border border-warning bg-base-100">
-      <table className="table table-xs">
+      <table className="table table-xs mb-90">
         <thead>
           <tr>
             <th className="hidden">ID</th>
             <th className="w-36">Data</th>
+            <th className="hidden">UID</th>
             <th className="hidden">CODIGO</th>
             <th className="text-center">Dec</th>
             <th>Nome</th>
@@ -106,7 +167,7 @@ const BSA = ({ codigo, r }) => {
           </tr>
         </thead>
         <tbody>
-          {dados.map((item) => (
+          {recentDados.map((item) => (
             <tr
               key={item.id}
               className={
@@ -117,6 +178,7 @@ const BSA = ({ codigo, r }) => {
             >
               <td className="hidden">{item.id}</td>
               <td>{Use.formatarData(item.data)}</td>
+              <td className="hidden">{item.r_bsa_uid}</td>
               <td className="hidden">{item.codigo}</td>
               <td className="text-center">{item.dec}</td>
               <td>{item.nome}</td>
@@ -127,6 +189,128 @@ const BSA = ({ codigo, r }) => {
           ))}
         </tbody>
       </table>
+      {betweenOneAndTwoMonthsDados.length > 0 && (
+        <div className="mt-2">
+          <table className="table table-xs">
+            <thead>
+              <tr>
+                <th className="hidden bg-secondary-content">ID</th>
+                <th className="w-36 bg-secondary-content">Data</th>
+                <th className="hidden bg-secondary-content">UID</th>
+                <th className="hidden bg-secondary-content">CODIGO</th>
+                <th className="text-center bg-secondary-content">Dec</th>
+                <th className="bg-secondary-content">Nome</th>
+                <th className="w-10 text-center bg-secondary-content">Base</th>
+                <th className="w-10 text-center bg-secondary-content">Sis</th>
+                <th className="w-10 text-center bg-secondary-content">Alt</th>
+              </tr>
+            </thead>
+            <tbody>
+              {betweenOneAndTwoMonthsDados.map((item) => (
+                <tr
+                  key={item.id}
+                  className={
+                    item.codigo === codigo
+                      ? "bg-green-200"
+                      : "bg-secondary-content"
+                  }
+                >
+                  <td className="hidden">{item.id}</td>
+                  <td>{Use.formatarData(item.data)}</td>
+                  <td className="hidden">{item.r_bsa_uid}</td>
+                  <td className="hidden">{item.codigo}</td>
+                  <td className="text-center">{item.dec}</td>
+                  <td>{item.nome}</td>
+                  <td className="text-center">
+                    {Number(item.base).toFixed(2)}
+                  </td>
+                  <td className="text-center">{Number(item.sis).toFixed(2)}</td>
+                  <td className="text-center">{Number(item.alt).toFixed(2)}</td>
+                </tr>
+              ))}
+            </tbody>
+            <tfoot>
+              <tr className="font-bold bg-info/30">
+                <td colSpan="2"></td>
+                <td className="text-right">Total:</td>
+                <td colSpan="3" className="text-center">
+                  {(
+                    totalsBetweenOneAndTwoMonths.base +
+                    totalsBetweenOneAndTwoMonths.sis +
+                    totalsBetweenOneAndTwoMonths.alt
+                  ).toFixed(2)}
+                </td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      )}
+      {oldDados.length > 0 && (
+        <div className="mt-2">
+          <table className="table table-xs">
+            <thead>
+              <tr>
+                <th className="hidden bg-error/30">ID</th>
+                <th className="w-36 bg-error/30">Data</th>
+                <th className="hidden bg-error/30">UID</th>
+                <th className="hidden bg-error/30">CODIGO</th>
+                <th className="text-center bg-error/30">Dec</th>
+                <th className="bg-error/30">Nome</th>
+                <th className="w-10 text-center bg-error/30">Base</th>
+                <th className="w-10 text-center bg-error/30">Sis</th>
+                <th className="w-10 text-center bg-error/30">Alt</th>
+                {user && user.role === "admin" && (
+                  <th className="w-20 text-center bg-error/30">Ações</th>
+                )}
+              </tr>
+            </thead>
+            <tbody>
+              {oldDados.map((item) => (
+                <tr
+                  key={item.id}
+                  className={
+                    item.codigo === codigo ? "bg-green-200" : "bg-error/30"
+                  }
+                >
+                  <td className="hidden">{item.id}</td>
+                  <td>{Use.formatarData(item.data)}</td>
+                  <td className="hidden">{item.r_bsa_uid}</td>
+                  <td className="hidden">{item.codigo}</td>
+                  <td className="text-center">{item.dec}</td>
+                  <td>{item.nome}</td>
+                  <td className="text-center">
+                    {Number(item.base).toFixed(2)}
+                  </td>
+                  <td className="text-center">{Number(item.sis).toFixed(2)}</td>
+                  <td className="text-center">{Number(item.alt).toFixed(2)}</td>
+                  {user && user.role === "admin" && (
+                    <td className="text-center">
+                      <button
+                        className="btn btn-xs btn-error btn-outline"
+                        onClick={() => handleDelete(item.id)}
+                      >
+                        Excluir
+                      </button>
+                    </td>
+                  )}
+                </tr>
+              ))}
+            </tbody>
+            <tfoot>
+              <tr className="font-bold bg-info/30">
+                <td colSpan="2"></td>
+                <td className="text-right">Total:</td>
+                <td
+                  colSpan={user && user.role === "admin" ? 4 : 3}
+                  className="text-center"
+                >
+                  {(totalsOld.base + totalsOld.sis + totalsOld.alt).toFixed(2)}
+                </td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      )}
     </div>
   );
 };

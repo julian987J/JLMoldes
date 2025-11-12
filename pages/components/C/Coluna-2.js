@@ -10,13 +10,24 @@ import Edit from "../Edit";
 import Use from "models/utils";
 import { useWebSocket } from "../../../contexts/WebSocketContext.js"; // Ajuste o caminho
 
-const formatCurrency = (value) => {
+const round = (value) => {
   const number = parseFloat(value);
   if (isNaN(number)) {
-    return "0.00";
+    return 0;
   }
-  const rounded = Math.round((number + Number.EPSILON) * 100) / 100;
-  return rounded.toFixed(2);
+  return Math.round((number + Number.EPSILON) * 100) / 100;
+};
+
+const roundToHalf = (value) => {
+  const number = parseFloat(value);
+  if (isNaN(number)) {
+    return 0;
+  }
+  return Math.round(number / 0.5) * 0.5;
+};
+
+const formatCurrency = (value) => {
+  return round(value).toFixed(2);
 };
 
 const Coluna = ({ r }) => {
@@ -39,20 +50,31 @@ const Coluna = ({ r }) => {
       return;
     }
 
-    const dataToSend = {
+    const finalEditedData = {
       ...editedData,
+      papelreal: roundToHalf(editedData.papelreal),
+      papelpix: roundToHalf(editedData.papelpix),
+      encaixereal: roundToHalf(editedData.encaixereal),
+      encaixepix: roundToHalf(editedData.encaixepix),
+      papel: round(editedData.papel),
+      desperdicio: round(editedData.desperdicio),
+      util: round(editedData.util),
+      perdida: round(editedData.perdida),
+      multi: parseFloat(editedData.multi) || 0,
+      comissao: parseFloat(editedData.comissao) || 0,
+    };
+
+    const dataToSend = {
+      ...finalEditedData,
       papelreal_pago:
-        (parseFloat(originalItem.papelreal) || 0) -
-        (parseFloat(editedData.papelreal) || 0),
+        (parseFloat(originalItem.papelreal) || 0) - finalEditedData.papelreal,
       papelpix_pago:
-        (parseFloat(originalItem.papelpix) || 0) -
-        (parseFloat(editedData.papelpix) || 0),
+        (parseFloat(originalItem.papelpix) || 0) - finalEditedData.papelpix,
       encaixereal_pago:
         (parseFloat(originalItem.encaixereal) || 0) -
-        (parseFloat(editedData.encaixereal) || 0),
+        finalEditedData.encaixereal,
       encaixepix_pago:
-        (parseFloat(originalItem.encaixepix) || 0) -
-        (parseFloat(editedData.encaixepix) || 0),
+        (parseFloat(originalItem.encaixepix) || 0) - finalEditedData.encaixepix,
     };
 
     try {
@@ -78,7 +100,9 @@ const Coluna = ({ r }) => {
 
       setDados(
         Array.isArray(results)
-          ? results.sort((a, b) => new Date(b.data) - new Date(a.data))
+          ? results
+              .filter((item) => !item.dtfim)
+              .sort((a, b) => new Date(b.data) - new Date(a.data))
           : [],
       );
       setExists(Array.isArray(existsData) ? existsData : []);
@@ -108,63 +132,56 @@ const Coluna = ({ r }) => {
       }
 
       const { type, payload } = lastMessage.data;
-      console.log("WebSocket message received:", type, payload);
 
-      // --- Lida com atualizações na tabela PapelC (dados principais) ---
+      // --- Lida com atualizações via WebSocket ---
       if (
-        // Condição para PAPELC_NEW_ITEM e PAPELC_UPDATED_ITEM: requer 'r' no payload
-        ((type === "PAPELC_NEW_ITEM" || type === "PAPELC_UPDATED_ITEM") &&
-          payload &&
-          String(payload.r) === String(r)) ||
-        // Condição para PAPELC_DELETED_ITEM: requer apenas 'id' no payload
-        (type === "PAPELC_DELETED_ITEM" && payload && payload.id !== undefined)
+        payload &&
+        (type === "PAPELC_NEW_ITEM" ||
+          type === "PAPELC_UPDATED_ITEM" ||
+          type === "PAPELC_FINALIZED_ITEM") &&
+        String(payload.r) === String(r)
       ) {
-        setDados((prevDadosPapelC) => {
-          let newDadosPapelC = [...prevDadosPapelC];
-          const itemIndex =
-            payload.id !== undefined
-              ? newDadosPapelC.findIndex(
-                  (item) => String(item.id) === String(payload.id),
-                )
-              : -1;
+        setDados((prevDados) => {
+          let newDados = [...prevDados];
+          const itemIndex = newDados.findIndex(
+            (item) => String(item.id) === String(payload.id),
+          );
 
           switch (type) {
             case "PAPELC_NEW_ITEM":
-              console.log("PAPELC_NEW_ITEM: Adding new item", payload);
-              if (itemIndex === -1) newDadosPapelC.push(payload);
+              if (itemIndex === -1 && !payload.dtfim) {
+                newDados.push(payload);
+              }
               break;
             case "PAPELC_UPDATED_ITEM":
-              console.log("PAPELC_UPDATED_ITEM: Updating item", payload);
-              if (itemIndex !== -1) {
-                newDadosPapelC[itemIndex] = {
-                  ...newDadosPapelC[itemIndex],
-                  ...payload,
-                };
+            case "PAPELC_FINALIZED_ITEM":
+              if (payload.dtfim) {
+                if (itemIndex !== -1) {
+                  newDados = newDados.filter(
+                    (item) => String(item.id) !== String(payload.id),
+                  );
+                }
               } else {
-                console.warn(
-                  "PAPELC_UPDATED_ITEM: Item not found for update, adding as new.",
-                  payload,
-                );
-                newDadosPapelC.push(payload);
+                if (itemIndex !== -1) {
+                  newDados[itemIndex] = { ...newDados[itemIndex], ...payload };
+                } else {
+                  newDados.push(payload);
+                }
               }
-              if (editingId === payload.id) setEditingId(null);
-              break;
-            case "PAPELC_DELETED_ITEM":
-              console.log("PAPELC_DELETED_ITEM: Deleting item", payload);
-              newDadosPapelC = newDadosPapelC.filter(
-                (item) => String(item.id) !== String(payload.id),
-              );
-              if (editingId === payload.id) setEditingId(null);
               break;
           }
-          return newDadosPapelC.sort(
-            (a, b) => new Date(b.data) - new Date(a.data),
-          );
+          if (editingId === payload.id) setEditingId(null);
+          return newDados.sort((a, b) => new Date(b.data) - new Date(a.data));
         });
-      }
-
-      // --- Lida com atualizações na tabela Deve (dados 'exists') ---
-      if (
+      } else if (type === "PAPELC_DELETED_ITEM" && payload) {
+        setDados((prevDados) => {
+          const newDados = prevDados.filter(
+            (item) => String(item.id) !== String(payload.id),
+          );
+          if (editingId === payload.id) setEditingId(null);
+          return newDados;
+        });
+      } else if (
         (type === "DEVE_NEW_ITEM" || type === "DEVE_UPDATED_ITEM") &&
         payload &&
         String(payload.r) === String(r)
@@ -176,9 +193,8 @@ const Coluna = ({ r }) => {
 
             const pId = payload.id;
             const pCodigo = payload.codigo;
-            const pDeveId = payload.deveid; // Use deveid for Deve table
+            const pDeveId = payload.deveid;
 
-            // Try to find the item by deveid first
             if (pDeveId !== undefined) {
               itemIndex = newExists.findIndex(
                 (item) =>
@@ -186,13 +202,11 @@ const Coluna = ({ r }) => {
                   String(item.deveid) === String(pDeveId),
               );
             } else if (pId !== undefined) {
-              // Fallback to id if deveid is not present (less reliable for Deve)
               itemIndex = newExists.findIndex(
                 (item) =>
                   item.id !== undefined && String(item.id) === String(pId),
               );
             } else if (pCodigo !== undefined) {
-              // Fallback to codigo if neither id nor deveid is present
               itemIndex = newExists.findIndex(
                 (item) =>
                   item.codigo !== undefined &&
@@ -202,15 +216,9 @@ const Coluna = ({ r }) => {
 
             switch (type) {
               case "DEVE_NEW_ITEM":
-                console.log("DEVE_NEW_ITEM: Adding new item", payload);
                 if (itemIndex === -1) {
-                  newExists.push(payload); // Adiciona se realmente novo
+                  newExists.push(payload);
                 } else {
-                  // Se já existe (ex: mensagem duplicada ou chegou fora de ordem), atualiza
-                  console.warn(
-                    "DEVE_NEW_ITEM: Item already exists, updating instead of adding.",
-                    payload,
-                  );
                   newExists[itemIndex] = {
                     ...newExists[itemIndex],
                     ...payload,
@@ -218,12 +226,7 @@ const Coluna = ({ r }) => {
                 }
                 break;
               case "DEVE_UPDATED_ITEM":
-                console.log("DEVE_UPDATED_ITEM: Updating item", payload);
                 if (parseFloat(payload.valor) <= 0) {
-                  console.log(
-                    "DEVE_UPDATED_ITEM: Removing item from exists (valor <= 0)",
-                    payload,
-                  );
                   newExists = newExists.filter(
                     (item) => String(item.deveid) !== String(payload.deveid),
                   );
@@ -233,29 +236,22 @@ const Coluna = ({ r }) => {
                     ...payload,
                   };
                 } else {
-                  console.warn(
-                    "DEVE_UPDATED_ITEM: Item not found in 'exists' state for payload, adding as new:",
-                    payload,
-                    "Current exists state:",
-                    prevExists,
-                  );
                   newExists.push(payload);
                 }
                 break;
             }
             return newExists.sort(
               (a, b) => new Date(b.data) - new Date(a.data),
-            ); // Ordena se necessário
+            );
           }
-          return prevExists; // Retorna o estado anterior se o payload for nulo (segurança)
+          return prevExists;
         });
       } else if (type === "DEVE_DELETED_ITEM" && payload) {
-        console.log("DEVE_DELETED_ITEM: Deleting item", payload);
         setExists((prevExists) => {
           let newExists = [...prevExists];
-          const pId = payload.id; // Payload de DEVE_DELETED_ITEM pode não ter 'id' vindo do backend atual
-          const pCodigo = payload.codigo; // Backend envia 'codigo'
-          const pDeveId = payload.deveid; // Use deveid for Deve table
+          const pId = payload.id;
+          const pCodigo = payload.codigo;
+          const pDeveId = payload.deveid;
 
           if (pDeveId !== undefined) {
             newExists = newExists.filter(
@@ -273,26 +269,14 @@ const Coluna = ({ r }) => {
                   String(item.codigo) === String(pCodigo)
                 ),
             );
-          }
-          // Adicionado para robustez, caso o payload de deleção comece a enviar 'id' no futuro
-          else if (pId !== undefined) {
+          } else if (pId !== undefined) {
             newExists = newExists.filter(
               (item) =>
                 !(item.id !== undefined && String(item.id) === String(pId)),
             );
           }
 
-          if (
-            pCodigo === undefined &&
-            pId === undefined &&
-            pDeveId === undefined
-          ) {
-            console.warn(
-              "DEVE_DELETED_ITEM: Payload without 'codigo', 'id' or 'deveid' to identify item to be deleted",
-              payload,
-            );
-          }
-          return newExists.sort((a, b) => new Date(b.data) - new Date(a.data)); // Ordena se necessário
+          return newExists.sort((a, b) => new Date(b.data) - new Date(a.data));
         });
       }
 
@@ -334,7 +318,8 @@ const Coluna = ({ r }) => {
       ...item,
       nome: String(item.nome !== undefined ? item.nome : ""),
       multi: String(item.multi !== undefined ? item.multi : "0"),
-      papel: String(item.papel !== undefined ? item.papel : "1"),
+      comissao: String(item.comissao !== undefined ? item.comissao : "0"),
+      papel: formatCurrency(item.papel !== undefined ? item.papel : "1"),
       papelreal: formatCurrency(
         item.papelreal !== undefined ? item.papelreal : 0,
       ),
@@ -347,9 +332,9 @@ const Coluna = ({ r }) => {
       ),
       desperdicio: formatCurrency(
         item.desperdicio !== undefined ? item.desperdicio : 0,
-      ), // formatCurrency para consistência, embora o input seja number
-      util: String(item.util !== undefined ? item.util : "1"),
-      perdida: String(item.perdida !== undefined ? item.perdida : "0"),
+      ),
+      util: formatCurrency(item.util !== undefined ? item.util : "1"),
+      perdida: formatCurrency(item.perdida !== undefined ? item.perdida : "0"),
       comentarios: String(
         item.comentarios !== undefined ? item.comentarios : "",
       ),
@@ -441,9 +426,7 @@ const Coluna = ({ r }) => {
                   {/* Linha com os totais de cada coluna */}
                   <tr>
                     <th colSpan={2}></th>
-                    <th className="text-center text-xs bg-warning/30">
-                      Metragem
-                    </th>
+                    <th className="text-center text-xs bg-warning/30">Met</th>
                     <th className="text-center text-xs bg-warning/30">
                       {formatCurrency(totalPapel)}
                     </th>
@@ -495,7 +478,7 @@ const Coluna = ({ r }) => {
                     <th className="bg-warning-content/50">Des</th>
                     <th className="bg-warning-content/50">Util</th>
                     <th className="bg-warning-content/50">Perda</th>
-                    <th>Comentarios</th>
+                    {/* <th>Com</th> */}
                     <th>Ações</th>
                   </tr>
                 </thead>
@@ -681,7 +664,7 @@ const Coluna = ({ r }) => {
                           formatCurrency(item.perdida)
                         )}
                       </td>
-                      <td>
+                      {/* <td>
                         {editingId === item.id ? (
                           <input
                             type="text"
@@ -694,7 +677,7 @@ const Coluna = ({ r }) => {
                         ) : (
                           item.comentarios
                         )}
-                      </td>
+                      </td> */}
                       <td>
                         <Edit
                           isEditing={editingId === item.id}

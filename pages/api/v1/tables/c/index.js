@@ -36,32 +36,76 @@ export default router.handler(controller.errorHandlers);
 
 async function postHandler(request, response) {
   const ordemInputValues = request.body;
-  const newCItemResult = await ordem.createC(ordemInputValues);
 
-  if (newCItemResult?.rows?.length > 0) {
+  // Nova lógica para pagamentos parciais usando r_bsa_ids
+  if (ordemInputValues.r_bsa_ids && ordemInputValues.r_bsa_ids.length > 0) {
+    const existingC = await ordem.findCByRbsaIds(
+      ordemInputValues.r,
+      ordemInputValues.r_bsa_ids,
+    );
+
+    if (existingC) {
+      // Se já existe um registro C, atualize-o
+      const updatedData = {
+        id: existingC.id,
+        base: ordemInputValues.base,
+        sis: ordemInputValues.sis,
+        alt: ordemInputValues.alt,
+        real: ordemInputValues.real,
+        pix: ordemInputValues.pix,
+        r_bsa_ids: ordemInputValues.r_bsa_ids,
+      };
+      const updatedResult = await ordem.updateCWithAddition(updatedData);
+
+      if (updatedResult?.rows?.length > 0) {
+        await notifyWebSocketServer({
+          type: "C_UPDATED_ITEM",
+          payload: updatedResult.rows[0],
+        });
+      }
+      return response.status(200).json(updatedResult);
+    }
+  }
+
+  // Lógica original para criar um novo registro C
+  const newCOrdem = await ordem.createC(ordemInputValues);
+
+  if (newCOrdem?.rows?.length > 0) {
     await notifyWebSocketServer({
       type: "C_NEW_ITEM",
-      payload: newCItemResult.rows[0], // Assume que createC retorna o item criado
+      payload: newCOrdem.rows[0],
     });
   }
-  return response.status(201).json(newCItemResult);
+
+  return response.status(201).json(newCOrdem);
 }
 
 async function getHandler(request, response) {
-  const { r } = request.query;
-  const result = await ordem.getC(r);
+  const { r, includeFinished } = request.query;
+  let result;
+  if (includeFinished === "true") {
+    result = await ordem.getAllC(r);
+  } else {
+    result = await ordem.getC(r);
+  }
   return response.status(200).json(result);
 }
 
 async function deleteHandler(request, response) {
   const { id } = request.body;
-  const result = await ordem.deleteC(id);
+  const deletedRows = await ordem.deleteC(id);
 
-  await notifyWebSocketServer({
-    type: "C_DELETED_ITEM",
-    payload: { id: id }, // Envia o ID do item deletado
-  });
-  return response.status(200).json(result);
+  if (deletedRows && deletedRows.length > 0) {
+    const deletedItem = deletedRows[0];
+    await notifyWebSocketServer({
+      type: "C_DELETED_ITEM",
+      payload: { id: deletedItem.id, r: deletedItem.r },
+    });
+    return response.status(200).json(deletedItem);
+  }
+
+  // Se nada foi deletado (ex: ID não encontrado), retorne uma resposta apropriada.
+  return response.status(200).json(null);
 }
 
 async function updateHandler(request, response) {

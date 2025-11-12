@@ -1,5 +1,5 @@
 import Update from "pages/components/Update.js";
-import React from "react";
+import React, { useState, useCallback } from "react";
 import { useAuth } from "../../contexts/AuthContext"; // Importa o hook de autenticação
 
 const NavBar = ({
@@ -12,6 +12,13 @@ const NavBar = ({
   AnualContent,
 }) => {
   const { user, logout } = useAuth(); // Obtém o usuário e a função logout do contexto
+  const [rContent1MTotal, setRContent1MTotal] = useState(0);
+  const [rContent2MTotal, setRContent2MTotal] = useState(0);
+
+  const handleRContentTotalsChange = useCallback((total1M, total2M) => {
+    setRContent1MTotal(total1M);
+    setRContent2MTotal(total2M);
+  }, []);
 
   // Mapeamento dos componentes passados por props
   const componentMap = {
@@ -196,10 +203,19 @@ const NavBar = ({
     })
     .map((tabDef) => {
       const ComponentToRender = componentMap[tabDef.componentName];
+      let componentProps = { ...tabDef.props };
+
+      if (tabDef.componentName === "Rcontent") {
+        componentProps.onCombinedTotalsChange = handleRContentTotalsChange;
+      } else if (tabDef.componentName === "MContent") {
+        componentProps.rContent1MTotal = rContent1MTotal;
+        componentProps.rContent2MTotal = rContent2MTotal;
+      }
+
       return {
         ...tabDef,
         content: ComponentToRender ? (
-          <ComponentToRender {...tabDef.props} />
+          <ComponentToRender {...componentProps} />
         ) : (
           "Carregando..."
         ),

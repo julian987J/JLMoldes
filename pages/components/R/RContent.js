@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import Calculadora from "./Calculadora.js";
 import Execute from "models/functions";
 import BSTA from "./BSATable.js";
@@ -8,15 +8,19 @@ import Pendente from "./Pendente.js";
 import PlanilhaDiaria from "./PlanilhaDiaria.js";
 import Aviso from "./Aviso.js";
 import ValoresColuna from "./ValoresColuna.js";
+import PlotterStatus from "./PlotterStatus.js";
+import PlotterTotals from "./PlotterTotals.js";
+import Semanas from "./Semanas.js";
 
-const Rcontent = ({ codigoExterno, r }) => {
-  // Referência para o valor de codigoExterno, para garantir que não altere depois de passado
-  const codigoExternoRef = useRef(codigoExterno);
+const Rcontent = ({
+  codigoExterno,
+  nomeExterno,
+  r,
+  onCombinedTotalsChange,
+}) => {
   const tablesToSearch = useRef(["R", "deve", "devo", "cadastro"]);
-
-  // Se o codigoExterno for passado, não alteramos o estado de codigo
   const [codigo, setCodigo] = useState(codigoExterno || "");
-  const [nome, setNome] = useState("");
+  const [nome, setNome] = useState(nomeExterno || "");
   const [plusCalculadora, setPlusCalculadora] = useState(null);
   const [valuesCalculadora, setValuesCalculadora] = useState(
     Array(28).fill(""),
@@ -24,27 +28,26 @@ const Rcontent = ({ codigoExterno, r }) => {
   const [data, setData] = useState();
   const [selectedPendenteItem, setSelectedPendenteItem] = useState(null);
   const [totalValores, setTotalValores] = useState(0);
+  const [bsaTotals, setBsaTotals] = useState({ total1M: 0, total2M: 0 });
+  const [deveTotals, setDeveTotals] = useState({ total1M: 0, total2M: 0 });
+  const [plotterTotals, setPlotterTotals] = useState(0);
+  const [countM1, setCountM1] = useState(0);
+  const [countUtilTotal, setCountUtilTotal] = useState(0);
+  const [combined1MTotal, setCombined1MTotal] = useState(0);
+  const [combined2MTotal, setCombined2MTotal] = useState(0);
 
   useEffect(() => {
-    if (codigoExterno !== codigoExternoRef.current) {
-      codigoExternoRef.current = codigoExterno;
-      setCodigo(codigoExterno || "");
-    }
+    setCodigo(codigoExterno || "");
   }, [codigoExterno]);
 
   useEffect(() => {
-    let isMounted = true;
-    // Se um item foi selecionado do Pendente, não busca o nome automaticamente
-    if (selectedPendenteItem) {
-      return;
-    }
+    setNome(nomeExterno || "");
+  }, [nomeExterno]);
 
-    const fetchNome = async () => {
+  useEffect(() => {
+    const fetchDataForCodigo = async () => {
       if (!codigo) {
-        if (isMounted) {
-          setNome("");
-          setData(undefined);
-        }
+        setData(undefined);
         return;
       }
 
@@ -56,70 +59,25 @@ const Rcontent = ({ codigoExterno, r }) => {
           if (foundItem) break;
         }
 
-        if (isMounted && foundItem) {
-          setNome(foundItem.nome || "");
+        if (foundItem) {
           setData(foundItem.data);
-        } else if (isMounted) {
-          setNome("");
+        } else {
           setData(undefined);
         }
       } catch (error) {
-        console.error("Falha ao buscar nome:", error);
-        if (isMounted) {
-          setNome("");
-          setData(undefined);
-        }
+        console.error("Falha ao buscar data para o código:", error);
+        setData(undefined);
       }
     };
 
-    fetchNome();
-    return () => {
-      isMounted = false;
-    };
-  }, [codigo, selectedPendenteItem]);
+    fetchDataForCodigo();
+  }, [codigo]); // Adiciona selectedPendenteItem como dependência
 
-  useEffect(() => {
-    if (selectedPendenteItem) {
-      return;
-    }
-
-    let isMounted = true;
-    const fetchCodigo = async () => {
-      if (!nome) {
-        if (isMounted) setCodigo("");
-        return;
-      }
-
-      try {
-        let foundCodigo = "";
-        for (const table of tablesToSearch.current) {
-          const items = await Execute.receiveFromRDeveDevo(table);
-          const foundItem = items.find((item) => item.nome === nome);
-          if (foundItem) {
-            foundCodigo = foundItem.codigo;
-            break;
-          }
-        }
-        if (isMounted) setCodigo(foundCodigo);
-      } catch (error) {
-        console.error("Falha ao buscar código:", error);
-      }
-    };
-
-    fetchCodigo();
-    return () => {
-      isMounted = false;
-    };
-  }, [nome, selectedPendenteItem]); // Adiciona selectedPendenteItem como dependência
-
-  // Atualizando o estado 'codigo' ou 'nome' diretamente
   const handleCodigoChange = (novoCodigo) => {
-    if (!codigoExternoRef.current) {
-      setCodigo(novoCodigo); // Só altera o código se codigoExterno não estiver definido
-      setSelectedPendenteItem(null); // Limpa a seleção do pendente
-      setPlusCalculadora(null); // Reseta o plus para null
-      setValuesCalculadora(Array(28).fill("")); // Reseta os values
-    }
+    setCodigo(novoCodigo);
+    setSelectedPendenteItem(null); // Limpa a seleção do pendente
+    setPlusCalculadora(null); // Reseta o plus para null
+    setValuesCalculadora(Array(28).fill("")); // Reseta os values
   };
 
   const handleNomeChange = (novoNome) => {
@@ -172,28 +130,70 @@ const Rcontent = ({ codigoExterno, r }) => {
     setData(item.data); // Atualiza a data também, se relevante
   };
 
-  const handleValoresChange = (valores) => {
+  const handleValoresChange = useCallback((valores) => {
     setTotalValores(valores);
-  };
+  }, []);
+
+  const handleBsaTotalsChange = useCallback((totals) => {
+    setBsaTotals(totals);
+  }, []);
+
+  const handleDeveTotalsChange = useCallback((totals) => {
+    setDeveTotals(totals);
+  }, []);
+
+  const handlePlotterTotalsChange = useCallback((totals, count) => {
+    setPlotterTotals(totals);
+    setCountM1(count || 0);
+  }, []);
+
+  const handleCountUtilChange = useCallback((count) => {
+    setCountUtilTotal(count || 0);
+  }, []);
+
+  useEffect(() => {
+    setCombined1MTotal(bsaTotals.total1M + deveTotals.total1M);
+    setCombined2MTotal(bsaTotals.total2M + deveTotals.total2M);
+  }, [bsaTotals, deveTotals]);
+
+  useEffect(() => {
+    if (onCombinedTotalsChange) {
+      onCombinedTotalsChange(combined1MTotal, combined2MTotal);
+    }
+  }, [combined1MTotal, combined2MTotal, onCombinedTotalsChange]);
 
   return (
     <div>
       <ValoresColuna r={r} onValoresChange={handleValoresChange} />
-      <div className="grid grid-cols-30 gap-1">
-        <PlanilhaDiaria r={r} totalValores={totalValores} />
+      <div className="grid grid-cols-39 gap-1">
+        <PlanilhaDiaria
+          r={r}
+          totalValores={totalValores}
+          plotterTotals={plotterTotals}
+          onCountUtilChange={handleCountUtilChange}
+        />
+        <div className="col-span-6">
+          <PlotterTotals r={r} onTotalsChange={handlePlotterTotalsChange} />
+        </div>
         <div className="col-span-9">
-          <BSTA codigo={codigo} r={r} />
+          <BSTA codigo={codigo} r={r} onTotalsChange={handleBsaTotalsChange} />
         </div>
         <div className="col-span-10">
           <Pendente r={r} onSelectItem={handlePendenteSelect} />
           <div className="mt-1">
-            <Deve codigo={codigo} r={r} />
+            <Deve
+              codigo={codigo}
+              r={r}
+              onTotalsChange={handleDeveTotalsChange}
+              total1M={bsaTotals.total1M + deveTotals.total1M}
+              total2M={bsaTotals.total2M + deveTotals.total2M}
+            />
           </div>
           <div className="mt-1">
             <Aviso codigo={codigo} r={r} />
           </div>
         </div>
-        <div className="col-span-4">
+        <div className="col-span-7">
           <Calculadora
             r={r}
             codigo={codigo}
@@ -206,8 +206,21 @@ const Rcontent = ({ codigoExterno, r }) => {
             onValuesChange={handleValuesChange}
             data={data}
             isPendente={!!selectedPendenteItem}
+            countM1={countM1}
+            countUtilGreaterThanZero={countUtilTotal}
           />
-          <Devo codigo={codigo} r={r} />
+          <div className="mt-1">
+            <PlotterStatus r={r} plotterNome="P01" />
+          </div>
+          <div className="mt-1">
+            <PlotterStatus r={r} plotterNome="P02" />
+          </div>
+          <div className="mt-1">
+            <Devo codigo={codigo} r={r} />
+          </div>
+          <div className="mt-1">
+            <Semanas r={r} />
+          </div>
         </div>
       </div>
     </div>

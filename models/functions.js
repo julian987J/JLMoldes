@@ -58,6 +58,7 @@ async function sendToR(itemData) {
         sis: itemData.sis ?? 0,
         alt: itemData.alt ?? 0,
         base: itemData.base ?? 0,
+        r_bsa_uid: itemData.r_bsa_uid,
       }),
     });
 
@@ -367,6 +368,7 @@ async function sendToC(itemData) {
         base: itemData.base,
         real: itemData.real,
         pix: itemData.pix,
+        r_bsa_ids: itemData.r_bsa_ids, // Adicionado r_bsa_ids aqui
       }),
     });
 
@@ -463,6 +465,31 @@ async function sendToPagamentos(itemData) {
     return await response.json();
   } catch (error) {
     console.error("Erro no sendToPagamentos:", error);
+    throw error;
+  }
+}
+
+async function sendToSemanal(itemData) {
+  try {
+    const response = await fetch("/api/v1/tables/semanal", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(itemData),
+    });
+
+    if (!response.ok) {
+      let errorMsg = `Erro ao criar registro em Semanal (Status: ${response.status})`;
+      try {
+        const errorData = await response.json();
+        errorMsg = errorData.error || errorData.message || errorMsg;
+      } catch (parseError) {
+        // Ignore if body is not valid JSON
+      }
+      throw new Error(errorMsg);
+    }
+    return await response.json();
+  } catch (error) {
+    console.error("Erro no sendToSemanal:", error);
     throw error;
   }
 }
@@ -625,7 +652,9 @@ async function receiveFromPagamentos(r) {
       console.warn("receiveFromPagamentos: 'r' parameter is missing.");
       return [];
     }
-    const response = await fetch(`/api/v1/tables/pagamentos?r=${r}`);
+    const response = await fetch(`/api/v1/tables/pagamentos?r=${r}`, {
+      cache: "no-store",
+    });
     if (!response.ok) {
       let errorMsg = `Error fetching pagamentos (Status: ${response.status})`;
       try {
@@ -643,9 +672,39 @@ async function receiveFromPagamentos(r) {
     return [];
   }
 }
+
+async function receiveFromSemanal(r) {
+  try {
+    if (typeof r === "undefined" || r === null) {
+      console.warn("receiveFromSemanal: 'r' parameter is missing.");
+      return [];
+    }
+    const response = await fetch(`/api/v1/tables/semanal?r=${r}`, {
+      cache: "no-store",
+    });
+    if (!response.ok) {
+      let errorMsg = `Error fetching semanal data (Status: ${response.status})`;
+      try {
+        const errorData = await response.json();
+        errorMsg = errorData.error || errorData.message || errorMsg;
+      } catch (e) {
+        // ignore if not json
+      }
+      throw new Error(errorMsg);
+    }
+    const data = await response.json();
+    return Array.isArray(data) ? data : [];
+  } catch (error) {
+    console.error(`Error fetching semanal for r=${r}:`, error);
+    return [];
+  }
+}
+
 async function receiveFromDevo(r) {
   try {
-    const response = await fetch(`/api/v1/tables/devo?r=${r}`);
+    const response = await fetch(`/api/v1/tables/devo?r=${r}`, {
+      cache: "no-store",
+    });
     if (!response.ok) throw new Error("Erro ao carregar os dados");
     const data = await response.json();
     return Array.isArray(data.rows) ? data.rows : [];
@@ -664,18 +723,6 @@ async function receiveFromDec(r) {
     return Array.isArray(data) ? data : [];
   } catch (error) {
     console.error("Erro ao buscar dados Dec:", error);
-    return [];
-  }
-}
-
-async function receiveFromC(r) {
-  try {
-    const response = await fetch(`/api/v1/tables/c?r=${r}`);
-    if (!response.ok) throw new Error("Erro ao carregar os dados");
-    const data = await response.json();
-    return Array.isArray(data.rows) ? data.rows : [];
-  } catch (error) {
-    console.error("Erro ao buscar dados C:", error);
     return [];
   }
 }
@@ -753,7 +800,9 @@ async function receiveFromPapelCData(codigo, data) {
 
 async function receiveFromPapelC(r) {
   try {
-    const response = await fetch(`/api/v1/tables/c/papel?r=${r}`);
+    const response = await fetch(`/api/v1/tables/c/papel?r=${r}`, {
+      cache: "no-store",
+    });
     if (!response.ok) throw new Error("Erro ao carregar os dados");
     const data = await response.json();
     return Array.isArray(data.rows) ? data.rows : [];
@@ -941,6 +990,22 @@ async function receiveFromPapel(letras) {
     return Array.isArray(data.rows) ? data.rows : [];
   } catch (error) {
     console.error("Erro ao buscar dados Papel:", error);
+  }
+}
+
+async function receiveFromPapelByItem(item) {
+  try {
+    const response = await fetch(`/api/v1/tables/gastos/papel?item=${item}`);
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || "Erro ao carregar os dados");
+    }
+
+    const data = await response.json();
+    return Array.isArray(data.rows) ? data.rows : [];
+  } catch (error) {
+    console.error("Erro ao buscar dados Papel por item:", error);
   }
 }
 
@@ -1138,15 +1203,40 @@ async function removeDeve(codigo) {
   console.log(result);
 }
 
-async function removeAviso(avisoid) {
-  const response = await fetch("/api/v1/tables/aviso", {
-    method: "DELETE",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ avisoid }),
-  });
+async function removeDeveById(deveid) {
+  try {
+    const response = await fetch("/api/v1/tables/deve", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ deveid }),
+    });
+    if (!response.ok) {
+      throw new Error("Falha ao remover dívida");
+    }
+    return await response.json();
+  } catch (error) {
+    console.error("Erro em removeDeveById:", error);
+    throw error;
+  }
+}
 
-  const result = await response.json();
-  console.log(result);
+async function removeAviso(avisoid) {
+  try {
+    const response = await fetch("/api/v1/tables/aviso", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ avisoid }),
+    });
+
+    if (!response.ok) {
+      throw new Error("Falha ao remover o aviso");
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error("Erro em removeAviso:", error);
+    throw error;
+  }
 }
 
 async function removeDevo(codigo) {
@@ -1242,6 +1332,34 @@ async function removePagamentoById(id) {
   }
 }
 
+async function removePagamentosByRAndDateRange(r, startDate, endDate) {
+  try {
+    const response = await fetch(
+      `/api/v1/tables/pagamentos?r=${r}&startDate=${encodeURIComponent(startDate)}&endDate=${encodeURIComponent(endDate)}`,
+      {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+      },
+    );
+
+    if (!response.ok) {
+      let errorMsg = `Erro ao excluir pagamentos (Status: ${response.status})`;
+      try {
+        const errorData = await response.json();
+        errorMsg = errorData.error || errorData.message || errorMsg;
+      } catch (parseError) {
+        // Ignore if body is not valid JSON
+      }
+      throw new Error(errorMsg);
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error(`Erro em removePagamentosByRAndDateRange:`, error);
+    throw error;
+  }
+}
+
 async function deleteAllPagamentos() {
   try {
     const response = await fetch(`/api/v1/tables/pagamentos`, {
@@ -1331,6 +1449,22 @@ async function updateUser(userData) {
   }
 }
 
+async function receiveFromC(r) {
+  try {
+    // Este endpoint agora busca todos os itens, ativos e finalizados.
+    const response = await fetch(
+      `/api/v1/tables/c?r=${r}&includeFinished=true`,
+      { cache: "no-store" },
+    );
+    if (!response.ok) throw new Error("Erro ao carregar todos os dados de C");
+    const data = await response.json();
+    return Array.isArray(data.rows) ? data.rows : [];
+  } catch (error) {
+    console.error("Erro ao buscar todos os dados de C:", error);
+    return [];
+  }
+}
+
 async function receiveFromPlotterC(r) {
   try {
     const response = await fetch(`/api/v1/tables/c/plotter?r=${r}`);
@@ -1370,7 +1504,138 @@ async function swapSimNaoPlotterC(id) {
   }
 }
 
+async function archiveAllFinalizado(r) {
+  try {
+    const response = await fetch("/api/v1/tables/c/plotter/archive", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ r }),
+    });
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || "Erro ao arquivar registros.");
+    }
+    return await response.json();
+  } catch (error) {
+    console.error("Erro em archiveAllFinalizado:", error);
+    throw error;
+  }
+}
+
+async function sendToTContentAno(itemData) {
+  try {
+    const response = await fetch("/api/v1/tables/tcontent-ano", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(itemData),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      // Se for erro de duplicata, lança erro específico
+      if (errorData.error === "TCONTENT_ANO_EXISTS") {
+        throw new Error("TCONTENT_ANO_EXISTS");
+      }
+      throw new Error(
+        errorData.error || "Erro ao criar snapshot de TContent Ano",
+      );
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error("Erro no sendToTContentAno:", error);
+    throw error;
+  }
+}
+
+async function receiveFromTContentAno(r, oficina) {
+  try {
+    if (typeof r === "undefined" || r === null) {
+      console.warn("receiveFromTContentAno: 'r' parameter is missing.");
+      return [];
+    }
+    if (typeof oficina === "undefined" || oficina === null) {
+      console.warn("receiveFromTContentAno: 'oficina' parameter is missing.");
+      return [];
+    }
+
+    const response = await fetch(
+      `/api/v1/tables/tcontent-ano?r=${r}&oficina=${encodeURIComponent(oficina)}`,
+      {
+        cache: "no-store",
+      },
+    );
+
+    if (!response.ok) {
+      let errorMsg = `Error fetching TContent Ano (Status: ${response.status})`;
+      try {
+        const errorData = await response.json();
+        errorMsg = errorData.error || errorData.message || errorMsg;
+      } catch (e) {
+        // ignore if not json
+      }
+      throw new Error(errorMsg);
+    }
+
+    const data = await response.json();
+    return Array.isArray(data) ? data : [];
+  } catch (error) {
+    console.error(
+      `Error fetching TContent Ano for r=${r}, oficina=${oficina}:`,
+      error,
+    );
+    return [];
+  }
+}
+
+async function receiveFromTContentAnoByYear(ano, r, oficina) {
+  try {
+    if (typeof ano === "undefined" || ano === null) {
+      console.warn("receiveFromTContentAnoByYear: 'ano' parameter is missing.");
+      return null;
+    }
+    if (typeof r === "undefined" || r === null) {
+      console.warn("receiveFromTContentAnoByYear: 'r' parameter is missing.");
+      return null;
+    }
+    if (typeof oficina === "undefined" || oficina === null) {
+      console.warn(
+        "receiveFromTContentAnoByYear: 'oficina' parameter is missing.",
+      );
+      return null;
+    }
+
+    const response = await fetch(
+      `/api/v1/tables/tcontent-ano?ano=${ano}&r=${r}&oficina=${encodeURIComponent(oficina)}`,
+      {
+        cache: "no-store",
+      },
+    );
+
+    if (!response.ok) {
+      let errorMsg = `Error fetching TContent Ano by year (Status: ${response.status})`;
+      try {
+        const errorData = await response.json();
+        errorMsg = errorData.error || errorData.message || errorMsg;
+      } catch (e) {
+        // ignore if not json
+      }
+      throw new Error(errorMsg);
+    }
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error(
+      `Error fetching TContent Ano for year=${ano}, r=${r}, oficina=${oficina}:`,
+      error,
+    );
+    return null;
+  }
+}
+
 const execute = {
+  archiveAllFinalizado,
   receiveFromPlotterC,
   removePlotterC,
   swapSimNaoPlotterC,
@@ -1389,6 +1654,7 @@ const execute = {
   sendToPapel,
   sendToPapelC,
   sendToPagamentos,
+  sendToSemanal,
   receiveFromTemp,
   sendToTemp,
   receiveFromC,
@@ -1405,6 +1671,7 @@ const execute = {
   receiveAnualFromPapelC,
   receiveFromConfig,
   receiveFromPapel,
+  receiveFromPapelByItem,
   receiveFromPapelCalculadora,
   receiveFromPapelC,
   receiveFromPapelCData,
@@ -1417,6 +1684,7 @@ const execute = {
   receiveFromDevoJustValor,
   receiveFromNota,
   receiveFromPagamentos,
+  receiveFromSemanal,
   receiveFromR,
   receiveFromRJustBSA,
   receiveAllCad, // Added
@@ -1432,16 +1700,21 @@ const execute = {
   removeMandR,
   PayAllMandR,
   removeDeve,
+  removeDeveById,
   removeAviso,
   removeDevo,
   updateDevo,
   removeDevoById,
   removePagamentoById,
+  removePagamentosByRAndDateRange,
   removeTemp,
   deleteAllPagamentos,
   loginUser,
   receiveUsers, // Added
   updateUser, // Added
+  sendToTContentAno,
+  receiveFromTContentAno,
+  receiveFromTContentAnoByYear,
 };
 
 export default execute;
